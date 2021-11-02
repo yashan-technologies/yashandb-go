@@ -8,12 +8,13 @@ package yasdb
 */
 import "C"
 import (
-	"bytes"
-	"database/sql/driver"
-	"log"
-	"strings"
-	"time"
-	"unsafe"
+    "bytes"
+    "database/sql/driver"
+    "log"
+    "strings"
+    "sync"
+    "time"
+    "unsafe"
 )
 
 type AncHandle *C.AncHandle
@@ -32,20 +33,25 @@ var (
     ANC_HANDLE_DESC    = 4
 )
 
+var (
+    Mutex        = &sync.Mutex{}
+    LastErrMsg   = (*C.AncChar)(C.malloc(512))
+    LastSqlState = (*C.AncChar)(C.malloc(512))
+)
+
 func checkYasError(ret C.AncResult) error {
     if int(ret) == 0 {
         return nil
     }
-    errCode := (*C.AncInt32)((unsafe.Pointer)(new(int)))
-    message := (*C.AncChar)((unsafe.Pointer)(new(string)))
-    sqlState := (*C.AncChar)((unsafe.Pointer)(new(string)))
-
+    Mutex.Lock()
+    defer Mutex.Unlock()
+    var errCode C.AncInt32
     pos := &C.struct_StAncTextPos{}
-    C.ancGetLastError(errCode, &message, &sqlState, pos)
+    C.ancGetLastError(&errCode, &LastErrMsg, &LastSqlState, pos)
     err := &YasDBError{
-        Code:     int(*errCode),
-        Msg:      C.GoString(message),
-        SqlState: C.GoString(sqlState),
+        Code:     int(errCode),
+        Msg:      C.GoString(LastErrMsg),
+        SqlState: C.GoString(LastSqlState),
         Line:     int(pos.line),
         Column:   int(pos.column),
     }
@@ -186,9 +192,14 @@ func yasdbExecute(stmt *YasStmt) error {
             stmt.RowCount = 1
             return nil
         }
-        rowCount := (unsafe.Pointer)(&stmt.RowCount)
+        rowCount := (unsafe.Pointer)(new(uint64))
         size := C.AncInt32(unsafe.Sizeof(new(int64)))
-        return checkYasError(C.ancGetStmtAttr(*stmt.Stmt, C.ANC_ATTR_ROWS_AFFECTED, rowCount, size))
+        err := checkYasError(C.ancGetStmtAttr(*stmt.Stmt, C.ANC_ATTR_ROWS_AFFECTED, rowCount, size))
+        if err != nil {
+            return err
+        }
+        stmt.RowCount = *(*uint64)(rowCount)
+        return nil
     } else {
         stmt.RowCount = 0
     }
@@ -210,14 +221,15 @@ func yasdbColumns(stmt *YasStmt, columns C.AncInt32) error {
         }
         cols = append(cols, C.GoString(item.name))
 
-        size := uint32(item.size)
+        size, indicator := uint32(item.size), C.AncInt32(0)
         row := NewYasRow(stmt, size, int(item._type))
         if err := checkYasError(
             C.ancBindColumn(
                 *stmt.Stmt, C.AncUint16(pos), C.AncType(item._type),
-                C.AncPointer(row.Data), C.AncInt32(size), nil)); err != nil {
+                C.AncPointer(row.Data), C.AncInt32(size), &indicator)); err != nil {
             return err
         }
+        row.Indicator = int32(indicator)
         stmt.fetchRows = append(stmt.fetchRows, row)
     }
     stmt.Columns = &cols
