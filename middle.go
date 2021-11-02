@@ -1,8 +1,8 @@
 package yasdb
 
 /*
-#cgo CFLAGS: -I./anchor/src/cli
-#cgo LDFLAGS: -L${SRCDIR}/anchor/build/lib -lcodcommon -lyas_infra -lyascli
+#cgo CFLAGS: -I./deps/include
+#cgo LDFLAGS: -L${SRCDIR}/deps/lib -lcodcommon -lyas_infra -lyascli
 
 #include "anc.h"
 */
