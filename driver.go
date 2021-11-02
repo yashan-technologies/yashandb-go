@@ -2,18 +2,12 @@ package yasdb
 
 import (
     "database/sql/driver"
-    "log"
     "regexp"
 )
 
 type YasDriver struct{}
 
-func init() {
-    log.Println("driver is call ")
-}
-
 func (driver *YasDriver) Open(dsn string) (driver.Conn, error) {
-    log.Println("exec open driver")
     conn := NewConnection()
     re := regexp.MustCompile(`^(.*?)/(.*?)@(.*)$`)
     if !re.MatchString(dsn) {

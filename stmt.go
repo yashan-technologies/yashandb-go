@@ -1,9 +1,8 @@
 package yasdb
 
 import (
-	"database/sql/driver"
-	"log"
-	"unsafe"
+    "database/sql/driver"
+    "unsafe"
 )
 
 type YasStmt struct {
@@ -36,7 +35,6 @@ func (stmt *YasStmt) Close() error {
 
 // Query  implement for Query
 func (stmt *YasStmt) Query(args []driver.Value) (driver.Rows, error) {
-    log.Println("do query", args)
     freeBindVals(stmt)
     if err := yasdbBindParams(stmt, args); err != nil {
         return nil, err

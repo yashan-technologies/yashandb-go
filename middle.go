@@ -10,7 +10,6 @@ import "C"
 import (
     "bytes"
     "database/sql/driver"
-    "log"
     "strings"
     "sync"
     "time"
@@ -55,7 +54,6 @@ func checkYasError(ret C.AncResult) error {
         Line:     int(pos.line),
         Column:   int(pos.column),
     }
-    log.Println(err)
     return err
 }
 
@@ -167,7 +165,6 @@ func yasdbBindParams(stmt *YasStmt, args []driver.Value) error {
             stmt.bindVals = append(stmt.bindVals, unsafe.Pointer(charV))
         }
         indicator := size - 1
-        log.Println(ancType, arg, size, indicator)
         ret = C.ancBindParameter(*stmt.Stmt, C.AncUint16(i), C.ANC_PARAM_INPUT, ancType, ancValue, size, &indicator)
         err = checkYasError(ret)
         if err != nil {
