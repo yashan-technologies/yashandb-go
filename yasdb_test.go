@@ -6,7 +6,7 @@ import (
     "testing"
     "time"
 
-    _ "yasdb"
+    _ "cod-git.sics.com/cod-noah/yasdb-go"
 )
 
 func init() {
