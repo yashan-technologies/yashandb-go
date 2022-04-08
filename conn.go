@@ -1,14 +1,14 @@
 package yasdb
 
 import (
-    "database/sql/driver"
+	"database/sql/driver"
 )
 
 // Conn for db open
 type Connection struct {
-    Env        AncHandle
-    Conn       AncHandle
-    Stmt       AncHandle
+    Env        YacHandle
+    Conn       YacHandle
+    Stmt       YacHandle
     Dsn        string
     Username   string
     autoCommit bool
@@ -16,9 +16,9 @@ type Connection struct {
 
 func NewConnection() *Connection {
     return &Connection{
-        Env:  NewAncHandle(),
-        Conn: NewAncHandle(),
-        Stmt: NewAncHandle(),
+        Env:  NewYacHandle(),
+        Conn: NewYacHandle(),
+        Stmt: NewYacHandle(),
     }
 }
 
@@ -36,13 +36,13 @@ func (c *Connection) Prepare(query string) (driver.Stmt, error) {
 
 // Close close db connection
 func (c *Connection) Close() error {
-    if err := yasdbFreeHandle(c.Stmt, ANC_HANDLE_STMT); err != nil {
+    if err := yasdbFreeHandle(c.Stmt, YAC_HANDLE_STMT); err != nil {
         return err
     }
-    if err := yasdbFreeHandle(c.Conn, ANC_HANDLE_DBC); err != nil {
+    if err := yasdbFreeHandle(c.Conn, YAC_HANDLE_DBC); err != nil {
         return err
     }
-    return yasdbFreeHandle(c.Env, ANC_HANDLE_ENV)
+    return yasdbFreeHandle(c.Env, YAC_HANDLE_ENV)
 }
 
 // Begin begin

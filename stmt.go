@@ -7,7 +7,7 @@ import (
 
 type YasStmt struct {
     Conn      *Connection
-    Stmt      AncHandle
+    Stmt      YacHandle
     Columns   *[]string
     SqlType   uint32
     ArrSize   uint32
@@ -20,7 +20,7 @@ type YasStmt struct {
 func NewYasStmt(conn *Connection) (*YasStmt, error) {
     stmt := &YasStmt{
         Conn: conn,
-        Stmt: NewAncHandle(),
+        Stmt: NewYacHandle(),
     }
     if err := yasdbStmtInit(stmt); err != nil {
         return nil, err
@@ -30,7 +30,7 @@ func NewYasStmt(conn *Connection) (*YasStmt, error) {
 
 // Close  implement for stmt
 func (stmt *YasStmt) Close() error {
-    return yasdbFreeHandle(stmt.Stmt, ANC_HANDLE_STMT)
+    return yasdbFreeHandle(stmt.Stmt, YAC_HANDLE_STMT)
 }
 
 // Query  implement for Query

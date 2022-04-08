@@ -12,7 +12,7 @@ type YasRow struct {
     dataSize   uint32
     IsValueSet bool
     IsArray    bool
-    Data       AncPointer
+    Data       YacPointer
     Indicator  int32
     DbType     int
     TransType  int
@@ -25,7 +25,7 @@ func NewYasRow(stmt *YasStmt, size uint32, dbType int) *YasRow {
         DbType:   dbType,
     }
     row.dataSize = size * row.Elements
-    row.Data = AncPointer(unsafe.Pointer(new([]byte)))
+    row.Data = YacPointer(unsafe.Pointer(new([]byte)))
     row.Indicator = 0
     return row
 }
