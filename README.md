@@ -5,21 +5,23 @@
 ### 下载代码
 
 ```bash
-go get -insecure cod-git.sics.com/cod-noah/yasdb-go@v0.1.0
+go get -insecure cod-git.sics.com/cod-noah/yasdb-go@v21.1
 ```
-
- - v0.1.0 主要是br分支，对应的TP版本号为v0.1.x
- - v0.2.0 主要是master分支，对应的TP版本号为v0.2.x
+ - v21.1 用于连接yasdb v21.1版本
 
 ### 设置环境变量
 
-由于该工程采用的是cgo的方式进行开发，需要用到TP的两个so库
+由于该工程采用的是cgo的方式进行开发，需要用到yasdb v21.1的两个so库
 
 - libyas_infra.so.0
 - libyascli.so.0
 
+第三方库
+
+- libcrypto.so.1.1
+
 ```bash
-export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v0.1.0/deps/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v21.1/deps/lib:$LD_LIBRARY_PATH
 ```
 
 ### 编码开发
@@ -35,7 +37,7 @@ import (
 )
 
 func Connect() *sql.DB {
-    db, err := sql.Open("yasdb", "sys/sys@192.168.30.219:16001")
+    db, err := sql.Open("yasdb", "sys/sys@127.0.0.1:1688")
     if err != nil {
         log.Fatalf("some error %s", err.Error())
     }
