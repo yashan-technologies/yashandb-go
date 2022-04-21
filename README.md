@@ -7,7 +7,7 @@
 ```bash
 vim ~/.gitconfig
 
-# 输入，我们的gitlab不支持https，所以需要把所有https转成http，http转成git就可以免密
+# 输入，我们的gitlab不支持https，所以需要把所有https转成http，再把http转成git就可以免密
 
 [url "git@cod-git.sics.com:"]
     insteadOf = http://cod-git.sics.com/
@@ -29,7 +29,7 @@ vim ~/.gitconfig
 
 ```bash
 go env -w GOPRIVATE=cod-git.sics.com
-export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v0.21.1/deps/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v1.0.0/deps/lib:$LD_LIBRARY_PATH
 ```
 
 ### 创建项目
