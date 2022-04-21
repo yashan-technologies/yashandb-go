@@ -1,7 +1,7 @@
 package yasdb
 
 import (
-	"database/sql/driver"
+    "database/sql/driver"
 )
 
 // Conn for db open
@@ -11,7 +11,7 @@ type Connection struct {
     Stmt       YacHandle
     Dsn        string
     Username   string
-    autoCommit bool
+    AutoCommit bool
 }
 
 func NewConnection() *Connection {
@@ -50,13 +50,17 @@ func (c *Connection) Begin() (driver.Tx, error) {
     return &YasTx{Conn: c}, nil
 }
 
-func (c *Connection) AutoCommit(auto bool) error {
-    if auto == c.autoCommit {
+func (c *Connection) SetAutoCommit(auto bool) error {
+    if auto == c.AutoCommit {
         return nil
     }
     if err := setAutoCommit(c, auto); err != nil {
         return err
     }
-    c.autoCommit = auto
+    c.AutoCommit = auto
     return nil
+}
+
+func (c *Connection) IsAutoCommit() bool {
+    return c.AutoCommit
 }

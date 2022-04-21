@@ -9,6 +9,7 @@ package yasdb
 import "C"
 import (
     "database/sql/driver"
+    "strconv"
     "strings"
     "sync"
     "time"
@@ -56,7 +57,7 @@ func checkYasError(ret C.YacResult) error {
     return err
 }
 
-func yasdbConnect(conn *Connection) error {
+func yasdbConnect(conn *Connection, autoCommit bool) error {
     if conn.Dsn == "" {
         return ErrDsnNoSet()
     }
@@ -87,7 +88,13 @@ func yasdbConnect(conn *Connection) error {
         yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
         return err
     }
-    return getAutoCommit(conn)
+    if err := setAutoCommit(conn, autoCommit); err != nil {
+        yasdbFreeHandle(conn.Conn, C.YAC_HANDLE_DBC)
+        yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
+        yasdbFreeHandle(conn.Stmt, C.YAC_HANDLE_STMT)
+        return err
+    }
+    return nil
 }
 
 func yasdbFreeHandle(a YacHandle, t int) error {
@@ -218,11 +225,18 @@ func yasdbColumns(stmt *YasStmt, columns C.YacInt32) error {
         }
         cols = append(cols, C.GoString(item.name))
 
+        yacType := C.YacType(item._type)
         size, indicator := uint32(item.size), C.YacInt32(0)
+
+        // number to string
+        if C.YAC_TYPE_NUMBER == yacType {
+            yacType = C.YAC_TYPE_VARCHAR
+            size = size + 8
+        }
         row := NewYasRow(stmt, size, int(item._type))
         if err := checkYasError(
             C.yacBindColumn(
-                *stmt.Stmt, C.YacUint16(pos), C.YacType(item._type),
+                *stmt.Stmt, C.YacUint16(pos), yacType,
                 C.YacPointer(row.Data), C.YacInt32(size), &indicator)); err != nil {
             return err
         }
@@ -277,9 +291,9 @@ func getAutoCommit(conn *Connection) error {
         return err
     }
     if auto == 0 {
-        conn.autoCommit = false
+        conn.AutoCommit = false
     } else {
-        conn.autoCommit = true
+        conn.AutoCommit = true
     }
     return nil
 }
@@ -334,6 +348,8 @@ func valueToGolang(row *YasRow) (interface{}, error) {
         return date, nil
     case C.YAC_TYPE_CHAR, C.YAC_TYPE_NCHAR, C.YAC_TYPE_VARCHAR, C.YAC_TYPE_NVARCHAR:
         return (C.GoString((*C.char)(p))), nil
+    case C.YAC_TYPE_NUMBER:
+        return strconv.ParseFloat(C.GoString((*C.char)(p)), 64)
     }
     return nil, ErrDbTypeUnsupport(row.DbType)
 }
