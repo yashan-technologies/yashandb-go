@@ -28,8 +28,16 @@ vim ~/.gitconfig
 - libcrypto.so.1.1
 
 ```bash
+# 将我们的gitlab设置为私有仓
 go env -w GOPRIVATE=cod-git.sics.com
-export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v1.0.0/deps/lib:$LD_LIBRARY_PATH
+
+# 设置yasdb 客户端所需的lib加载的路径，yasdb-go默认带了v21.1版本的lib库
+# 也可自行指向其他带lib库的路径
+# 注意：
+#    1. v21.1  支持访问v22.1的yasdb
+#    2. v22.1不支持访问v21.1的yasdb
+
+export LD_LIBRARY_PATH=$GOPATH/pkg/mod/cod-git.sics.com/cod-noah/yasdb-go@v1.0.1/deps/lib:$LD_LIBRARY_PATH
 ```
 
 ### 创建项目
@@ -85,6 +93,13 @@ func main() {
 
 ```bash
 go mod init yasdb_connect
+
+# 必须在init后执行，go get默认使用https下载包。
+# 我们的gitlab不支持https，所以使用go mod tidy会导致失败
+# 需要提前使用go get -insecure，以http的方式下载，
+# 注意必须设置私有仓：go env -w GOPRIVATE=cod-git.sics.com
+
+go get -insecure cod-git.sics.com/cod-noah/yasdb-go
 go mod tidy
 
 go run main.go

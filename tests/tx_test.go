@@ -106,8 +106,8 @@ func TestCount(t *testing.T) {
     ast.GenTable(tableName, Column{"id": "int", "name": "varchar(255)"})
 
     ast.Begin()
-    ast.TxExec(fmt.Sprintf("insert into %s values(?, ?)", tableName), 1, "张三")
-    ast.TxExec(fmt.Sprintf("insert into %s values(?, ?)", tableName), 2, "李四")
+    ast.TxExec(fmt.Sprintf("insert into %s (id, name) values(?, ?)", tableName), 1, "张三")
+    ast.TxExec(fmt.Sprintf("insert into %s (id, name) values(?, ?)", tableName), 2, "李四")
     ast.Ast.Nil(ast.Tx.Commit())
 
     ast.Begin()
