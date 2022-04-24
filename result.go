@@ -9,7 +9,7 @@ type YasResult struct {
 }
 
 func (y *YasResult) LastInsertId() (int64, error) {
-    return 0, ErrInsertIdUnsupport
+    return 0, nil
 }
 func (y *YasResult) RowsAffected() (int64, error) {
     return yasdbRowAffected(y.stmt)

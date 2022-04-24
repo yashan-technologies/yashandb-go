@@ -223,7 +223,7 @@ func yasdbColumns(stmt *YasStmt, columns C.YacInt32) error {
         if err := checkYasError(C.yacDescribeCol2(*stmt.Stmt, C.YacUint16(pos), &item)); err != nil {
             return err
         }
-        cols = append(cols, C.GoString(item.name))
+        cols = append(cols, strings.ToLower(C.GoString(item.name)))
 
         yacType := C.YacType(item._type)
         size, indicator := uint32(item.size), C.YacInt32(0)
@@ -370,6 +370,8 @@ func valueToC(arg driver.Value) (C.YacType, unsafe.Pointer, error) {
         // YashanDB 存储的是us，需要除以1000
         d := v.UnixNano() / 1e3
         return C.YAC_TYPE_TIMESTAMP, unsafe.Pointer(&d), nil
+    case nil:
+        return C.YAC_TYPE_VARCHAR, unsafe.Pointer(&v), nil
     default:
         return 0, nil, ErrUnknowType(v)
     }
