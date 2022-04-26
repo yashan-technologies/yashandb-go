@@ -365,7 +365,7 @@ func valueToC(arg driver.Value) (C.YacType, unsafe.Pointer, error) {
     case string:
         return C.YAC_TYPE_VARCHAR, unsafe.Pointer(&v), nil
     case []byte:
-        return C.YAC_TYPE_BINARY, unsafe.Pointer(&v), nil
+        return C.YAC_TYPE_VARCHAR, unsafe.Pointer(&v), nil
     case time.Time:
         // YashanDB 存储的是us，需要除以1000
         d := v.UnixNano() / 1e3
