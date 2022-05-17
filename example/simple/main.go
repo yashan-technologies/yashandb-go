@@ -4,7 +4,7 @@ import (
     "database/sql"
     "log"
 
-    _ "cod-git.sics.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/cod-noah/yasdb-go"
 )
 
 func Connect() *sql.DB {

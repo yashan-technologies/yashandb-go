@@ -5,7 +5,7 @@ import (
     "testing"
     "time"
 
-    _ "cod-git.sics.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/cod-noah/yasdb-go"
 )
 
 func TestSelect(t *testing.T) {

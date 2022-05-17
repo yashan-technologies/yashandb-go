@@ -4,7 +4,7 @@ import (
     "fmt"
     "testing"
 
-    _ "cod-git.sics.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/cod-noah/yasdb-go"
     "github.com/stretchr/testify/assert"
 )
 
