@@ -227,9 +227,10 @@ func yasdbColumns(stmt *YasStmt, columns C.YacInt32) error {
 
         yacType := C.YacType(item._type)
         size, indicator := uint32(item.size), C.YacInt32(0)
-
-        // number to string
-        if C.YAC_TYPE_NUMBER == yacType {
+        switch yacType {
+        case C.YAC_TYPE_CHAR, C.YAC_TYPE_NCHAR, C.YAC_TYPE_VARCHAR, C.YAC_TYPE_NVARCHAR:
+            size += 1
+        case C.YAC_TYPE_NUMBER: // number to string
             yacType = C.YAC_TYPE_VARCHAR
             size = size + 8
         }
