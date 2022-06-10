@@ -57,6 +57,20 @@ func checkYasError(ret C.YacResult) error {
     return err
 }
 
+func sizeToAlign4(size uint32) uint32 {
+    margin := uint32(size % 4)
+    if margin == 0 {
+        return size
+    }
+    return size + (4 - margin)
+}
+
+func mallocBytes(size uint32) unsafe.Pointer {
+    p := C.malloc(C.size_t(size))
+    pp := (*[1 << 30]byte)(p)
+    return unsafe.Pointer(pp)
+}
+
 func yasdbConnect(conn *Connection, autoCommit bool) error {
     if conn.Dsn == "" {
         return ErrDsnNoSet()
@@ -152,6 +166,18 @@ func freeBindVals(stmt *YasStmt) {
     stmt.bindVals = []unsafe.Pointer{}
 }
 
+func freeFetchRows(stmt *YasStmt) {
+    if len(stmt.fetchRows) == 0 {
+        return
+    }
+    for _, v := range stmt.fetchRows {
+        if v != nil {
+            C.free(v.Data)
+        }
+    }
+    stmt.fetchRows = []*YasRow{}
+}
+
 func yasdbBindParams(stmt *YasStmt, args []driver.Value) error {
     for i, arg := range args {
         yacType, v, err := valueToC(arg)
@@ -221,6 +247,7 @@ func yasdbColumns(stmt *YasStmt, columns C.YacInt32) error {
     for pos = 0; pos < columns; pos++ {
         item := C.struct_StYacColumnDesc{}
         if err := checkYasError(C.yacDescribeCol2(*stmt.Stmt, C.YacUint16(pos), &item)); err != nil {
+            freeFetchRows(stmt)
             return err
         }
         cols = append(cols, strings.ToLower(C.GoString(item.name)))
@@ -229,27 +256,28 @@ func yasdbColumns(stmt *YasStmt, columns C.YacInt32) error {
         size, indicator := uint32(item.size), C.YacInt32(0)
         switch yacType {
         case C.YAC_TYPE_CHAR, C.YAC_TYPE_NCHAR, C.YAC_TYPE_VARCHAR, C.YAC_TYPE_NVARCHAR:
-            size += 1
-        case C.YAC_TYPE_NUMBER: // number to string
+            size = sizeToAlign4(size) + 1
+        case C.YAC_TYPE_NUMBER, C.YAC_TYPE_YM_INTERVAL, C.YAC_TYPE_DS_INTERVAL: // number to string
             yacType = C.YAC_TYPE_VARCHAR
-            size = size + 8
+            size = sizeToAlign4(uint32(item.precision) + 8)
         }
-        row := NewYasRow(stmt, size, int(item._type))
+        row := NewYasRow(stmt, size, int(yacType))
+        stmt.fetchRows = append(stmt.fetchRows, row)
         if err := checkYasError(
-            C.yacBindColumn(
-                *stmt.Stmt, C.YacUint16(pos), yacType,
-                C.YacPointer(row.Data), C.YacInt32(size), &indicator)); err != nil {
+            C.yacBindColumn(*stmt.Stmt, C.YacUint16(pos), yacType, C.YacPointer(row.Data), C.YacInt32(size), &indicator),
+        ); err != nil {
+            freeFetchRows(stmt)
             return err
         }
         row.Indicator = int32(indicator)
-        stmt.fetchRows = append(stmt.fetchRows, row)
     }
     stmt.Columns = &cols
     return nil
 }
 
 func yasdbFetch(stmt *YasStmt) (*[]driver.Value, error) {
-    rows := (*C.YacUint32)((unsafe.Pointer)(new(uint32)))
+    unsafeRows := (unsafe.Pointer)(new(uint32))
+    rows := (*C.YacUint32)(unsafeRows)
     if err := checkYasError(C.yacFetch(*stmt.Stmt, rows)); err != nil {
         return nil, err
     }
@@ -328,7 +356,7 @@ func codSizeAlign4(size C.YacUint32) uint32 {
 }
 
 func valueToGolang(row *YasRow) (interface{}, error) {
-    p := unsafe.Pointer(row.Data)
+    p := row.Data
     switch C.YacType(row.DbType) {
     case C.YAC_TYPE_BOOL:
         return (*(*bool)(p)), nil

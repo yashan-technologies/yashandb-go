@@ -12,7 +12,7 @@ type YasRow struct {
     dataSize   uint32
     IsValueSet bool
     IsArray    bool
-    Data       YacPointer
+    Data       unsafe.Pointer
     Indicator  int32
     DbType     int
     TransType  int
@@ -25,7 +25,7 @@ func NewYasRow(stmt *YasStmt, size uint32, dbType int) *YasRow {
         DbType:   dbType,
     }
     row.dataSize = size * row.Elements
-    row.Data = YacPointer(unsafe.Pointer(new([]byte)))
+    row.Data = mallocBytes(size)
     row.Indicator = 0
     return row
 }
@@ -39,6 +39,7 @@ func (r *YasRows) Columns() []string {
 }
 
 func (r *YasRows) Close() error {
+    freeFetchRows(r.stmt)
     return nil
 }
 
@@ -48,6 +49,7 @@ func (r *YasRows) Next(dest []driver.Value) error {
         return err
     }
     if results == nil {
+        freeFetchRows(r.stmt)
         return io.EOF
     }
     for i, d := range *results {
