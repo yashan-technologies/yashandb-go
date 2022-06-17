@@ -1,8 +1,8 @@
 package yasdb
 
 import (
-	"fmt"
-	"reflect"
+    "fmt"
+    "reflect"
 )
 
 type YasBaseError struct {
@@ -40,7 +40,7 @@ func ErrStmtNoOpen() *YasBaseError {
     return &YasBaseError{Code: 1005, Msg: "yasdb stmt is not open"}
 }
 func ErrDbTypeUnsupport(dbType int) *YasBaseError {
-    return &YasBaseError{Code: 1006, Msg: fmt.Sprintf("yasdb type %d is not open", dbType)}
+    return &YasBaseError{Code: 1006, Msg: fmt.Sprintf("yasdb type %d is not support", dbType)}
 }
 func ErrDbFetchEOF() *YasBaseError {
     return &YasBaseError{Code: 1007, Msg: "fetch is over"}
