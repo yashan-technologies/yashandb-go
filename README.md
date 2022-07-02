@@ -7,7 +7,7 @@
 ```bash
 vim ~/.gitconfig
 
-# 输入，我们的gitlab不支持https，所以需要把所有https转成http，再把http转成git就可以免密
+# https转成git，结合gitlab的SSH密钥配置就可以免密
 
 [url "git@git.yasdb.com:"]
     insteadOf = https://git.yasdb.com/
@@ -23,6 +23,7 @@ vim ~/.gitconfig
 第三方库
 
 - libcrypto.so.1.1
+- libpcre.so
 
 ```bash
 # 将我们的gitlab设置为私有仓
