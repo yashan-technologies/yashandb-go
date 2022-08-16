@@ -10,7 +10,7 @@ import (
 )
 
 func Connect() *sql.DB {
-    db, err := sql.Open("yasdb", "sys/sys@192.168.30.226:1688")
+    db, err := sql.Open("yasdb", "sys/yasdb_123@192.168.31.139:1688")
     if err != nil {
         log.Fatalf("some error %s", err.Error())
     }
