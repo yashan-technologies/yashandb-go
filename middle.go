@@ -92,7 +92,8 @@ func yasdbConnect(conn *Connection, autoCommit bool) error {
         yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
         return err
     }
-    if err := checkYasError(C.yacConnect(*conn.Conn, url, username, password)); err != nil {
+    s_length := C.YacInt16(0)
+    if err := checkYasError(C.yacConnect(*conn.Conn, url, s_length, username, s_length, password, s_length)); err != nil {
         yasdbFreeHandle(conn.Conn, C.YAC_HANDLE_DBC)
         yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
         return err
@@ -141,12 +142,13 @@ func yasdbPrepare(stmt *YasStmt, query string) error {
     }
     q := C.CString(query)
     defer C.free(unsafe.Pointer(q))
-    if err := checkYasError(C.yacPrepare(*stmt.Stmt, q)); err != nil {
+    s_length := C.YacInt32(0)
+    if err := checkYasError(C.yacPrepare(*stmt.Stmt, q, s_length)); err != nil {
         return err
     }
     sqltype := (unsafe.Pointer)(new(uint32))
     sqlSize := C.YacInt32(unsafe.Sizeof(&sqltype))
-    err := checkYasError(C.yacGetStmtAttr(*stmt.Stmt, C.YAC_ATTR_SQLTYPE, sqltype, sqlSize))
+    err := checkYasError(C.yacGetStmtAttr(*stmt.Stmt, C.YAC_ATTR_SQLTYPE, sqltype, sqlSize, &s_length))
     if err != nil {
         return err
     }
@@ -188,17 +190,18 @@ func yasdbBindParams(stmt *YasStmt, args []driver.Value) error {
         var ret C.YacResult
         var charV *C.char
         yacValue := C.YacPointer(v)
-        size := C.YacInt32(unsafe.Sizeof(&arg)) + 1
+        size := C.YacUint32(unsafe.Sizeof(&arg)) + 1
         if yacType == C.YAC_TYPE_VARCHAR {
             charV = C.CString(*(*string)(v))
-            size = C.YacInt32(len([]byte(*(*string)(v))) + 1)
+            size = C.YacUint32(len([]byte(*(*string)(v))) + 1)
             yacValue = C.YacPointer(charV)
             // hold for free in execute
             stmt.bindVals = append(stmt.bindVals, unsafe.Pointer(charV))
         }
-        indicator := size - 1
+        indicator := C.YacInt32(size - 1)
         index := i + 1
-        ret = C.yacBindParameter(*stmt.Stmt, C.YacUint16(index), C.YAC_PARAM_INPUT, yacType, yacValue, size, &indicator)
+        s_length := C.YacInt32(0)
+        ret = C.yacBindParameter(*stmt.Stmt, C.YacUint16(index), C.YAC_PARAM_INPUT, yacType, yacValue, size, s_length, &indicator)
         err = checkYasError(ret)
         if err != nil {
             freeBindVals(stmt)
@@ -224,7 +227,8 @@ func yasdbExecute(stmt *YasStmt) error {
         }
         rowCount := (unsafe.Pointer)(new(uint64))
         size := C.YacInt32(unsafe.Sizeof(new(int64)))
-        err := checkYasError(C.yacGetStmtAttr(*stmt.Stmt, C.YAC_ATTR_ROWS_AFFECTED, rowCount, size))
+        s_length := C.YacInt32(0)
+        err := checkYasError(C.yacGetStmtAttr(*stmt.Stmt, C.YAC_ATTR_ROWS_AFFECTED, rowCount, size, &s_length))
         if err != nil {
             return err
         }
@@ -315,7 +319,8 @@ func setAutoCommit(conn *Connection, auto bool) error {
 func getAutoCommit(conn *Connection) error {
     var auto C.YacInt32
     size := C.YacInt32(unsafe.Sizeof(auto))
-    err := checkYasError(C.yacGetConnAttr(*conn.Conn, C.YAC_ATTR_AUTOCOMMIT, unsafe.Pointer(&auto), size))
+    s_length := C.YacInt32(0)
+    err := checkYasError(C.yacGetConnAttr(*conn.Conn, C.YAC_ATTR_AUTOCOMMIT, unsafe.Pointer(&auto), size, &s_length))
     if err != nil {
         return err
     }
@@ -338,11 +343,12 @@ func yasdbRollback(conn *Connection) error {
 func yasdbRowAffected(stmt *YasStmt) (int64, error) {
     var rows C.YacUint32
     size := C.YacInt32(unsafe.Sizeof(&rows))
+    s_length := C.YacInt32(0)
     err := checkYasError(
         C.yacGetStmtAttr(
             *stmt.Stmt,
             C.YAC_ATTR_ROWS_AFFECTED,
-            unsafe.Pointer(&rows), size),
+            unsafe.Pointer(&rows), size, &s_length),
     )
     return int64(rows), err
 }
