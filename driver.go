@@ -1,46 +1,83 @@
 package yasdb
 
+/*
+#cgo !noPkgConfig pkg-config: yacli
+#include "yacli.go.h"
+*/
+import "C"
 import (
     "database/sql/driver"
-    "regexp"
-    "strings"
+    "unsafe"
 )
 
-type YasDriver struct{}
+type YasdbDriver struct{}
 
-func (driver *YasDriver) Open(dsn string) (driver.Conn, error) {
-    conn := NewConnection()
-    re1 := regexp.MustCompile(`^(.*?)/(.*?)@(.*)\?(.*?)$`)
-    re2 := regexp.MustCompile(`^(.*?)/(.*?)@(.*)$`)
-    autoCommit := false
-    if re1.MatchString(dsn) {
-        items := strings.Split(dsn, "?")
-        dsn = items[0]
-        options := strings.Split(items[1], "&")
-        for _, opt := range options {
-            o := strings.ToLower(opt)
-            if o == "autocommit=1" || o == "autocommit=true" {
-                autoCommit = true
-            }
-        }
-    } else if !re2.MatchString(dsn) {
-        return nil, ErrDsnNoStandard(dsn)
-    }
-    conn.Dsn = dsn
-    if err := yasdbConnect(conn, autoCommit); err != nil {
+func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
+    dsn, err := ParseDSN(dsnStr)
+    if err != nil {
         return nil, err
     }
-    getAutoCommit(conn)
+    conn, err := yasDriver.getYasConn(dsn)
+    if err != nil {
+        return nil, err
+    }
+    return conn, nil
+}
+
+func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
+    var isAllocHandleEnv, isAllocHandleDbc bool
+    var err error
+    conn := NewYasConn()
+
+    defer func(errHandle *error) {
+        if *errHandle == nil {
+            return
+        }
+        if isAllocHandleEnv {
+            yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
+        }
+        if isAllocHandleDbc {
+            yasdbFreeHandle(conn.Conn, C.YAC_HANDLE_DBC)
+        }
+
+    }(&err)
+
+    if err = checkYasError(C.yacAllocHandle(C.YAC_HANDLE_ENV, nil, conn.Env)); err != nil {
+        return nil, err
+    }
+    isAllocHandleEnv = true
+
+    if err = checkYasError(C.yacAllocHandle(C.YAC_HANDLE_DBC, *conn.Env, conn.Conn)); err != nil {
+        return nil, err
+    }
+    isAllocHandleDbc = true
+
+    url := stringToYasChar(dsn.Url)
+    defer C.free(unsafe.Pointer(url))
+    user := stringToYasChar(dsn.User)
+    defer C.free(unsafe.Pointer(user))
+    password := stringToYasChar(dsn.Password)
+    defer C.free(unsafe.Pointer(password))
+    urlLen := intToYacInt16(len(dsn.Url))
+    userLen := intToYacInt16(len(dsn.User))
+    pwLen := intToYacInt16(len(dsn.Password))
+    if err = checkYasError(C.yacConnect(*conn.Conn, url, urlLen, user, userLen, password, pwLen)); err != nil {
+        return nil, err
+    }
+
+    if err := conn.setAutoCommit(dsn.IsAutoCommit); err != nil {
+        return nil, err
+    }
     return conn, nil
 }
 
 type YasTx struct {
-    Conn *Connection
+    Conn *YasConn
 }
 
 func (tx *YasTx) Commit() error {
-    return yasdbCommit(tx.Conn)
+    return tx.Conn.yacCommit()
 }
 func (tx *YasTx) Rollback() error {
-    return yasdbRollback(tx.Conn)
+    return tx.Conn.yacRollback()
 }

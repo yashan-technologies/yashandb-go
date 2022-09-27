@@ -5,5 +5,5 @@ import (
 )
 
 func init() {
-    sql.Register("yasdb", &YasDriver{})
+    sql.Register("yasdb", &YasdbDriver{})
 }

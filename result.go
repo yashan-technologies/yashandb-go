@@ -5,12 +5,15 @@ import "errors"
 var ErrInsertIdUnsupport = errors.New("last insert id is unsupport")
 
 type YasResult struct {
-    stmt *YasStmt
+    rowsAffected    int64
+    rowsAffectedErr error
+    lastInsertId    int64
+    lastInsertIdErr error
 }
 
-func (y *YasResult) LastInsertId() (int64, error) {
-    return 0, nil
+func (result *YasResult) LastInsertId() (int64, error) {
+    return result.lastInsertId, result.lastInsertIdErr
 }
-func (y *YasResult) RowsAffected() (int64, error) {
-    return yasdbRowAffected(y.stmt)
+func (result *YasResult) RowsAffected() (int64, error) {
+    return result.rowsAffected, result.rowsAffectedErr
 }

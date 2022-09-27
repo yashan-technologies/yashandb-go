@@ -48,3 +48,7 @@ func ErrDbFetchEOF() *YasBaseError {
 func ErrUnknowType(v interface{}) *YasBaseError {
     return &YasBaseError{Code: 1008, Msg: fmt.Sprintf("Unknow: %s", reflect.TypeOf(v).String())}
 }
+
+func ErrOutputBindValue() *YasBaseError {
+    return &YasBaseError{}
+}
