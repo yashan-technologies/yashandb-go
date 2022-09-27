@@ -11,7 +11,7 @@ import (
     "github.com/stretchr/testify/assert"
 )
 
-const DSN string = "sys/yasdb_123@127.0.0.1:1688"
+const DSN string = "sys/yasdb_123@192.168.6.177:1688"
 
 func init() {
     log.SetFlags(log.Ltime)

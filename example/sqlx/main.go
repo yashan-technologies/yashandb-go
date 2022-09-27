@@ -18,7 +18,7 @@ type user struct {
 }
 
 func InitDB() (err error) {
-    dsn := "sys/sys@127.0.0.1:1688"
+    dsn := "sys/yasdb_123@192.168.6.177:1688"
     db, err = sqlx.Open("yasdb", dsn)
     if err != nil {
         fmt.Printf("connect server failed, err:%v\n", err)
