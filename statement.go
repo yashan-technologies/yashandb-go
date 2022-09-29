@@ -1,3 +1,11 @@
+/*
+Copyright  2022, YashanDB and/or its affiliates. All rights reserved.
+YashanDB Driver for golang is licensed under the terms of the mulan PSL v2.0
+
+License: 	http://license.coscl.org.cn/MulanPSL2
+Home page: 	https://www.yashandb.com/
+*/
+
 package yasdb
 
 // #include "yacli.go.h"
@@ -647,9 +655,6 @@ func WithBindSize(bindSize uint32) outputBindOpt {
     return func(obi *outputBindInfo) { obi.bindSize = C.YacUint32(bindSize) }
 }
 
-//
-//
-//
 func NewOutputBindValue(dest interface{}, opts ...outputBindOpt) (*outputBindInfo, error) {
     out := &outputBindInfo{
         dest:     dest,

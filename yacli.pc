@@ -10,5 +10,5 @@ glib_mkenums=glib-mkenums
 Name: yacli
 Description: yacli library
 Cflags: -I${includedir}
-Libs: -L${libdir} -lyascli
+Libs: -L${libdir} -lyas_infra -lyascli
 Version: 22.1
