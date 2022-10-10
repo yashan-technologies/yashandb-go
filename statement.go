@@ -8,7 +8,13 @@ Home page: 	https://www.yashandb.com/
 
 package yasdb
 
-// #include "yacli.go.h"
+/*
+#cgo CFLAGS: -I./yacapi/include
+
+#include "yacapi.h"
+#include <stdio.h>
+#include <stdlib.h>
+*/
 import "C"
 import (
     "context"
@@ -23,7 +29,7 @@ import (
 
 type YasStmt struct {
     Conn    *YasConn
-    Stmt    YacHandle
+    Stmt    *C.YapiStmt
     closed  bool
     SqlType uint32
     ctx     context.Context
@@ -31,21 +37,9 @@ type YasStmt struct {
     sync.Mutex
 }
 
-func NewYasStmt(conn *YasConn, ctx context.Context) (*YasStmt, error) {
-    if conn == nil || conn.Conn == nil {
-        return nil, ErrNoConnect()
-    }
-    stmt := &YasStmt{
-        Conn: conn,
-        Stmt: NewYacHandle(),
-        ctx:  ctx,
-    }
-    if err := checkYasError(C.yacAllocHandle(C.YAC_HANDLE_STMT, *conn.Conn, stmt.Stmt)); err != nil {
-        return nil, err
-    }
-    return stmt, nil
-}
-
+// Query executes a query that may return rows, such as a SELECT.
+//
+// Deprecated: Drivers should implement StmtQueryContext instead (or additionally).
 func (stmt *YasStmt) Query(args []driver.Value) (driver.Rows, error) {
     nargs := make([]driver.NamedValue, len(args))
     for i, arg := range args {
@@ -55,6 +49,9 @@ func (stmt *YasStmt) Query(args []driver.Value) (driver.Rows, error) {
     return stmt.QueryContext(context.Background(), nargs)
 }
 
+// QueryContext executes a query that may return rows, such as a SELECT.
+//
+// QueryContext must honor the context timeout and return when it is canceled.
 func (stmt *YasStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
     if err := ctx.Err(); err != nil {
         return nil, err
@@ -70,6 +67,9 @@ func (stmt *YasStmt) QueryContext(ctx context.Context, args []driver.NamedValue)
     return stmt.query()
 }
 
+// Exec executes a query that doesn't return rows, such as an INSERT or UPDATE.
+//
+// Deprecated: Drivers should implement StmtExecContext instead (or additionally).
 func (stmt *YasStmt) Exec(args []driver.Value) (driver.Result, error) {
     nargs := make([]driver.NamedValue, len(args))
     for i, arg := range args {
@@ -80,6 +80,9 @@ func (stmt *YasStmt) Exec(args []driver.Value) (driver.Result, error) {
     return stmt.ExecContext(context.Background(), nargs)
 }
 
+// ExecContext executes a query that doesn't return rows, such as an INSERT or UPDATE.
+//
+// ExecContext must honor the context timeout and return when it is canceled.
 func (stmt *YasStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
     if ctx.Err() != nil {
         return nil, ctx.Err()
@@ -96,18 +99,23 @@ func (stmt *YasStmt) ExecContext(ctx context.Context, args []driver.NamedValue) 
     return stmt.exec()
 }
 
+// NumInput returns the number of placeholder parameters.
 func (stmt *YasStmt) NumInput() int {
     return -1
 }
 
+// Close closes the statement.
 func (stmt *YasStmt) Close() error {
     if stmt.closed {
         return nil
     }
     stmt.closed = true
-    return yasdbFreeHandle(stmt.Stmt, YAC_HANDLE_STMT)
+    return stmt.yapiReleaseStmt()
 }
 
+// CheckNamedValue is called before passing arguments to the driver
+// and is called in place of any ColumnConverter. CheckNamedValue must do type
+// validation and conversion as appropriate for the driver.
 func (stmt *YasStmt) CheckNamedValue(namedValue *driver.NamedValue) error {
     switch namedValue.Value.(type) {
     case sql.Out:
@@ -164,12 +172,19 @@ func (stmt *YasStmt) exec() (driver.Result, error) {
 }
 
 func (stmt *YasStmt) yacExecute() error {
-    return checkYasError(C.yacExecute(*stmt.Stmt))
+    return checkYasError(C.yapiExecute(stmt.Stmt))
+}
+
+func (stmt *YasStmt) yapiReleaseStmt() error {
+    if err := checkYasError(C.yapiReleaseStmt(stmt.Stmt)); err != nil {
+        return err
+    }
+    return nil
 }
 
 func (stmt *YasStmt) getFetchRows() ([]*yasRow, error) {
-    columns := C.YacInt16(0)
-    if err := checkYasError(C.yacNumResultCols(*stmt.Stmt, &columns)); err != nil {
+    columns := C.int16_t(0)
+    if err := checkYasError(C.yapiNumResultCols(stmt.Stmt, &columns)); err != nil {
         return nil, err
     }
     columnCount := int(columns)
@@ -186,36 +201,36 @@ func (stmt *YasStmt) getFetchRows() ([]*yasRow, error) {
 }
 
 func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
-    item := C.YacColumnDesc{}
-    if err := checkYasError(C.yacDescribeCol2(*stmt.Stmt, C.YacUint16(pos), &item)); err != nil {
+    item := C.YapiColumnDesc{}
+    if err := checkYasError(C.yapiDescribeCol2(stmt.Stmt, C.uint16_t(pos), &item)); err != nil {
         return nil, err
     }
-    yacType := C.YacType(item._type)
-    size, indicator := uint32(item.size), C.YacInt32(0)
+    yacType := C.YapiType(item._type)
+    size, indicator := uint32(item.size), C.int32_t(0)
     bufLen := int32(size)
-    row := NewYasRow(stmt, size, yacType)
+    row := NewYasRow(size, yacType)
     row.name = C.GoString(item.name)
     switch yacType {
-    case C.YAC_TYPE_CHAR, C.YAC_TYPE_NCHAR, C.YAC_TYPE_VARCHAR, C.YAC_TYPE_NVARCHAR:
+    case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
         bufLen = int32(sizeToAlign4(size)) + 1
-    case C.YAC_TYPE_NUMBER, C.YAC_TYPE_YM_INTERVAL, C.YAC_TYPE_DS_INTERVAL: // number to string
-        yacType = C.YAC_TYPE_VARCHAR
+    case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
+        yacType = C.YAPI_TYPE_VARCHAR
         bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
-    case C.YAC_TYPE_CLOB, C.YAC_TYPE_BLOB:
+    case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
         var desc = new(unsafe.Pointer)
-        if err := checkYasError(C.yacLobDescAlloc(*stmt.Conn.Conn, yacType, desc)); err != nil {
+        if err := checkYasError(C.yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc)); err != nil {
             return nil, err
         }
         row.Data = unsafe.Pointer(desc)
         bufLen = -1
     }
     if err := checkYasError(
-        C.yacBindColumn(
-            *stmt.Stmt,
-            C.YacUint16(pos),
+        C.yapiBindColumn(
+            stmt.Stmt,
+            C.uint16_t(pos),
             yacType,
-            C.YacPointer(row.Data),
-            C.YacInt32(bufLen),
+            C.YapiPointer(row.Data),
+            C.int32_t(bufLen),
             &indicator,
         ),
     ); err != nil {
@@ -226,13 +241,13 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 }
 
 func (stmt *YasStmt) getRowsAffected() (int64, error) {
-    var rowsCount C.YacUint32
-    size := C.YacInt32(unsafe.Sizeof(&rowsCount))
-    s_length := C.YacInt32(0)
+    var rowsCount C.uint32_t
+    size := C.int32_t(unsafe.Sizeof(&rowsCount))
+    s_length := C.int32_t(0)
     err := checkYasError(
-        C.yacGetStmtAttr(
-            *stmt.Stmt,
-            C.YAC_ATTR_ROWS_AFFECTED,
+        C.yapiGetStmtAttr(
+            stmt.Stmt,
+            C.YAPI_ATTR_ROWS_AFFECTED,
             unsafe.Pointer(&rowsCount),
             size,
             &s_length,
@@ -276,16 +291,16 @@ func (stmt *YasStmt) bindValues(args []driver.NamedValue) error {
     return nil
 }
 
-func (stmt *YasStmt) yacBindParameter(b bindStruct, pos C.YacUint16) error {
+func (stmt *YasStmt) yacBindParameter(b bindStruct, pos C.uint16_t) error {
     if err := checkYasError(
-        C.yacBindParameter(
-            *stmt.Stmt,
+        C.yapiBindParameter(
+            stmt.Stmt,
             pos,
             b.direction,
             b.yacType,
             b.value,
             b.bindSize,
-            C.YacInt32(0),
+            C.int32_t(0),
             b.indicator,
         ),
     ); err != nil {
@@ -296,14 +311,14 @@ func (stmt *YasStmt) yacBindParameter(b bindStruct, pos C.YacUint16) error {
 
 func (stmt *YasStmt) yacBindParameterByName(b bindStruct, name string) error {
     if err := checkYasError(
-        C.yacBindParameterByName(
-            *stmt.Stmt,
+        C.yapiBindParameterByName(
+            stmt.Stmt,
             stringToYasChar(name),
             b.direction,
             b.yacType,
             b.value,
             b.bindSize,
-            C.YacInt32(0),
+            C.int32_t(0),
             nil,
         ),
     ); err != nil {
@@ -315,51 +330,51 @@ func (stmt *YasStmt) yacBindParameterByName(b bindStruct, name string) error {
 func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
     bind := bindStruct{}
     var (
-        yacType   C.YacType
-        size      C.YacUint32
-        value     C.YacPointer
-        indicator *C.YacInt32
-        bufLength C.YacInt32
+        yacType   C.YapiType
+        size      C.uint32_t
+        value     C.YapiPointer
+        indicator *C.int32_t
+        bufLength C.int32_t
     )
 
-    size = C.YacUint32(unsafe.Sizeof(&arg)) + 1
-    bufLength = C.YacInt32(size - 1)
-    indicator = new(C.YacInt32)
-    *indicator = C.YacInt32(size - 1)
+    size = C.uint32_t(unsafe.Sizeof(&arg)) + 1
+    bufLength = C.int32_t(size - 1)
+    indicator = new(C.int32_t)
+    *indicator = C.int32_t(size - 1)
 
     switch v := arg.(type) {
     case int64:
-        yacType = C.YAC_TYPE_BIGINT
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_BIGINT
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case float64:
-        yacType = C.YAC_TYPE_DOUBLE
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_DOUBLE
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case bool:
-        yacType = C.YAC_TYPE_BOOL
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_BOOL
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case string:
-        yacType = C.YAC_TYPE_VARCHAR
+        yacType = C.YAPI_TYPE_VARCHAR
         size = intToYacUint32(len(v)) + 1
-        bufLength = C.YacInt32(size - 1)
+        bufLength = C.int32_t(size - 1)
         indicator = nil
-        value = C.YacPointer(unsafe.Pointer(stringToYasChar(v)))
+        value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
     case []byte:
-        desc, err := stmt.Conn.lobWrite(C.YAC_TYPE_BLOB, v)
+        desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
         if err != nil {
             return bind, err
         }
-        yacType = C.YAC_TYPE_BLOB
-        size = C.YacUint32(math.MaxUint32)
+        yacType = C.YAPI_TYPE_BLOB
+        size = C.uint32_t(math.MaxUint32)
         bufLength = -1
         indicator = nil
-        value = C.YacPointer(desc)
+        value = C.YapiPointer(desc)
     case time.Time:
-        yacType = C.YAC_TYPE_TIMESTAMP
+        yacType = C.YAPI_TYPE_TIMESTAMP
         t := v.UnixNano() / 1e3
-        value = C.YacPointer(unsafe.Pointer(&t))
+        value = C.YapiPointer(unsafe.Pointer(&t))
     case nil:
-        yacType = C.YAC_TYPE_VARCHAR
-        value = C.YacPointer(&v)
+        yacType = C.YAPI_TYPE_VARCHAR
+        value = C.YapiPointer(&v)
     default:
         return bind, ErrUnknowType(arg)
     }
@@ -369,7 +384,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
     bind.bindSize = size
     bind.bufLength = bufLength
     bind.indicator = indicator
-    bind.direction = C.YAC_PARAM_INPUT
+    bind.direction = C.YAPI_PARAM_INPUT
     return bind, nil
 }
 
@@ -384,11 +399,11 @@ func (stmt *YasStmt) getOutputBindValue(sqlOut sql.Out) (bindStruct, error) {
 func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, error) {
     bind := bindStruct{}
     var (
-        yacType   C.YacType
-        bindSize  C.YacUint32
-        value     C.YacPointer
-        indicator *C.YacInt32
-        bufLength C.YacInt32
+        yacType   C.YapiType
+        bindSize  C.uint32_t
+        value     C.YapiPointer
+        indicator *C.int32_t
+        bufLength C.int32_t
         arg       driver.Value
         err       error
     )
@@ -413,43 +428,43 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
         }
     }
 
-    bindSize = C.YacUint32(unsafe.Sizeof(&arg)) + 1
-    bufLength = C.YacInt32(bindSize)
-    indicator = new(C.YacInt32)
-    *indicator = C.YacInt32(bindSize - 1)
+    bindSize = C.uint32_t(unsafe.Sizeof(&arg)) + 1
+    bufLength = C.int32_t(bindSize)
+    indicator = new(C.int32_t)
+    *indicator = C.int32_t(bindSize - 1)
 
     switch v := arg.(type) {
     case int64:
-        yacType = C.YAC_TYPE_INTEGER
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_INTEGER
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case float64:
-        yacType = C.YAC_TYPE_DOUBLE
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_DOUBLE
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case bool:
-        yacType = C.YAC_TYPE_BOOL
-        value = C.YacPointer(unsafe.Pointer(&v))
+        yacType = C.YAPI_TYPE_BOOL
+        value = C.YapiPointer(unsafe.Pointer(&v))
     case string:
-        yacType = C.YAC_TYPE_VARCHAR
+        yacType = C.YAPI_TYPE_VARCHAR
         bindSize = _OutputBindSize
-        bufLength = C.YacInt32(bindSize - 1)
-        value = C.YacPointer(unsafe.Pointer(stringToYasChar(v)))
+        bufLength = C.int32_t(bindSize - 1)
+        value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
     case []byte:
-        desc, err := stmt.Conn.lobWrite(C.YAC_TYPE_BLOB, v)
+        desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
         if err != nil {
             return bind, err
         }
-        yacType = C.YAC_TYPE_BLOB
-        bindSize = C.YacUint32(math.MaxUint32)
+        yacType = C.YAPI_TYPE_BLOB
+        bindSize = C.uint32_t(math.MaxUint32)
         bufLength = -1
         indicator = nil
-        value = C.YacPointer(desc)
+        value = C.YapiPointer(desc)
     case time.Time:
-        yacType = C.YAC_TYPE_TIMESTAMP
+        yacType = C.YAPI_TYPE_TIMESTAMP
         t := int64(0)
-        value = C.YacPointer(unsafe.Pointer(&t))
+        value = C.YapiPointer(unsafe.Pointer(&t))
     case nil:
-        yacType = C.YAC_TYPE_VARCHAR
-        value = C.YacPointer(&v)
+        yacType = C.YAPI_TYPE_VARCHAR
+        value = C.YapiPointer(&v)
     default:
         return bind, ErrUnknowType(v)
     }
@@ -459,18 +474,18 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
     bind.bindSize = bindSize
     bind.bufLength = bufLength
     bind.indicator = indicator
-    bind.direction = C.YAC_PARAM_OUTPUT
+    bind.direction = C.YAPI_PARAM_OUTPUT
     return bind, nil
 }
 
 func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, error) {
     bind := bindStruct{}
     var (
-        yacType   C.YacType = obi.yacType
-        bindSize  C.YacUint32
-        value     C.YacPointer
-        indicator *C.YacInt32
-        bufLength C.YacInt32
+        yacType   C.YapiType = obi.yacType
+        bindSize  C.uint32_t
+        value     C.YapiPointer
+        indicator *C.int32_t
+        bufLength C.int32_t
     )
 
     if obi.bindSize == 0 {
@@ -478,51 +493,51 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
     } else {
         bindSize = obi.bindSize
     }
-    bufLength = C.YacInt32(bindSize)
-    indicator = new(C.YacInt32)
-    *indicator = C.YacInt32(bindSize - 1)
+    bufLength = C.int32_t(bindSize)
+    indicator = new(C.int32_t)
+    *indicator = C.int32_t(bindSize - 1)
 
     switch yacType {
-    case C.YAC_TYPE_BLOB:
+    case C.YAPI_TYPE_BLOB:
         v, err := obi.getBlobBindDest()
         if err != nil {
             return bind, err
         }
-        desc, err := stmt.Conn.lobWrite(C.YAC_TYPE_BLOB, *v)
+        desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, *v)
         if err != nil {
             return bind, err
         }
-        bindSize = C.YacUint32(math.MaxUint32)
+        bindSize = C.uint32_t(math.MaxUint32)
         bufLength = -1
         indicator = nil
-        value = C.YacPointer(desc)
-    case C.YAC_TYPE_CLOB:
+        value = C.YapiPointer(desc)
+    case C.YAPI_TYPE_CLOB:
         v, err := obi.getClobBindDest()
         if err != nil {
             return bind, err
         }
-        desc, err := stmt.Conn.lobWrite(C.YAC_TYPE_CLOB, []byte(*v))
+        desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_CLOB, []byte(*v))
         if err != nil {
             return bind, err
         }
-        bindSize = C.YacUint32(math.MaxUint32)
+        bindSize = C.uint32_t(math.MaxUint32)
         bufLength = -1
         indicator = nil
-        value = C.YacPointer(desc)
-    case C.YAC_TYPE_CHAR:
+        value = C.YapiPointer(desc)
+    case C.YAPI_TYPE_CHAR:
         v, err := obi.getCharBindDest()
         if err != nil {
             return bind, err
         }
-        bufLength = C.YacInt32(bindSize - 1)
-        value = C.YacPointer(unsafe.Pointer(stringToYasChar(*v)))
-    case C.YAC_TYPE_VARCHAR:
+        bufLength = C.int32_t(bindSize - 1)
+        value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
+    case C.YAPI_TYPE_VARCHAR:
         v, err := obi.getCharBindDest()
         if err != nil {
             return bind, err
         }
-        bufLength = C.YacInt32(bindSize - 1)
-        value = C.YacPointer(unsafe.Pointer(stringToYasChar(*v)))
+        bufLength = C.int32_t(bindSize - 1)
+        value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
     default:
         return bind, ErrUnknowType(yacType)
     }
@@ -532,7 +547,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
     bind.bindSize = bindSize
     bind.bufLength = bufLength
     bind.indicator = indicator
-    bind.direction = C.YAC_PARAM_OUTPUT
+    bind.direction = C.YAPI_PARAM_OUTPUT
     return bind, nil
 }
 
@@ -576,32 +591,32 @@ func (stmt *YasStmt) getBindValueDest() error {
         case *bool:
             *dest = yacPointerToBool(bind.value)
         case *[]byte:
-            lobLocator := (**C.YacLobLocator)(bind.value)
+            lobLocator := (**C.YapiLobLocator)(bind.value)
             *dest, err = stmt.Conn.lobRead(*lobLocator)
             if err != nil {
                 return err
             }
         case *outputBindInfo:
             switch dest.yacType {
-            case C.YAC_TYPE_BLOB:
+            case C.YAPI_TYPE_BLOB:
                 bindDest, _ := dest.getBlobBindDest()
-                lobLocator := (**C.YacLobLocator)(bind.value)
+                lobLocator := (**C.YapiLobLocator)(bind.value)
                 *bindDest, err = stmt.Conn.lobRead(*lobLocator)
                 if err != nil {
                     return err
                 }
-            case C.YAC_TYPE_CLOB:
+            case C.YAPI_TYPE_CLOB:
                 bindDest, _ := dest.getClobBindDest()
-                lobLocator := (**C.YacLobLocator)(bind.value)
+                lobLocator := (**C.YapiLobLocator)(bind.value)
                 byteDest, err := stmt.Conn.lobRead(*lobLocator)
                 *bindDest = string(byteDest)
                 if err != nil {
                     return err
                 }
-            case C.YAC_TYPE_VARCHAR:
+            case C.YAPI_TYPE_VARCHAR:
                 bindDest, _ := dest.getVarcharBindDest()
                 *bindDest = C.GoString((*C.char)(bind.value))
-            case C.YAC_TYPE_CHAR:
+            case C.YAPI_TYPE_CHAR:
                 bindDest, _ := dest.getVarcharBindDest()
                 *bindDest = C.GoString((*C.char)(bind.value))
             }
@@ -616,10 +631,10 @@ func (stmt *YasStmt) freeBindValues() {
     for _, bind := range stmt.binds {
         if bind.value != nil {
             switch bind.yacType {
-            case C.YAC_TYPE_BLOB, C.YAC_TYPE_CLOB:
-                lobLocator := (**C.YacLobLocator)(unsafe.Pointer(bind.value))
+            case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_CLOB:
+                lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
                 stmt.Conn.lobFree(bind.yacType, *lobLocator)
-            case C.YAC_TYPE_VARCHAR:
+            case C.YAPI_TYPE_VARCHAR:
                 C.free(unsafe.Pointer(bind.value))
             }
             bind.value = nil
@@ -629,37 +644,37 @@ func (stmt *YasStmt) freeBindValues() {
 }
 
 type outputBindInfo struct {
-    yacType  C.YacType
+    yacType  C.YapiType
     dest     interface{}
-    bindSize C.YacUint32
+    bindSize C.uint32_t
 }
 type outputBindOpt func(*outputBindInfo)
 
 func WithTypeClob() outputBindOpt {
-    return func(obi *outputBindInfo) { obi.yacType = C.YAC_TYPE_CLOB }
+    return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_CLOB }
 }
 
 func WithTypeBlob() outputBindOpt {
-    return func(obi *outputBindInfo) { obi.yacType = C.YAC_TYPE_BLOB }
+    return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_BLOB }
 }
 
 func WithTypeVarchar() outputBindOpt {
-    return func(obi *outputBindInfo) { obi.yacType = C.YAC_TYPE_VARCHAR }
+    return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_VARCHAR }
 }
 
-func WitchTypeChar() outputBindOpt {
-    return func(obi *outputBindInfo) { obi.yacType = C.YAC_TYPE_CHAR }
+func WithTypeChar() outputBindOpt {
+    return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_CHAR }
 }
 
 func WithBindSize(bindSize uint32) outputBindOpt {
-    return func(obi *outputBindInfo) { obi.bindSize = C.YacUint32(bindSize) }
+    return func(obi *outputBindInfo) { obi.bindSize = C.uint32_t(bindSize) }
 }
 
 func NewOutputBindValue(dest interface{}, opts ...outputBindOpt) (*outputBindInfo, error) {
     out := &outputBindInfo{
         dest:     dest,
-        bindSize: C.YacUint32(0),
-        yacType:  C.YacType(0),
+        bindSize: C.uint32_t(0),
+        yacType:  C.YapiType(0),
     }
     if err := out.setBindOpt(opts...); err != nil {
         return nil, err
@@ -676,13 +691,13 @@ func (obi *outputBindInfo) setBindOpt(opts ...outputBindOpt) error {
 
 func (obi *outputBindInfo) checkBindOptParams() (err error) {
     switch obi.yacType {
-    case C.YAC_TYPE_BLOB:
+    case C.YAPI_TYPE_BLOB:
         _, err = obi.getBlobBindDest()
-    case C.YAC_TYPE_CLOB:
+    case C.YAPI_TYPE_CLOB:
         _, err = obi.getClobBindDest()
-    case C.YAC_TYPE_VARCHAR:
+    case C.YAPI_TYPE_VARCHAR:
         _, err = obi.getVarcharBindDest()
-    case C.YAC_TYPE_CHAR:
+    case C.YAPI_TYPE_CHAR:
         _, err = obi.getCharBindDest()
     default:
         return ErrUnknowType(obi.yacType)

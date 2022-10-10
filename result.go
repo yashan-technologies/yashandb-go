@@ -19,9 +19,15 @@ type YasResult struct {
     lastInsertIdErr error
 }
 
+// LastInsertId returns the database's auto-generated ID
+// after, for example, an INSERT into a table with primary
+// key.
 func (result *YasResult) LastInsertId() (int64, error) {
     return result.lastInsertId, result.lastInsertIdErr
 }
+
+// RowsAffected returns the number of rows affected by the
+// query.
 func (result *YasResult) RowsAffected() (int64, error) {
     return result.rowsAffected, result.rowsAffectedErr
 }

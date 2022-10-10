@@ -41,34 +41,6 @@ go env -w GOPRIVATE=git.yasdb.com
 export LD_LIBRARY_PATH=<yasdb的lib库文件绝对路径>:$LD_LIBRARY_PATH
 ```
 
-#### PKG_CONFIG_PATH
-
-该工程是通过`pkg-config`获取所依赖的c语言头文件和so库，需要编辑配置文件`yacli.pc`（示例如下），并将环境变量`PKG_CONFIG_PATH`设置为`yacli.pc`文件地址
-
-```bash
-# 设置yacli.pc文件的加载路径
-export PKG_CONFIG_PATH=<yacli.pc文件绝对路径>
-```
-
-`yacli.pc`示例
-
-```
-prefix=/devel/target/XXXXXXXXXXXXXXXXXXXXXXXXXX
-exec_prefix=${prefix}
-libdir=${prefix}/lib/
-includedir=${prefix}/include/
-
-glib_genmarshal=glib-genmarshal
-gobject_query=gobject-query
-glib_mkenums=glib-mkenums
-
-Name: yacli
-Description: yacli library
-Cflags: -I${includedir}
-Libs: -L${libdir} -lyas_infra -lyascli
-Version: 22.1
-```
-
 ### 创建项目
 
 ```bash

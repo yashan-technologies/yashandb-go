@@ -9,7 +9,7 @@ import (
 )
 
 var (
-    testDsn     = "sys/yasdb_123@192.168.6.177:1688?autocommit=true"
+    testDsn     = "sys/yasdb_123@192.168.6.177:1688"
     tablePrefix = "gosqltest_"
 )
 
@@ -36,7 +36,14 @@ func newSqlTest(t *testing.T) *sqlTest {
     if err != nil {
         t.Fatalf("error connecting: %v", err)
     }
-    t.Parallel()
+    return &sqlTest{T: t, DB: db}
+}
+
+func newSqlAutoCommitTest(t *testing.T) *sqlTest {
+    db, err := sql.Open("yasdb", fmt.Sprintf("%s?%s", testDsn, "autocommit=true"))
+    if err != nil {
+        t.Fatalf("error connecting: %v", err)
+    }
     return &sqlTest{T: t, DB: db}
 }
 
@@ -227,4 +234,39 @@ func runSqlTest(t *testing.T, fn func(st *sqlTest)) {
     }
     defer db.Close()
     fn(&sqlTest{T: t, DB: db})
+}
+
+func runsqlTestACTrue(t *testing.T, fn func(st *sqlTest)) {
+    dsn := fmt.Sprintf("%s?%s", testDsn, "autocommit=true")
+    db, err := sql.Open("yasdb", dsn)
+    if err != nil {
+        t.Fatalf("error connecting: %v", err)
+    }
+    defer db.Close()
+    fn(&sqlTest{T: t, DB: db})
+}
+
+func runsqlTestACFalse(t *testing.T, fn func(st *sqlTest)) {
+    dsn := fmt.Sprintf("%s?%s", testDsn, "autocommit=false")
+    db, err := sql.Open("yasdb", dsn)
+    if err != nil {
+        t.Fatalf("error connecting: %v", err)
+    }
+    defer db.Close()
+    fn(&sqlTest{T: t, DB: db})
+}
+
+func affectedResultComparison(t *testing.T, actualResult int64, expectedResult int64) {
+    if actualResult != expectedResult {
+        t.Fatalf("affected result - received: %d - expected: %d", actualResult, expectedResult)
+    }
+}
+
+func newYasDB(t *testing.T) *sql.DB {
+    db, err := sql.Open("yasdb", testDsn)
+    if err != nil {
+        t.Fatalf("error connecting: %v", err)
+    }
+    t.Parallel()
+    return db
 }
