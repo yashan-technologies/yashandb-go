@@ -208,21 +208,24 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
     yacType := C.YapiType(item._type)
     size, indicator := uint32(item.size), C.int32_t(0)
     bufLen := int32(size)
-    row := NewYasRow(size, yacType)
-    row.name = C.GoString(item.name)
+    row := NewYasRow(yacType)
     switch yacType {
     case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
         bufLen = int32(sizeToAlign4(size)) + 1
+        row.Data = mallocBytes(uint32(bufLen))
     case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
         yacType = C.YAPI_TYPE_VARCHAR
         bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
+        row.Data = mallocBytes(uint32(bufLen))
     case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
         var desc = new(unsafe.Pointer)
         if err := checkYasError(C.yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc)); err != nil {
             return nil, err
         }
-        row.Data = unsafe.Pointer(desc)
         bufLen = -1
+        row.Data = unsafe.Pointer(desc)
+    default:
+        row.Data = mallocBytes(size)
     }
     if err := checkYasError(
         C.yapiBindColumn(
@@ -236,6 +239,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
     ); err != nil {
         return nil, err
     }
+    row.name = C.GoString(item.name)
     row.Indicator = int32(indicator)
     return row, nil
 }
