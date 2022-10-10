@@ -37,13 +37,11 @@ type yasRow struct {
     name       string
 }
 
-func NewYasRow(size uint32, yacType C.YapiType) *yasRow {
+func NewYasRow(yacType C.YapiType) *yasRow {
     row := &yasRow{
         Elements: 1,
-        Size:     size,
         yacType:  yacType,
     }
-    row.Data = mallocBytes(size)
     row.Indicator = 0
     return row
 }
