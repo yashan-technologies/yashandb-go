@@ -9,8 +9,12 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 /*
-#cgo !noPkgConfig pkg-config: yacli
-#include "yacli.go.h"
+#cgo CFLAGS: -I./yacapi/include -I./yacapi/src
+
+#include "yacapi.h"
+#include "yapi_inc.h"
+#include <stdio.h>
+#include <stdlib.h>
 */
 import "C"
 import (
@@ -20,68 +24,81 @@ import (
 )
 
 type YasConn struct {
-    Env        YacHandle
-    Conn       YacHandle
+    Env        *C.YapiEnv
+    Conn       *C.YapiConnect
     autoCommit bool
     closed     bool
 }
 
-func NewYasConn() *YasConn {
-    return &YasConn{
-        Env:  NewYacHandle(),
-        Conn: NewYacHandle(),
-    }
-}
-
-// Prepare statement for prepare exec
+// Prepare returns a prepared statement, bound to this connection.
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
     return conn.PrepareContext(context.Background(), query)
 }
 
+// PrepareContext returns a prepared statement, bound to this connection.
+// context is for the preparation of the statement,
+// it must not store the context within the statement itself.
 func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
     if ctx.Err() != nil {
         return nil, ctx.Err()
     }
 
-    stmt, err := NewYasStmt(conn, ctx)
-    if err != nil {
-        return nil, err
-    }
+    var stmt *C.YapiStmt
 
     queryP := C.CString(query)
     defer C.free(unsafe.Pointer(queryP))
-    sqlLength := C.YacInt32(0)
+    sqlLength := C.int32_t(len(query))
     if err := checkYasError(
-        C.yacPrepare(
-            *stmt.Stmt,
+        C.yapiPrepare(
+            conn.Conn,
             queryP,
             sqlLength,
+            &stmt,
         )); err != nil {
         return nil, err
     }
 
-    var sqltype C.YacUint32
-    sqlSize := C.YacInt32(unsafe.Sizeof(&sqltype))
+    var sqltype C.uint32_t
+    sqlSize := C.int32_t(unsafe.Sizeof(&sqltype))
     if err := checkYasError(
-        C.yacGetStmtAttr(
-            *stmt.Stmt,
-            C.YAC_ATTR_SQLTYPE,
+        C.yapiGetStmtAttr(
+            stmt,
+            C.YAPI_ATTR_SQLTYPE,
             unsafe.Pointer(&sqltype),
             sqlSize,
             &sqlLength,
         )); err != nil {
         return nil, err
     }
-    stmt.SqlType = (uint32)(sqltype)
 
-    return stmt, nil
+    yasStmt := &YasStmt{
+        Conn:    conn,
+        Stmt:    stmt,
+        SqlType: (uint32)(sqltype),
+    }
+
+    return yasStmt, nil
 }
 
-// Begin begin
+// Begin starts and returns a new transaction.
+//
+// Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
 func (conn *YasConn) Begin() (driver.Tx, error) {
     return conn.BeginTx(context.Background(), driver.TxOptions{})
 }
 
+// BeginTx starts and returns a new transaction.
+// If the context is canceled by the user the sql package will
+// call Tx.Rollback before discarding and closing the connection.
+//
+// This must check opts.Isolation to determine if there is a set
+// isolation level. If the driver does not support a non-default
+// level and one is set or if there is a non-default isolation level
+// that is not supported, an error must be returned.
+//
+// This must also check opts.ReadOnly to determine if the read-only
+// value is true to either set the read-only transaction property if supported
+// or return an error if it is not supported.
 func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
     if ctx.Err() != nil {
         return nil, ctx.Err()
@@ -89,19 +106,18 @@ func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
     return &YasTx{Conn: conn}, nil
 }
 
-// Close close db YasConn
+// Close invalidates and potentially stops any current
+// prepared statements and transactions, marking this
+// connection as no longer in use.
 func (conn *YasConn) Close() error {
     if conn.closed {
         return nil
     }
     conn.closed = true
-
-    if err := yasdbFreeHandle(conn.Conn, YAC_HANDLE_DBC); err != nil {
-        return err
-    }
-    return yasdbFreeHandle(conn.Env, YAC_HANDLE_ENV)
+    return conn.yapiReleaseConn()
 }
 
+// Ping checks the connection's state.
 func (conn *YasConn) Ping(ctx context.Context) error {
     if ctx.Err() != nil {
         return ctx.Err()
@@ -112,27 +128,23 @@ func (conn *YasConn) Ping(ctx context.Context) error {
     return nil
 }
 
-func (conn *YasConn) IsAutoCommit() bool {
-    return conn.autoCommit
-}
-
 func (conn *YasConn) setAutoCommit(auto bool) error {
-    var a C.YacInt32 = 0
+    var a C.int32_t = 0
     if auto {
         a = 1
     }
-    size := C.YacInt32(unsafe.Sizeof(a))
-    if err := conn.yacSetConnAttr(C.YAC_ATTR_AUTOCOMMIT, unsafe.Pointer(&a), size); err != nil {
+    size := C.int32_t(unsafe.Sizeof(a))
+    if err := conn.yapiSetConnAttr(C.YAPI_ATTR_AUTOCOMMIT, unsafe.Pointer(&a), size); err != nil {
         return err
     }
     conn.autoCommit = auto
     return nil
 }
 
-func (conn *YasConn) yacSetConnAttr(attr C.YacConnAttr, value unsafe.Pointer, bufLength C.YacInt32) error {
+func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
     if err := checkYasError(
-        C.yacSetConnAttr(
-            *conn.Conn,
+        C.yapiSetConnAttr(
+            conn.Conn,
             attr,
             value,
             bufLength,
@@ -143,14 +155,14 @@ func (conn *YasConn) yacSetConnAttr(attr C.YacConnAttr, value unsafe.Pointer, bu
 }
 
 func (conn *YasConn) yacCommit() error {
-    return checkYasError(C.yacCommit(*conn.Conn))
+    return checkYasError(C.yapiCommit(conn.Conn))
 }
 
 func (conn *YasConn) yacRollback() error {
-    return checkYasError(C.yacRollback(*conn.Conn))
+    return checkYasError(C.yapiRollback(conn.Conn))
 }
 
-func (conn *YasConn) lobRead(lobLocator *C.YacLobLocator) ([]byte, error) {
+func (conn *YasConn) lobRead(lobLocator *C.YapiLobLocator) ([]byte, error) {
     lobLen, err := conn.yacLobGetLength(lobLocator)
     if err != nil {
         return nil, err
@@ -162,18 +174,18 @@ func (conn *YasConn) lobRead(lobLocator *C.YacLobLocator) ([]byte, error) {
     return data, nil
 }
 
-func (conn *YasConn) yacLobRead(lobLocator *C.YacLobLocator, lobLen uint64) ([]byte, error) {
+func (conn *YasConn) yacLobRead(lobLocator *C.YapiLobLocator, lobLen uint64) ([]byte, error) {
     if lobLen == 0 {
         return []byte{}, nil
     }
     data := make([]byte, 0, lobLen)
-    bytes := C.YacUint64(_LobBufLen)
+    bytes := C.uint64_t(_LobBufLen)
     for {
         readBuffer := byteBufferPool.Get().([]byte)
-        buf := (*C.YacUint8)((unsafe.Pointer)(&readBuffer[0]))
+        buf := (*C.uint8_t)((unsafe.Pointer)(&readBuffer[0]))
         if err := checkYasError(
-            C.yacLobRead(
-                *conn.Conn,
+            C.yapiLobRead(
+                conn.Conn,
                 lobLocator,
                 &bytes,
                 buf,
@@ -189,20 +201,20 @@ func (conn *YasConn) yacLobRead(lobLocator *C.YacLobLocator, lobLen uint64) ([]b
     return data, nil
 }
 
-func (conn *YasConn) yacLobGetLength(lobLocator *C.YacLobLocator) (uint64, error) {
-    var lobLen C.YacUint64
-    if err := checkYasError(C.yacLobGetLength(*conn.Conn, lobLocator, &lobLen)); err != nil {
+func (conn *YasConn) yacLobGetLength(lobLocator *C.YapiLobLocator) (uint64, error) {
+    var lobLen C.uint64_t
+    if err := checkYasError(C.yapiLobGetLength(conn.Conn, lobLocator, &lobLen)); err != nil {
         return 0, err
     }
     return uint64(lobLen), nil
 }
 
-func (conn *YasConn) lobWrite(yacType C.YacType, data []byte) (*unsafe.Pointer, error) {
+func (conn *YasConn) lobWrite(yacType C.YapiType, data []byte) (*unsafe.Pointer, error) {
     desc, err := conn.yacLobDescAlloc(yacType)
     if err != nil {
         return nil, err
     }
-    lobLocator := (**C.YacLobLocator)(unsafe.Pointer(desc))
+    lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(desc))
     if err := conn.yacLobCreateTemporary(*lobLocator); err != nil {
         return nil, err
     }
@@ -212,22 +224,22 @@ func (conn *YasConn) lobWrite(yacType C.YacType, data []byte) (*unsafe.Pointer, 
     return desc, nil
 }
 
-func (conn *YasConn) yacLobDescAlloc(yacType C.YacType) (*unsafe.Pointer, error) {
+func (conn *YasConn) yacLobDescAlloc(yacType C.YapiType) (*unsafe.Pointer, error) {
     var desc = new(unsafe.Pointer)
-    if err := checkYasError(C.yacLobDescAlloc(*conn.Conn, yacType, desc)); err != nil {
+    if err := checkYasError(C.yapiLobDescAlloc(conn.Conn, yacType, desc)); err != nil {
         return nil, err
     }
     return desc, nil
 }
 
-func (conn *YasConn) yacLobCreateTemporary(lobLocator *C.YacLobLocator) error {
-    if err := checkYasError(C.yacLobCreateTemporary(*conn.Conn, lobLocator)); err != nil {
+func (conn *YasConn) yacLobCreateTemporary(lobLocator *C.YapiLobLocator) error {
+    if err := checkYasError(C.yapiLobCreateTemporary(conn.Conn, lobLocator)); err != nil {
         return err
     }
     return nil
 }
 
-func (conn *YasConn) yacLobWrite(lobLocator *C.YacLobLocator, data []byte) error {
+func (conn *YasConn) yacLobWrite(lobLocator *C.YapiLobLocator, data []byte) error {
     if len(data) == 0 || data == nil {
         return nil
     }
@@ -240,16 +252,16 @@ func (conn *YasConn) yacLobWrite(lobLocator *C.YacLobLocator, data []byte) error
     } else {
         copy(writeBuffer, data[0:_LobBufLen])
     }
-    buf := (*C.YacUint8)((unsafe.Pointer)(&writeBuffer[0]))
+    buf := (*C.uint8_t)((unsafe.Pointer)(&writeBuffer[0]))
     count := uint64(0)
     for {
         if err := checkYasError(
-            C.yacLobWrite(
-                *conn.Conn,
+            C.yapiLobWrite(
+                conn.Conn,
                 lobLocator,
                 nil,
                 buf,
-                C.YacUint64(bufLen),
+                C.uint64_t(bufLen),
             )); err != nil {
             return nil
         }
@@ -267,12 +279,19 @@ func (conn *YasConn) yacLobWrite(lobLocator *C.YacLobLocator, data []byte) error
     return nil
 }
 
-func (conn *YasConn) lobFree(yacType C.YacType, lobLocator *C.YacLobLocator) {
-    if yacType != C.YAC_TYPE_BLOB && yacType != C.YAC_TYPE_CLOB {
+func (conn *YasConn) lobFree(yacType C.YapiType, lobLocator *C.YapiLobLocator) {
+    if yacType != C.YAPI_TYPE_BLOB && yacType != C.YAPI_TYPE_CLOB {
         return
     }
-    C.yacLobFreeTemporary(*conn.Conn, lobLocator)
-    C.yacLobDescFree(unsafe.Pointer(lobLocator), yacType)
+    C.yapiLobFreeTemporary(conn.Conn, lobLocator)
+    C.yapiLobDescFree(unsafe.Pointer(lobLocator), yacType)
+}
+
+func (conn *YasConn) yapiReleaseConn() error {
+    if err := checkYasError(C.yapiReleaseConn(conn.Conn)); err != nil {
+        return err
+    }
+    return nil
 }
 
 func (conn *YasConn) handleYacCancel(ctx context.Context, done <-chan struct{}) {
@@ -288,5 +307,5 @@ func (conn *YasConn) handleYacCancel(ctx context.Context, done <-chan struct{}) 
 }
 
 func (conn *YasConn) yacCancel() error {
-    return checkYasError(C.yacCancel(*conn.Conn))
+    return checkYasError(C.yapiCancel(conn.Conn))
 }

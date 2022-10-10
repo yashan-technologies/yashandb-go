@@ -9,8 +9,14 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 /*
-#cgo !noPkgConfig pkg-config: yacli
-#include "yacli.go.h"
+#cgo CFLAGS: -I./yacapi/include -I./yacapi/src
+#cgo LDFLAGS: -ldl
+
+#include "yacapi.h"
+#include "yapi_inc.h"
+#include "yacapi.go.h"
+#include <stdio.h>
+#include <stdlib.h>
 */
 import "C"
 import (
@@ -25,15 +31,7 @@ const (
 )
 
 var (
-    YAC_HANDLE_UNKNOWN = 0
-    YAC_HANDLE_ENV     = 1
-    YAC_HANDLE_DBC     = 2
-    YAC_HANDLE_STMT    = 3
-    YAC_HANDLE_DESC    = 4
-
-    Mutex        = &sync.Mutex{}
-    LastErrMsg   = (*C.YacChar)(C.malloc(512))
-    LastSqlState = (*C.YacChar)(C.malloc(512))
+    mutex = &sync.Mutex{}
 
     byteBufferPool = sync.Pool{
         New: func() interface{} {
@@ -42,74 +40,50 @@ var (
     }
 )
 
-type YacHandle *C.YacHandle
-
 type bindStruct struct {
-    direction C.YacParamDirection
-    yacType   C.YacType
-    value     C.YacPointer
-    bindSize  C.YacUint32
-    bufLength C.YacInt32
-    indicator *C.YacInt32
+    direction C.YapiParamDirection
+    yacType   C.YapiType
+    value     C.YapiPointer
+    bindSize  C.uint32_t
+    bufLength C.int32_t
+    indicator *C.int32_t
     out       sql.Out
 }
 
-func NewYacHandle() YacHandle {
-    return (YacHandle)((unsafe.Pointer)(new([]byte)))
-}
-
-// stringToYasChar converts golang string to C *YacChar
-func stringToYasChar(str string) *C.YacChar {
+func stringToYasChar(str string) *C.char {
     p := C.malloc(C.size_t(len(str) + 1))
     pp := (*[1 << 30]byte)(p)
     copy(pp[:], str)
     pp[len(str)] = 0
-    return (*C.YacChar)(p) //C.CString(str)
+    return (*C.char)(p)
 }
 
-// stringToYasUint8 converts golang string to C *YacUint8
-func stringToYasUint8(str string) *C.YacUint8 {
-    p := C.malloc(C.size_t(len(str) + 1))
-    pp := (*[1 << 30]byte)(p)
-    copy(pp[:], str)
-    pp[len(str)] = 0
-    return (*C.YacUint8)(p) //C.CString(str)
+func intToYacInt16(n int) C.int16_t {
+    return C.int16_t(n)
 }
 
-// intToYacInt32 converts golang int to C YacInt16
-func intToYacInt16(n int) C.YacInt16 {
-    return C.YacInt16(n)
+func intToYacUint16(n int) C.uint16_t {
+    return C.uint16_t(n)
 }
 
-// intToYacInt32 converts golang int to C YacInt32
-func intToYacInt32(n int) C.YacInt32 {
-    return C.YacInt32(n)
+func intToYacUint32(n int) C.uint32_t {
+    return C.uint32_t(n)
 }
 
-// intToYacUint16 converts golang int to C YacUint16
-func intToYacUint16(n int) C.YacUint16 {
-    return C.YacUint16(n)
+func yacPointerToInt64(p C.YapiPointer) int64 {
+    return int64(*(*C.int64_t)(p))
 }
 
-// intToYacUint32 converts golang int to C YacUint32
-func intToYacUint32(n int) C.YacUint32 {
-    return C.YacUint32(n)
+func yacPointerToUint64(p C.YapiPointer) uint64 {
+    return uint64(*(*C.uint64_t)(p))
 }
 
-func yacPointerToInt64(p C.YacPointer) int64 {
-    return int64(*(*C.YacInt64)(p))
+func yacPointerToFloat64(p C.YapiPointer) float64 {
+    return float64(*(*C.double)(p))
 }
 
-func yacPointerToUint64(p C.YacPointer) uint64 {
-    return uint64(*(*C.YacUint64)(p))
-}
-
-func yacPointerToFloat64(p C.YacPointer) float64 {
-    return float64(*(*C.YacDouble)(p))
-}
-
-func yacPointerToBool(p C.YacPointer) bool {
-    return bool(*(*C.YacBool)(p))
+func yacPointerToBool(p C.YapiPointer) bool {
+    return bool(*(*C.bool)(p))
 }
 
 func mallocBytes(size uint32) unsafe.Pointer {
@@ -126,17 +100,6 @@ func sizeToAlign4(size uint32) uint32 {
     return size + (4 - margin)
 }
 
-func yasdbFreeHandle(a YacHandle, t int) error {
-    if a == nil {
-        return nil
-    }
-    if err := checkYasError(C.yacFreeHandle(C.YacHandleType(t), *a)); err != nil {
-        return err
-    }
-    a = nil
-    return nil
-}
-
 func freeFetchRows(rows []*yasRow) {
     if len(rows) == 0 || rows == nil {
         return
@@ -147,9 +110,9 @@ func freeFetchRows(rows []*yasRow) {
             continue
         }
         switch row.yacType {
-        case C.YAC_TYPE_CLOB, C.YAC_TYPE_BLOB:
-            lobLocator := (**C.YacLobLocator)(unsafe.Pointer(row.Data))
-            C.yacLobDescFree(unsafe.Pointer(*lobLocator), row.yacType)
+        case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+            lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(row.Data))
+            C.yapiLobDescFree(unsafe.Pointer(*lobLocator), row.yacType)
         default:
             C.free(row.Data)
         }
@@ -157,21 +120,20 @@ func freeFetchRows(rows []*yasRow) {
     }
 }
 
-func checkYasError(ret C.YacResult) error {
+func checkYasError(ret C.YapiResult) error {
     if int(ret) == 0 {
         return nil
     }
-    Mutex.Lock()
-    defer Mutex.Unlock()
-    var errCode C.YacInt32
-    pos := &C.struct_StYacTextPos{}
-    C.yacGetLastError(&errCode, &LastErrMsg, &LastSqlState, pos)
+    mutex.Lock()
+    defer mutex.Unlock()
+    var yapErr C.YapiErrorInfo
+    C.yapiGetLastError(&yapErr)
     err := &YasDBError{
-        Code:     int(errCode),
-        Msg:      C.GoString(LastErrMsg),
-        SqlState: C.GoString(LastSqlState),
-        Line:     int(pos.line),
-        Column:   int(pos.column),
+        Code:     int(yapErr.errCode),
+        Msg:      C.GoString(&yapErr.message[0]),
+        SqlState: C.GoString(&yapErr.sqlState[0]),
+        Line:     int(yapErr.pos.line),
+        Column:   int(yapErr.pos.column),
     }
     return err
 }

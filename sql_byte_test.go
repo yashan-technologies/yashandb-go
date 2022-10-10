@@ -23,7 +23,7 @@ func testBlob(t *sqlTest) {
         tableName: "test_blob",
         columnNameType: [][2]string{
             {"id", "int"},
-            {"clob1", "blob"},
+            {"blob1", "blob"},
         },
         execArgs: [][]interface{}{
             {1, blob1},

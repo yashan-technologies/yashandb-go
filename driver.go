@@ -9,8 +9,11 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 /*
-#cgo !noPkgConfig pkg-config: yacli
-#include "yacli.go.h"
+#cgo CFLAGS: -I./yacapi/include
+
+#include "yacapi.h"
+#include <stdio.h>
+#include <stdlib.h>
 */
 import "C"
 import (
@@ -20,6 +23,7 @@ import (
 
 type YasdbDriver struct{}
 
+// Open returns a new connection to the database.
 func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
     dsn, err := ParseDSN(dsnStr)
     if err != nil {
@@ -33,32 +37,12 @@ func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
 }
 
 func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
-    var isAllocHandleEnv, isAllocHandleDbc bool
-    var err error
-    conn := NewYasConn()
-
-    defer func(errHandle *error) {
-        if *errHandle == nil {
-            return
-        }
-        if isAllocHandleEnv {
-            yasdbFreeHandle(conn.Env, C.YAC_HANDLE_ENV)
-        }
-        if isAllocHandleDbc {
-            yasdbFreeHandle(conn.Conn, C.YAC_HANDLE_DBC)
-        }
-
-    }(&err)
-
-    if err = checkYasError(C.yacAllocHandle(C.YAC_HANDLE_ENV, nil, conn.Env)); err != nil {
+    var env *C.YapiEnv
+    if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
         return nil, err
     }
-    isAllocHandleEnv = true
 
-    if err = checkYasError(C.yacAllocHandle(C.YAC_HANDLE_DBC, *conn.Env, conn.Conn)); err != nil {
-        return nil, err
-    }
-    isAllocHandleDbc = true
+    var conn *C.YapiConnect
 
     url := stringToYasChar(dsn.Url)
     defer C.free(unsafe.Pointer(url))
@@ -69,23 +53,30 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
     urlLen := intToYacInt16(len(dsn.Url))
     userLen := intToYacInt16(len(dsn.User))
     pwLen := intToYacInt16(len(dsn.Password))
-    if err = checkYasError(C.yacConnect(*conn.Conn, url, urlLen, user, userLen, password, pwLen)); err != nil {
+    if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
         return nil, err
     }
-
-    if err := conn.setAutoCommit(dsn.IsAutoCommit); err != nil {
+    yasConn := &YasConn{
+        Env:        env,
+        Conn:       conn,
+        autoCommit: dsn.IsAutoCommit,
+    }
+    if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
         return nil, err
     }
-    return conn, nil
+    return yasConn, nil
 }
 
 type YasTx struct {
     Conn *YasConn
 }
 
+// Commit transaction commit
 func (tx *YasTx) Commit() error {
     return tx.Conn.yacCommit()
 }
+
+// Rollback transaction rollback
 func (tx *YasTx) Rollback() error {
     return tx.Conn.yacRollback()
 }

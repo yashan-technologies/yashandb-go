@@ -6,10 +6,11 @@ import (
     "os"
 
     _ "git.yasdb.com/cod-noah/yasdb-go"
+    "git.yasdb.com/cod-noah/yasdb-go/example"
 )
 
 func main() {
-    dsn := `sys/yasdb_123@192.168.6.177:1688?autocommit=true`
+    dsn := example.GetDsn()
     db, err := sql.Open("yasdb", dsn)
     if err != nil {
         fmt.Println(err)

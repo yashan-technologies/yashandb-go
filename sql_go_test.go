@@ -94,7 +94,7 @@ func testManyQueryRow_gosql(t *sqlTest) {
 
     t.mustExec(fmt.Sprintf("insert into %s (id, name) values(?,?)", t.tableName), 1, "bob")
     var name string
-    for i := 0; i < 1000; i++ {
+    for i := 0; i < 10000; i++ {
         err := t.QueryRow(fmt.Sprintf("select name from %s where id = ?", t.tableName), 1).Scan(&name)
         if err != nil || name != "bob" {
             t.Fatalf("on query %d: err=%v, name=%q", i, err, name)

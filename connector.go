@@ -16,14 +16,18 @@ import (
 type YasConnector struct {
 }
 
+// Driver returns the underlying Driver of the Connector,
+// mainly to maintain compatibility with the Driver method
+// on sql.DB.
 func (connector *YasConnector) Driver() driver.Driver {
     return &YasdbDriver{}
 }
 
+// Connect returns a connection to the database.
 func (connectot *YasConnector) Connect(ctx context.Context) (driver.Conn, error) {
     if ctx.Err() != nil {
         return nil, ctx.Err()
     }
-    yasConn := NewYasConn()
+    yasConn := &YasConn{}
     return yasConn, nil
 }

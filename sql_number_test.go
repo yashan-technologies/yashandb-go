@@ -5,13 +5,11 @@ import (
     "testing"
 )
 
-func TestNum(t *testing.T) {
+func TestSelectNumberFromTable(t *testing.T) {
     t.Parallel()
     runSqlTest(t, testSelectNumberFromTable)
-    runSqlTest(t, testSelectNumberFromDual)
 }
 
-// test create, insert, selete, update, and delete of number types
 func testSelectNumberFromTable(t *sqlTest) {
     si := sqlGenInfo{
         tableName: "test_num",
@@ -93,6 +91,11 @@ func testSelectNumberFromTable(t *sqlTest) {
     t.genTableTest()
     t.runInsertTest()
     t.runSelectTest()
+}
+
+func TestSelectNumberFromDual(t *testing.T) {
+    t.Parallel()
+    runSqlTest(t, testSelectNumberFromDual)
 }
 
 func testSelectNumberFromDual(t *sqlTest) {
