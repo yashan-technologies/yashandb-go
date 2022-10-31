@@ -1,46 +1,82 @@
+/*
+Copyright  2022, YashanDB and/or its affiliates. All rights reserved.
+YashanDB Driver for golang is licensed under the terms of the mulan PSL v2.0
+
+License: 	http://license.coscl.org.cn/MulanPSL2
+Home page: 	https://www.yashandb.com/
+*/
+
 package yasdb
 
+/*
+#cgo CFLAGS: -I./yacapi/include
+
+#include "yacapi.h"
+#include <stdio.h>
+#include <stdlib.h>
+*/
+import "C"
 import (
     "database/sql/driver"
-    "regexp"
-    "strings"
+    "unsafe"
 )
 
-type YasDriver struct{}
+type YasdbDriver struct{}
 
-func (driver *YasDriver) Open(dsn string) (driver.Conn, error) {
-    conn := NewConnection()
-    re1 := regexp.MustCompile(`^(.*?)/(.*?)@(.*)\?(.*?)$`)
-    re2 := regexp.MustCompile(`^(.*?)/(.*?)@(.*)$`)
-    autoCommit := false
-    if re1.MatchString(dsn) {
-        items := strings.Split(dsn, "?")
-        dsn = items[0]
-        options := strings.Split(items[1], "&")
-        for _, opt := range options {
-            o := strings.ToLower(opt)
-            if o == "autocommit=1" || o == "autocommit=true" {
-                autoCommit = true
-            }
-        }
-    } else if !re2.MatchString(dsn) {
-        return nil, ErrDsnNoStandard(dsn)
-    }
-    conn.Dsn = dsn
-    if err := yasdbConnect(conn, autoCommit); err != nil {
+// Open returns a new connection to the database.
+func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
+    dsn, err := ParseDSN(dsnStr)
+    if err != nil {
         return nil, err
     }
-    getAutoCommit(conn)
+    conn, err := yasDriver.getYasConn(dsn)
+    if err != nil {
+        return nil, err
+    }
     return conn, nil
 }
 
-type YasTx struct {
-    Conn *Connection
+func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
+    var env *C.YapiEnv
+    if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
+        return nil, err
+    }
+
+    var conn *C.YapiConnect
+
+    url := stringToYasChar(dsn.Url)
+    defer C.free(unsafe.Pointer(url))
+    user := stringToYasChar(dsn.User)
+    defer C.free(unsafe.Pointer(user))
+    password := stringToYasChar(dsn.Password)
+    defer C.free(unsafe.Pointer(password))
+    urlLen := intToYacInt16(len(dsn.Url))
+    userLen := intToYacInt16(len(dsn.User))
+    pwLen := intToYacInt16(len(dsn.Password))
+    if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
+        return nil, err
+    }
+    yasConn := &YasConn{
+        Env:        env,
+        Conn:       conn,
+        autoCommit: dsn.IsAutoCommit,
+    }
+    if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
+        return nil, err
+    }
+    return yasConn, nil
 }
 
-func (tx *YasTx) Commit() error {
-    return yasdbCommit(tx.Conn)
+type YasTx struct {
+    Conn *YasConn
 }
+
+// Commit transaction commit
+func (tx *YasTx) Commit() error {
+    return tx.Conn.yacCommit()
+}
+
+// Rollback transaction rollback
 func (tx *YasTx) Rollback() error {
-    return yasdbRollback(tx.Conn)
+    return tx.Conn.yacRollback()
 }
