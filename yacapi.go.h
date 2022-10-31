@@ -1,0 +1,6 @@
+#include "yacapi/src/yapi_cli.c"
+#include "yacapi/src/yapi_conn.c"
+#include "yacapi/src/yapi_env.c"
+#include "yacapi/src/yapi_err.c"
+#include "yacapi/src/yapi_stmt.c"
+#include "yacapi/src/yapi_var.c"

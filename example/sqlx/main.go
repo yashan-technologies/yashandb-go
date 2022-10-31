@@ -2,6 +2,7 @@ package main
 
 import (
     "database/sql"
+    "flag"
     "fmt"
     "log"
 
@@ -17,8 +18,7 @@ type user struct {
     Name string `db:"NAME"`
 }
 
-func InitDB() (err error) {
-    dsn := "sys/sys@127.0.0.1:1688"
+func InitDB(dsn string) (err error) {
     db, err = sqlx.Open("yasdb", dsn)
     if err != nil {
         fmt.Printf("connect server failed, err:%v\n", err)
@@ -61,7 +61,9 @@ func QueryMultiRow() {
 }
 
 func main() {
-    if err := InitDB(); err != nil {
+    dsn := flag.String("dsn", "sys/sys@127.0.0.1:1688", "input you dsn(data source name) to connect yashandb.")
+    flag.Parse()
+    if err := InitDB(*dsn); err != nil {
         log.Fatal(err)
     }
     Create()
