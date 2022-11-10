@@ -44,7 +44,7 @@ type bindStruct struct {
     direction C.YapiParamDirection
     yacType   C.YapiType
     value     C.YapiPointer
-    bindSize  C.uint32_t
+    bindSize  C.int32_t
     bufLength C.int32_t
     indicator *C.int32_t
     out       sql.Out
@@ -130,8 +130,8 @@ func checkYasError(ret C.YapiResult) error {
     C.yapiGetLastError(&yapErr)
     err := &YasDBError{
         Code:     int(yapErr.errCode),
-        Msg:      C.GoString(&yapErr.message[0]),
-        SqlState: C.GoString(&yapErr.sqlState[0]),
+        Msg:      C.GoString(yapErr.message),
+        SqlState: C.GoString(yapErr.sqlState),
         Line:     int(yapErr.pos.line),
         Column:   int(yapErr.pos.column),
     }

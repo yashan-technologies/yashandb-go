@@ -4,3 +4,4 @@
 #include "yacapi/src/yapi_err.c"
 #include "yacapi/src/yapi_stmt.c"
 #include "yacapi/src/yapi_var.c"
+#include "yacapi/src/yapi_infr.c"

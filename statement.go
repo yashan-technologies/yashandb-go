@@ -21,7 +21,6 @@ import (
     "database/sql"
     "database/sql/driver"
     "fmt"
-    "math"
     "sync"
     "time"
     "unsafe"
@@ -335,13 +334,13 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
     bind := bindStruct{}
     var (
         yacType   C.YapiType
-        size      C.uint32_t
+        size      C.int32_t
         value     C.YapiPointer
         indicator *C.int32_t
         bufLength C.int32_t
     )
 
-    size = C.uint32_t(unsafe.Sizeof(&arg)) + 1
+    size = C.int32_t(unsafe.Sizeof(&arg)) + 1
     bufLength = C.int32_t(size - 1)
     indicator = new(C.int32_t)
     *indicator = C.int32_t(size - 1)
@@ -358,7 +357,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
         value = C.YapiPointer(unsafe.Pointer(&v))
     case string:
         yacType = C.YAPI_TYPE_VARCHAR
-        size = intToYacUint32(len(v)) + 1
+        size = C.int32_t(len(v)) + 1
         bufLength = C.int32_t(size - 1)
         indicator = nil
         value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
@@ -368,7 +367,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
             return bind, err
         }
         yacType = C.YAPI_TYPE_BLOB
-        size = C.uint32_t(math.MaxUint32)
+        size = -1
         bufLength = -1
         indicator = nil
         value = C.YapiPointer(desc)
@@ -404,7 +403,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
     bind := bindStruct{}
     var (
         yacType   C.YapiType
-        bindSize  C.uint32_t
+        bindSize  C.int32_t
         value     C.YapiPointer
         indicator *C.int32_t
         bufLength C.int32_t
@@ -432,7 +431,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
         }
     }
 
-    bindSize = C.uint32_t(unsafe.Sizeof(&arg)) + 1
+    bindSize = C.int32_t(unsafe.Sizeof(&arg)) + 1
     bufLength = C.int32_t(bindSize)
     indicator = new(C.int32_t)
     *indicator = C.int32_t(bindSize - 1)
@@ -458,7 +457,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
             return bind, err
         }
         yacType = C.YAPI_TYPE_BLOB
-        bindSize = C.uint32_t(math.MaxUint32)
+        bindSize = -1
         bufLength = -1
         indicator = nil
         value = C.YapiPointer(desc)
@@ -486,7 +485,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
     bind := bindStruct{}
     var (
         yacType   C.YapiType = obi.yacType
-        bindSize  C.uint32_t
+        bindSize  C.int32_t
         value     C.YapiPointer
         indicator *C.int32_t
         bufLength C.int32_t
@@ -511,7 +510,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
         if err != nil {
             return bind, err
         }
-        bindSize = C.uint32_t(math.MaxUint32)
+        bindSize = -1
         bufLength = -1
         indicator = nil
         value = C.YapiPointer(desc)
@@ -524,7 +523,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
         if err != nil {
             return bind, err
         }
-        bindSize = C.uint32_t(math.MaxUint32)
+        bindSize = -1
         bufLength = -1
         indicator = nil
         value = C.YapiPointer(desc)
@@ -650,7 +649,7 @@ func (stmt *YasStmt) freeBindValues() {
 type outputBindInfo struct {
     yacType  C.YapiType
     dest     interface{}
-    bindSize C.uint32_t
+    bindSize C.int32_t
 }
 type outputBindOpt func(*outputBindInfo)
 
@@ -671,13 +670,13 @@ func WithTypeChar() outputBindOpt {
 }
 
 func WithBindSize(bindSize uint32) outputBindOpt {
-    return func(obi *outputBindInfo) { obi.bindSize = C.uint32_t(bindSize) }
+    return func(obi *outputBindInfo) { obi.bindSize = C.int32_t(bindSize) }
 }
 
 func NewOutputBindValue(dest interface{}, opts ...outputBindOpt) (*outputBindInfo, error) {
     out := &outputBindInfo{
         dest:     dest,
-        bindSize: C.uint32_t(0),
+        bindSize: C.int32_t(0),
         yacType:  C.YapiType(0),
     }
     if err := out.setBindOpt(opts...); err != nil {

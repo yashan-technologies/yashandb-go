@@ -8,7 +8,7 @@ import (
     "time"
 
     yasdbgo "git.yasdb.com/cod-noah/yasdb-go"
-    "git.yasdb.com/cod-noah/yasdb-go/example"
+    example "git.yasdb.com/cod-noah/yasdb-go/_examples"
 )
 
 func main() {
