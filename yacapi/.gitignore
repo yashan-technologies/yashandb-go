@@ -1,0 +1,10 @@
+*.vs
+.idea
+build
+/out/
+/output
+CMakeSettings.json
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake

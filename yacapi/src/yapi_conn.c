@@ -5,14 +5,21 @@
 YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const char* user, int16_t userLength,
                        const char* password, int16_t passwordLength, YapiConnect** hConn)
 {
-    YapiConnect* conn = malloc(sizeof(YapiConnect));
-    if (conn == NULL) {
+    YapiErrorMsg error;
+    yapiInitError(&error);
+
+    YapiConnect* conn;
+    if (yapiAllocMem("Connection", 1, sizeof(YapiConnect), (void**)&conn, &error) != YAPI_SUCCESS) {
         return YAPI_ERROR;
     }
-    if (yapiCliAllocHandle(YAPI_HANDLE_DBC, env->envHandler, &conn->connHandler) != YAPI_SUCCESS) {
+    if (yapiCliAllocHandle(YAPI_HANDLE_DBC, env->envHandler, &conn->connHandler, &error) != YAPI_SUCCESS) {
+        yapiFreeMem(conn);
         return YAPI_ERROR;
     }
-    if (yapiCliConnect(conn->connHandler, url, urlLength, user, userLength, password, passwordLength) != YAPI_SUCCESS) {
+    if (yapiCliConnect(conn->connHandler, url, urlLength, user, userLength, password, passwordLength, &error) !=
+        YAPI_SUCCESS) {
+        yapiCliFreeHandle(YAPI_HANDLE_DBC, conn->connHandler, &error);
+        yapiFreeMem(conn);
         return YAPI_ERROR;
     }
     *hConn = conn;
@@ -21,90 +28,115 @@ YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const c
 
 YapiResult yapiDisconnect(YapiConnect* hConn)
 {
-    return yapiCliDisconnect(hConn->connHandler);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliDisconnect(hConn->connHandler, &error);
 }
 
 YapiResult yapiReleaseConn(YapiConnect* hConn)
 {
-    return yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler, &error);
 }
 
 YapiResult yapiCancel(YapiConnect* hConn)
 {
+    YapiErrorMsg error;
+    yapiInitError(&error);
     return YAPI_ERROR;
 }
 
 YapiResult yapiCommit(YapiConnect* hConn)
 {
-    return yapiCliCommit(hConn->connHandler);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliCommit(hConn->connHandler, &error);
 }
 
 YapiResult yapiRollback(YapiConnect* hConn)
 {
-    return yapiCliRollback(hConn->connHandler);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliRollback(hConn->connHandler, &error);
 }
 
 YapiResult yapiSetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, int32_t length)
 {
-    return yapiCliSetConnAttr(hConn->connHandler, attr, value, length);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliSetConnAttr(hConn->connHandler, attr, value, length, &error);
 }
 
 YapiResult yapiGetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, int32_t bufLength, int32_t* stringLength)
 {
-    return yapiCliGetConnAttr(hConn->connHandler, attr, value, bufLength, stringLength);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliGetConnAttr(hConn->connHandler, attr, value, bufLength, stringLength, &error);
 }
 
 void yapiGetLastError(YapiErrorInfo* info)
 {
-    char *msg, *stat;
-    if (yapiCliGetLastError(&info->errCode, &msg, &stat, &info->pos) != YAPI_SUCCESS) {
-        info->errCode = -1;
-        info->pos.column = -1;
-        info->pos.line = -1;
-        strcpy(info->message, "get error failed");
-        strcpy(info->sqlState, "00000");
-    } else {
-        strcpy(info->message, msg);
-        strcpy(info->sqlState, stat);
-    }
+    YapiErrorMsg error;
+
+    yapiInitError(&error);
+    yapiGetErrorInfo(&error, info);
 }
 
 YapiResult yapiLobDescAlloc(YapiConnect* hConn, YapiType type, void** desc)
 {
-    return yapiCliLobDescAlloc(hConn->connHandler, type, desc);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobDescAlloc(hConn->connHandler, type, desc, &error);
 }
 
 YapiResult yapiLobDescFree(void* desc, YapiType type)
 {
-    return yapiCliLobDescFree(desc, type);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobDescFree(desc, type, &error);
 }
 
 YapiResult yapiLobGetChunkSize(YapiConnect* hConn, YapiLobLocator* locator, uint16_t* chunkSize)
 {
-    return yapiCliLobGetChunkSize(hConn->connHandler, locator, chunkSize);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobGetChunkSize(hConn->connHandler, locator, chunkSize, &error);
 }
 
 YapiResult yapiLobGetLength(YapiConnect* hConn, YapiLobLocator* locator, uint64_t* length)
 {
-    return yapiCliLobGetLength(hConn->connHandler, locator, length);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobGetLength(hConn->connHandler, locator, length, &error);
 }
 
 YapiResult yapiLobRead(YapiConnect* hConn, YapiLobLocator* loc, uint64_t* bytes, uint8_t* buf, uint64_t bufLen)
 {
-    return yapiCliLobRead(hConn->connHandler, loc, bytes, buf, bufLen);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobRead(hConn->connHandler, loc, bytes, buf, bufLen, &error);
 }
 
 YapiResult yapiLobWrite(YapiConnect* hConn, YapiLobLocator* loc, uint64_t* bytes, uint8_t* buf, uint64_t bufLen)
 {
-    return yapiCliLobWrite(hConn->connHandler, loc, bytes, buf, bufLen);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliLobWrite(hConn->connHandler, loc, bytes, buf, bufLen, &error);
 }
 
 YapiResult yapiLobCreateTemporary(YapiConnect* hConn, YapiLobLocator* loc)
 {
-    return yapiCliLobCreateTemporary(hConn->connHandler, loc);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+
+    return yapiCliLobCreateTemporary(hConn->connHandler, loc, &error);
 }
 
 YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc)
 {
-    return yapiCliLobFreeTemporary(hConn->connHandler, loc);
+    YapiErrorMsg error;
+    yapiInitError(&error);
+
+    return yapiCliLobFreeTemporary(hConn->connHandler, loc, &error);
 }
