@@ -6,8 +6,8 @@ import (
     "os"
     "strings"
 
-    _ "git.yasdb.com/cod-noah/yasdb-go"
-    example "git.yasdb.com/cod-noah/yasdb-go/_examples"
+    _ "git.yasdb.com/go/yasdb-go"
+    example "git.yasdb.com/go/yasdb-go/_examples"
 )
 
 func main() {

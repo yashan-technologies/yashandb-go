@@ -59,7 +59,7 @@ import (
     "database/sql"
     "log"
 
-    _ "git.yasdb.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/go/yasdb-go"
 )
 
 func Connect() *sql.DB {
@@ -100,7 +100,7 @@ go mod init yasdb_connect
 # 需要提前使用go get -insecure，以http的方式下载，
 # 注意必须设置私有仓：go env -w GOPRIVATE=git.yasdb.com
 
-go get -insecure git.yasdb.com/cod-noah/yasdb-go
+go get -insecure git.yasdb.com/go/yasdb-go
 go mod tidy
 
 go run main.go

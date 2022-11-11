@@ -7,8 +7,8 @@ import (
     "strings"
     "time"
 
-    yasdbgo "git.yasdb.com/cod-noah/yasdb-go"
-    example "git.yasdb.com/cod-noah/yasdb-go/_examples"
+    yasdbgo "git.yasdb.com/go/yasdb-go"
+    example "git.yasdb.com/go/yasdb-go/_examples"
 )
 
 func main() {
