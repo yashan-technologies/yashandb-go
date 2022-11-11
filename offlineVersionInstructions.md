@@ -4,7 +4,7 @@
 
 ### 获取yasdb-go源码包
 
-- 先从内网的git仓获取yasdb-go的源码包: [http://git.yasdb.com/cod-noah/yasdb-go](http://cod-git.sics.com/cod-noah/yasdb-go)
+- 先从内网的git仓获取yasdb-go的源码包: [http://git.yasdb.com/go/yasdb-go](http://cod-git.sics.com/go/yasdb-go)
 
 - 将源码解压到本地路径
 
@@ -45,7 +45,7 @@ import (
     "database/sql"
     "log"
 
-    _ "git.yasdb.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/go/yasdb-go"
 )
 
 func Connect() *sql.DB {
@@ -82,7 +82,7 @@ func main() {
 go mod init yasdb_connect
 
 # 使用 go mod的replace命令，将安装包指向 本地路径
-go mod edit -replace=git.yasdb.com/cod-noah/yasdb-go@v1.0.1=<yasdb-go源码包解压后的绝对路径>
+go mod edit -replace=git.yasdb.com/go/yasdb-go@v1.0.1=<yasdb-go源码包解压后的绝对路径>
 go mod tidy
 
 go run main.go

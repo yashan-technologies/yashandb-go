@@ -6,7 +6,7 @@ import (
     "fmt"
     "log"
 
-    _ "git.yasdb.com/cod-noah/yasdb-go"
+    _ "git.yasdb.com/go/yasdb-go"
     "github.com/jmoiron/sqlx"
 )
 
