@@ -17,7 +17,7 @@ func GetDsn() string {
     if defaultDsn == "" {
         defaultDsn = "sys/sys@127.0.0.1:1688"
     }
-    dsn := flag.String("dsn", defaultDsn, "input you dsn(data source name) to connect yashandb.")
+    dsn := flag.String("dsn", defaultDsn, "input you dsn(DataSourceName, format:username/password@host:port[?param1=value1&...&paramN=valueN]) to connect yashandb.")
     flag.Parse()
     return *dsn
 }

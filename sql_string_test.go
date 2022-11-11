@@ -103,7 +103,7 @@ func testVarchar(t *sqlTest) {
         queryResult: [][]interface{}{
             {int32(1), t2c1_1},
             {int32(2), t2c1_2},
-            {int32(3), t2c1_3},
+            {int32(3), nil},
         },
     }
     t.genTableTest()
@@ -160,7 +160,7 @@ func testChar(t *sqlTest) {
         queryResult: [][]interface{}{
             {int32(1), t2c1_1},
             {int32(2), t2c1_2 + strings.Repeat(" ", 8000-len(t2c1_2))},
-            {int32(3), strings.Repeat(t2c1_3, 8000)},
+            {int32(3), nil},
         },
     }
     t.genTableTest()

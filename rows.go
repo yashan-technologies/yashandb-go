@@ -32,17 +32,17 @@ type yasRow struct {
     IsValueSet bool
     IsArray    bool
     Data       unsafe.Pointer
-    Indicator  int32
+    Indicator  *C.int32_t
     yacType    C.YapiType
     name       string
 }
 
-func NewYasRow(yacType C.YapiType) *yasRow {
+func NewYasRow(size uint32, yacType C.YapiType) *yasRow {
     row := &yasRow{
         Elements: 1,
         yacType:  yacType,
+        Size:     size,
     }
-    row.Indicator = 0
     return row
 }
 
@@ -121,7 +121,7 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
     case C.YAPI_TYPE_SMALLINT:
         return reflect.TypeOf(int16(0))
     case C.YAPI_TYPE_INTEGER:
-        return reflect.TypeOf(int(0))
+        return reflect.TypeOf(int32(0))
     case C.YAPI_TYPE_BIGINT:
         return reflect.TypeOf(int64(0))
     case C.YAPI_TYPE_FLOAT:
@@ -214,8 +214,9 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
     for i := 0; i < columns; i++ {
         var value driver.Value
         row := r.fetchRows[i]
-        if row == nil {
-            return &dest, nil
+        if *row.Indicator == C.YAPI_NULL_DATA {
+            value = nil
+            continue
         }
         switch row.yacType {
         case C.YAPI_TYPE_BOOL:

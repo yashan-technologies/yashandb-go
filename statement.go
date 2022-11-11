@@ -205,9 +205,9 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
         return nil, err
     }
     yacType := C.YapiType(item._type)
-    size, indicator := uint32(item.size), C.int32_t(0)
+    size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(32))
+    row := NewYasRow(size, yacType)
     bufLen := int32(size)
-    row := NewYasRow(yacType)
     switch yacType {
     case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
         bufLen = int32(sizeToAlign4(size)) + 1
@@ -233,13 +233,13 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
             yacType,
             C.YapiPointer(row.Data),
             C.int32_t(bufLen),
-            &indicator,
+            indicator,
         ),
     ); err != nil {
         return nil, err
     }
     row.name = C.GoString(item.name)
-    row.Indicator = int32(indicator)
+    row.Indicator = indicator
     return row, nil
 }
 
@@ -322,7 +322,7 @@ func (stmt *YasStmt) yacBindParameterByName(b bindStruct, name string) error {
             b.value,
             b.bindSize,
             C.int32_t(0),
-            nil,
+            b.indicator,
         ),
     ); err != nil {
         return err
@@ -334,16 +334,16 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
     bind := bindStruct{}
     var (
         yacType   C.YapiType
-        size      C.int32_t
+        bindSize  C.int32_t
         value     C.YapiPointer
         indicator *C.int32_t
         bufLength C.int32_t
     )
 
-    size = C.int32_t(unsafe.Sizeof(&arg)) + 1
-    bufLength = C.int32_t(size - 1)
+    bindSize = C.int32_t(unsafe.Sizeof(&arg)) + 1
+    bufLength = C.int32_t(bindSize - 1)
     indicator = new(C.int32_t)
-    *indicator = C.int32_t(size - 1)
+    *indicator = C.int32_t(bindSize - 1)
 
     switch v := arg.(type) {
     case int64:
@@ -357,8 +357,8 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
         value = C.YapiPointer(unsafe.Pointer(&v))
     case string:
         yacType = C.YAPI_TYPE_VARCHAR
-        size = C.int32_t(len(v)) + 1
-        bufLength = C.int32_t(size - 1)
+        bindSize = C.int32_t(len(v)) + 1
+        bufLength = C.int32_t(bindSize - 1)
         indicator = nil
         value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
     case []byte:
@@ -367,7 +367,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
             return bind, err
         }
         yacType = C.YAPI_TYPE_BLOB
-        size = -1
+        bindSize = -1
         bufLength = -1
         indicator = nil
         value = C.YapiPointer(desc)
@@ -376,15 +376,17 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
         t := v.UnixNano() / 1e3
         value = C.YapiPointer(unsafe.Pointer(&t))
     case nil:
-        yacType = C.YAPI_TYPE_VARCHAR
-        value = C.YapiPointer(&v)
+        yacType = C.YAPI_TYPE_CHAR
+        bindSize = 0
+        *indicator = C.YAPI_NULL_DATA
+        value = C.YapiPointer(unsafe.Pointer(&v))
     default:
         return bind, ErrUnknowType(arg)
     }
 
     bind.yacType = yacType
     bind.value = value
-    bind.bindSize = size
+    bind.bindSize = bindSize
     bind.bufLength = bufLength
     bind.indicator = indicator
     bind.direction = C.YAPI_PARAM_INPUT
@@ -466,8 +468,10 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
         t := int64(0)
         value = C.YapiPointer(unsafe.Pointer(&t))
     case nil:
-        yacType = C.YAPI_TYPE_VARCHAR
-        value = C.YapiPointer(&v)
+        yacType = C.YAPI_TYPE_CHAR
+        bindSize = 0
+        *indicator = C.YAPI_NULL_DATA
+        value = C.YapiPointer(unsafe.Pointer(&v))
     default:
         return bind, ErrUnknowType(v)
     }
@@ -612,10 +616,10 @@ func (stmt *YasStmt) getBindValueDest() error {
                 bindDest, _ := dest.getClobBindDest()
                 lobLocator := (**C.YapiLobLocator)(bind.value)
                 byteDest, err := stmt.Conn.lobRead(*lobLocator)
-                *bindDest = string(byteDest)
                 if err != nil {
                     return err
                 }
+                *bindDest = string(byteDest)
             case C.YAPI_TYPE_VARCHAR:
                 bindDest, _ := dest.getVarcharBindDest()
                 *bindDest = C.GoString((*C.char)(bind.value))

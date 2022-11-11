@@ -104,19 +104,23 @@ func freeFetchRows(rows []*yasRow) {
     if len(rows) == 0 || rows == nil {
         return
     }
-    for i := range rows {
-        row := rows[i]
-        if row == nil {
+    for i := 0; i < len(rows); i++ {
+        if rows[i] == nil {
             continue
         }
-        switch row.yacType {
+        switch rows[i].yacType {
         case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
-            lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(row.Data))
-            C.yapiLobDescFree(unsafe.Pointer(*lobLocator), row.yacType)
+            lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(rows[i].Data))
+            C.yapiLobDescFree(unsafe.Pointer(*lobLocator), rows[i].yacType)
         default:
-            C.free(row.Data)
+            C.free(rows[i].Data)
+        }
+
+        if rows[i].Indicator != nil {
+            C.free(unsafe.Pointer(rows[i].Indicator))
         }
         rows[i].Data = nil
+        rows[i].Indicator = nil
     }
 }
 
