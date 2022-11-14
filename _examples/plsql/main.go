@@ -20,7 +20,7 @@ func main() {
         return
     }
     defer db.Close()
-    _, err = db.Exec(`CREATE OR REPLACE FUNCTION ya_proc1(i INT) RETURN VARCHAR
+    _, err = db.Exec(`CREATE  OR    REPLACE FUNCTION ya_proc1(i INT) RETURN VARCHAR
     IS
     BEGIN
     CASE i
