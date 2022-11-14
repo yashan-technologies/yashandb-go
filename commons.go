@@ -39,6 +39,23 @@ var (
             return make([]byte, _LobBufLen)
         },
     }
+
+    keySqls = []string{
+        "create or replace procedure",
+        "create procedure",
+        "create or replace trigger",
+        "create trigger",
+        "create or replace function",
+        "create function",
+        "create or replace package",
+        "create package",
+        "create or replace package body",
+        "create package body",
+        "create or replace type body",
+        "create type body",
+        "begin",
+        "declare",
+    }
 )
 
 type bindStruct struct {
@@ -143,6 +160,20 @@ func checkYasError(ret C.YapiResult) error {
     return err
 }
 
-func rmSqlSemicolon(query string) string {
+func tryRmSqlSemicolon(query string) string {
+    if isKeySql(query) {
+        return query
+    }
     return strings.TrimSuffix(strings.TrimSpace(query), ";")
+}
+
+func isKeySql(query string) bool {
+    strs := strings.Fields(strings.TrimSpace(query))
+    sqlStr := strings.ToLower(strings.Join(strs, " "))
+    for _, v := range keySqls {
+        if strings.HasPrefix(sqlStr, v) {
+            return true
+        }
+    }
+    return false
 }
