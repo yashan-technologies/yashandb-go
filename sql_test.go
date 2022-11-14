@@ -356,3 +356,27 @@ func TestDMLResult(t *testing.T) {
     }
     // affectedResultComparison(t, affectedRows, 1)
 }
+
+func TestQueryContainSemicolon(t *testing.T) {
+    db := newSqlTest(t)
+    defer db.Close()
+
+    db.mustExec("drop table if exists test_semicolon;")
+    db.mustExec(`CREATE TABLE test_semicolon(
+        order_no CHAR(14) NOT NULL,
+        product_no CHAR(5) ,
+        area CHAR(2) ,
+        branch CHAR(4) ,
+        order_date DATE DEFAULT SYSDATE NOT NULL,
+        salesperson CHAR(10) ,
+        id NUMBER);  `)
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20010102020001','11001','02','0201',sysdate-400,'0201010011',300);")
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20010102020002','11002','02','0201',sysdate-400,'0201008003',1300) ; ")
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20010102020003','10001','02','0201',sysdate-400,'0201010011',2300) ;  ")
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20210102020004','11001','02','0201',sysdate-400,'0201008003',400)  ;")
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20210102020005','11002','02','0201',sysdate-400,'0201010011',200);")
+    db.mustExec("INSERT INTO test_semicolon VALUES ('20210102020006','10001','02','0201',sysdate-400,'0201008003',100)   ;")
+    db.mustQuery("select * from test_semicolon;")
+    db.mustExec("DELETE FROM test_semicolon WHERE order_no=20010102020002; ")
+    db.mustExec("DELETE FROM test_semicolon WHERE id<300  ;")
+}
