@@ -21,6 +21,7 @@ package yasdb
 import "C"
 import (
     "database/sql"
+    "strings"
     "sync"
     "unsafe"
 )
@@ -140,4 +141,8 @@ func checkYasError(ret C.YapiResult) error {
         Column:   int(yapErr.pos.column),
     }
     return err
+}
+
+func rmSqlSemicolon(query string) string {
+    return strings.TrimSuffix(strings.TrimSpace(query), ";")
 }

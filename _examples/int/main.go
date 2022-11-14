@@ -18,20 +18,20 @@ func main() {
     }
     defer db.Close()
 
-    _, err = db.Exec("drop table if exists int_example")
+    _, err = db.Exec("drop table if exists int_example;")
     if err != nil {
         fmt.Println(err)
         return
     }
 
-    _, err = db.Exec("create table int_example(id int)")
+    _, err = db.Exec("create table int_example(id int)  ;")
     if err != nil {
         fmt.Println(err)
         return
     }
 
     id := 10
-    result, err := db.Exec("insert into int_example(id) values(?)", id)
+    result, err := db.Exec("insert into int_example(id) values(?);  ", id)
     if err != nil {
         fmt.Println(err)
         return
@@ -43,7 +43,7 @@ func main() {
     }
     fmt.Println("affectRows:", rowsAffected)
 
-    rows, err := db.Query("select id from int_example")
+    rows, err := db.Query("select id from int_example  ;  ")
     if err != nil {
         fmt.Println(err)
         return
