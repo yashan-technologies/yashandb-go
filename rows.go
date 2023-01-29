@@ -248,9 +248,10 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
             if err != nil {
                 return nil, err
             }
-            value = data
-            if C.YapiType(row.yacType) == C.YAPI_TYPE_CLOB {
+            if row.yacType == C.YAPI_TYPE_CLOB {
                 value = string(data)
+            } else {
+                value = data
             }
         }
         dest[i] = value

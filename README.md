@@ -13,3 +13,6 @@ yasdb-go驱动包可以通过以下两种方式进行安装和配置：
 
 - 如果无法连接上`https://git.yasdb.com/go/yasdb-go`，可以使用离线方案，直接获得源码包
 - 使用教程: [offline version instructions](./offlineVersionInstructions.md)
+
+### DSN的填写说明
+参考教程: [DSN format](./DSNFormat.md)

@@ -18,6 +18,15 @@ const (
     urlRegExpr = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
 )
 
+var (
+    specialChars = map[string]string{
+        `\`: "{dsn_placeholder_1}",
+        `/`: "{dsn_placeholder_2}",
+        `@`: "{dsn_placeholder_3}",
+    }
+    escapeChar = `\`
+)
+
 type DataSourceName struct {
     User         string
     Password     string
@@ -38,6 +47,11 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
     if dsnStr == "" {
         return nil, ErrDsnNoSet()
     }
+    return parseDSN(dsnStr)
+}
+
+func parseDSN(dsnStr string) (*DataSourceName, error) {
+    dsnStr = replaceSpecialChars(dsnStr)
     dsnReg, _ := regexp.Compile(dsnRegExpr)
     urlReg, _ := regexp.Compile(urlRegExpr)
     if !dsnReg.MatchString(dsnStr) {
@@ -45,8 +59,8 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
     }
     matchStrs := dsnReg.FindStringSubmatch(dsnStr)
     dsn := &DataSourceName{
-        User:     matchStrs[1],
-        Password: matchStrs[2],
+        User:     recoverySpecialChars(matchStrs[1]),
+        Password: recoverySpecialChars(matchStrs[2]),
         Url:      matchStrs[3],
     }
     if !urlReg.MatchString(dsn.Url) {
@@ -62,4 +76,18 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
         }
     }
     return dsn, nil
+}
+
+func replaceSpecialChars(dsnStr string) string {
+    for k, v := range specialChars {
+        dsnStr = strings.ReplaceAll(dsnStr, escapeChar+k, v)
+    }
+    return dsnStr
+}
+
+func recoverySpecialChars(str string) string {
+    for k, v := range specialChars {
+        str = strings.ReplaceAll(str, v, k)
+    }
+    return str
 }
