@@ -50,6 +50,13 @@ YapiResult yapiEnvGetAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t 
     return yapiCliGetEnvAttr(hEnv->envHandler, attr, value, bufLength, stringLength, &error);
 }
 
+YapiResult yapiSetEnvAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t length)
+{
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliSetEnvAttr(hEnv->envHandler, attr, value, length, &error);
+}
+
 char* yapiGetVersion(YapiEnv* inst) 
 {
     YapiErrorMsg error;

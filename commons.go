@@ -84,6 +84,10 @@ func intToYacUint16(n int) C.uint16_t {
     return C.uint16_t(n)
 }
 
+func intToYacInt32(n int) C.int32_t {
+    return C.int32_t(n)
+}
+
 func intToYacUint32(n int) C.uint32_t {
     return C.uint32_t(n)
 }

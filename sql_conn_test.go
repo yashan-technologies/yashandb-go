@@ -15,6 +15,21 @@ func TestConnect(t *testing.T) {
     }
 }
 
+/*
+must set env:
+LD_LIBRARY_PATH
+YASDB_DATA
+*/
+func TestConnectWithoutPassword(t *testing.T) {
+    db, err := sql.Open("yasdb", "")
+    if err != nil {
+        t.Fatalf("error connecting: %v", err)
+    }
+    if err = db.Close(); err != nil {
+        t.Fatalf("error db close: %v", err)
+    }
+}
+
 func TestPing(t *testing.T) {
     db, err := sql.Open("yasdb", testDsn)
     if err != nil {

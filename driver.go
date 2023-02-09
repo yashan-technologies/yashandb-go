@@ -41,7 +41,15 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
     if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
         return nil, err
     }
+    if dsn.DataPath != "" {
+        dataPath := stringToYasChar(dsn.DataPath)
+        defer C.free(unsafe.Pointer(dataPath))
 
+        dpLen := intToYacInt32(len(dsn.DataPath))
+        if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen)); err != nil {
+            return nil, err
+        }
+    }
     var conn *C.YapiConnect
 
     url := stringToYasChar(dsn.Url)

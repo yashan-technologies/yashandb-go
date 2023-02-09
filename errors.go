@@ -38,6 +38,9 @@ func ErrDsnNoStandard(dsn string) *YasBaseError {
 func ErrDsnNoSet() *YasBaseError {
     return &YasBaseError{Code: 1002, Msg: "dsn is unset"}
 }
+func ErrDataPathNoExist(p string) *YasBaseError {
+    return &YasBaseError{Code: 1009, Msg: fmt.Sprintf("YASDB_DATA:%s is not existed", p)}
+}
 func ErrNoConnect() *YasBaseError {
     return &YasBaseError{Code: 1003, Msg: "yasdb is not connected"}
 }

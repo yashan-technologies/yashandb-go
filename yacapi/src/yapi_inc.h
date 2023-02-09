@@ -22,6 +22,7 @@ typedef YacResult (*yapiFuncAllocHandle)(YapiHandleType type, YacHandle input, Y
 typedef YacResult (*yapiFuncFreeHandler)(YapiHandleType type, YacHandle handle);
 typedef char* (*yapiFuncGetVersion)();
 typedef void (*yapiFuncGetLastError)(int32_t* errCode, char** message, char** sqlState, YapiTextPos* pos);
+typedef YacResult (*yapiFuncSetEnvAttr)(YacHandle hEnv, YapiEnvAttr attr, void* value, int32_t length);
 typedef YacResult (*yapiFuncGetEnvAttr)(YacHandle hEnv, YapiEnvAttr attr, void* value, int32_t bufLength,
                                         int32_t* stringLength);
 
@@ -122,6 +123,7 @@ typedef struct StYapiSymbols {
     yapiFuncCommit        fnCommit;
     yapiFuncRollback      fnRollback;
 
+    yapiFuncSetEnvAttr  fnSetEnvAttr;
     yapiFuncGetEnvAttr  fnGetEnvAttr;
     yapiFuncSetConnAttr fnSetConnAttr;
     yapiFuncGetConnAttr fnGetConnAttr;
@@ -214,6 +216,7 @@ YapiResult yapiCliFreeHandle(YapiHandleType type, YacHandle handle, YapiErrorMsg
 YapiResult yapiCliGetVersion(char** version, YapiErrorMsg* error);
 YapiResult yapiCliGetLastError(YapiErrorMsg* error);
 
+YapiResult yapiCliSetEnvAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t length, YapiErrorMsg* error);
 YapiResult yapiCliGetEnvAttr(YacHandle hEnv, YapiEnvAttr attr, void* value, int32_t bufLength, int32_t* stringLength, YapiErrorMsg* error);
 
 YapiResult yapiCliConnect(YacHandle hConn, const char* url, int16_t urlLength, const char* user, int16_t userLength,

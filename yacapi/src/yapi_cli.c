@@ -33,7 +33,7 @@ static void*       yapiLibHandle = NULL;
 
 #ifdef _WIN32
 
-static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error)
+static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error, char* errMsgPrefix)
 {
     char*    fallbackErrorFormat = "failed to get message for Windows Error %d";
     wchar_t* errBuf = NULL;
@@ -56,7 +56,8 @@ static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error)
 
     // convert to UTF-8 encoding
     if (length > 0) {
-        length = WideCharToMultiByte(CP_UTF8, 0, errBuf, -1, error->buf->message, T2S_BUFFER_SIZE, NULL, NULL);
+        strcpy_s(error->buf->message, T2S_BUFFER_SIZE, errMsgPrefix);
+        length = WideCharToMultiByte(CP_UTF8, 0, errBuf, -1, error->buf->message + strlen(errMsgPrefix), T2S_BUFFER_SIZE, NULL, NULL);
     }
     LocalFree(errBuf);
     return YAPI_SUCCESS;
@@ -71,7 +72,8 @@ YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg*
     }
 
     DWORD errNum = GetLastError();
-    return yapiGetWindowsError(errNum, error);
+    YAPI_CALL(yapiGetWindowsError(errNum, error, "load yacli library error: "));
+    return YAPI_ERROR;
 }
 
 YapiResult yapiCloseDynamicLib(YapiPointer* handler, YapiErrorMsg* error)
@@ -168,6 +170,16 @@ YapiResult yapiCliGetLastError(YapiErrorMsg* error)
     strcpy(error->buf->message, msg);
     strcpy(error->buf->sqlState, stat);
     return YAPI_SUCCESS;
+}
+
+YapiResult yapiCliSetEnvAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t length,
+                             YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacSetEnvAttr", yapiSymbols.fnSetEnvAttr)
+    ret = (*yapiSymbols.fnSetEnvAttr)(hEnv, attr, value, length);
+    YAPI_CHECK_CLI_RETURN();
 }
 
 YapiResult yapiCliGetEnvAttr(YacHandle hEnv, YapiEnvAttr attr, void* value, int32_t bufLength, int32_t* stringLength,
