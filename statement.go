@@ -130,10 +130,11 @@ func (stmt *YasStmt) query() (driver.Rows, error) {
 
     done := make(chan struct{})
     go stmt.Conn.handleYacCancel(stmt.ctx, done)
-    if err := stmt.yacExecute(); err != nil {
+    err := stmt.yacExecute()
+    close(done)
+    if err != nil {
         return nil, err
     }
-    close(done)
 
     fetchRows, err := stmt.getFetchRows()
     if err != nil {
@@ -153,10 +154,11 @@ func (stmt *YasStmt) exec() (driver.Result, error) {
 
     done := make(chan struct{})
     go stmt.Conn.handleYacCancel(stmt.ctx, done)
-    if err := stmt.yacExecute(); err != nil {
+    err := stmt.yacExecute()
+    close(done)
+    if err != nil {
         return nil, err
     }
-    close(done)
 
     rowsAffected, rowsAffectedErr := stmt.getRowsAffected()
     result := YasResult{
@@ -216,6 +218,9 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
         yacType = C.YAPI_TYPE_VARCHAR
         bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
         row.Data = mallocBytes(uint32(bufLen))
+    case C.YAPI_TYPE_TIMESTAMP:
+        bufLen = 12
+        row.Data = mallocBytes(uint32(bufLen))
     case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
         var desc = new(unsafe.Pointer)
         if err := checkYasError(C.yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc)); err != nil {
@@ -245,7 +250,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 
 func (stmt *YasStmt) getRowsAffected() (int64, error) {
     var rowsCount C.uint32_t
-    size := C.int32_t(unsafe.Sizeof(&rowsCount))
+    size := C.int32_t(unsafe.Sizeof(rowsCount))
     s_length := C.int32_t(0)
     err := checkYasError(
         C.yapiGetStmtAttr(
@@ -340,7 +345,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
         bufLength C.int32_t
     )
 
-    bindSize = C.int32_t(unsafe.Sizeof(&arg)) + 1
+    bindSize = C.int32_t(unsafe.Sizeof(arg)) + 1
     bufLength = C.int32_t(bindSize - 1)
     indicator = new(C.int32_t)
     *indicator = C.int32_t(bindSize - 1)
@@ -433,7 +438,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
         }
     }
 
-    bindSize = C.int32_t(unsafe.Sizeof(&arg)) + 1
+    bindSize = C.int32_t(unsafe.Sizeof(arg)) + 1
     bufLength = C.int32_t(bindSize)
     indicator = new(C.int32_t)
     *indicator = C.int32_t(bindSize - 1)

@@ -58,7 +58,7 @@ func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.S
     }
 
     var sqltype C.uint32_t
-    sqlSize := C.int32_t(unsafe.Sizeof(&sqltype))
+    sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
     if err := checkYasError(
         C.yapiGetStmtAttr(
             stmt,
