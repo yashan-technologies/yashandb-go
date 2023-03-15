@@ -17,7 +17,7 @@ func testBool(t *sqlTest) {
             {"b1", "boolean"},
         },
         execArgs: [][]interface{}{
-            {1, "true"},
+            {1, nil},
             {2, "t"},
             {3, "yes"},
             {4, "y"},
@@ -36,7 +36,7 @@ func testBool(t *sqlTest) {
             {17, -2},
         },
         queryResult: [][]interface{}{
-            {int32(1), true},
+            {int32(1), nil},
             {int32(2), true},
             {int32(3), true},
             {int32(4), true},

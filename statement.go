@@ -218,7 +218,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
         yacType = C.YAPI_TYPE_VARCHAR
         bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
         row.Data = mallocBytes(uint32(bufLen))
-    case C.YAPI_TYPE_TIMESTAMP:
+    case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
         bufLen = 12
         row.Data = mallocBytes(uint32(bufLen))
     case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
@@ -228,8 +228,12 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
         }
         bufLen = -1
         row.Data = unsafe.Pointer(desc)
-    default:
+    case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE:
         row.Data = mallocBytes(size)
+    default:
+        yacType = C.YAPI_TYPE_VARCHAR
+        bufLen = int32(sizeToAlign4(size)) + 1
+        row.Data = mallocBytes(uint32(bufLen))
     }
     if err := checkYasError(
         C.yapiBindColumn(
