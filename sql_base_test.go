@@ -2,6 +2,7 @@ package yasdb
 
 import (
     "database/sql"
+    "flag"
     "fmt"
     "reflect"
     "testing"
@@ -9,9 +10,19 @@ import (
 )
 
 var (
-    testDsn     = "sys/yasdb_123@192.168.6.177:2000"
+    testDsn     = "sys/Cod-2022@127.0.0.1"
     tablePrefix = "gosqltest_"
 )
+
+func init() {
+    testing.Init()
+    dsn := flag.String("dsn", "", "input you dsn(DataSourceName, format:username/password@host:port[?param1=value1&...&paramN=valueN]) to connect yashandb.")
+    flag.Parse()
+    if *dsn != "" {
+        testDsn = *dsn
+    }
+    fmt.Println("test dsn:", testDsn)
+}
 
 type sqlTest struct {
     *sqlGenInfo
