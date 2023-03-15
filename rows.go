@@ -212,12 +212,12 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
     columns := len(r.fetchRows)
     dest := make([]driver.Value, columns)
     for i := 0; i < columns; i++ {
-        var value driver.Value
         row := r.fetchRows[i]
         if *row.Indicator == C.YAPI_NULL_DATA {
-            value = nil
+            dest[i] = nil
             continue
         }
+        var value driver.Value
         switch row.yacType {
         case C.YAPI_TYPE_BOOL:
             value = (*(*bool)(row.Data))
@@ -233,9 +233,9 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
             value = (*(*float32)(row.Data))
         case C.YAPI_TYPE_DOUBLE:
             value = (*(*float64)(row.Data))
-        case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP:
+        case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
             value = time.Unix(0, (*(*int64)(row.Data))*1e3)
-        case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
+        case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
             value = (C.GoString((*C.char)(row.Data)))
         case C.YAPI_TYPE_NUMBER:
             value, err = strconv.ParseFloat(C.GoString((*C.char)(row.Data)), 64)
@@ -253,6 +253,8 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
             } else {
                 value = data
             }
+        default:
+            value = (C.GoString((*C.char)(row.Data)))
         }
         dest[i] = value
     }
