@@ -10,7 +10,7 @@ import (
 )
 
 var (
-    testDsn     = "sys/Cod-2022@127.0.0.1"
+    testDsn     = "sys/Cod-2022@127.0.0.1:1688"
     tablePrefix = "gosqltest_"
 )
 
