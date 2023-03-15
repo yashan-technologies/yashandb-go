@@ -1,2 +1,5 @@
 .vscode
 .VSCodeCounter
+.mypy_cache
+*.zip
+*.tar.gz
