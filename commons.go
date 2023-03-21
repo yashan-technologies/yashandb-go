@@ -10,7 +10,7 @@ package yasdb
 
 /*
 #cgo CFLAGS: -I./yacapi/include -I./yacapi/src
-#cgo LDFLAGS: -ldl
+#cgo !windows LDFLAGS: -ldl
 
 #include "yacapi.h"
 #include "yapi_inc.h"
