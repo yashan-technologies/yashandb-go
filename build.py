@@ -97,7 +97,7 @@ def package(args):
     proj_path = get_project_path()
     src_path = proj_path
     output = proj_path if not args.output else args.output
-    packge_version = get_version().split("-")[0]
+    packge_version = get_version()
     if Ziper(
         src_path,
         output,
