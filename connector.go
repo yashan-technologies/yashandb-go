@@ -9,8 +9,8 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 import (
-    "context"
-    "database/sql/driver"
+	"context"
+	"database/sql/driver"
 )
 
 type YasConnector struct {
@@ -20,14 +20,14 @@ type YasConnector struct {
 // mainly to maintain compatibility with the Driver method
 // on sql.DB.
 func (connector *YasConnector) Driver() driver.Driver {
-    return &YasdbDriver{}
+	return &YasdbDriver{}
 }
 
 // Connect returns a connection to the database.
 func (connectot *YasConnector) Connect(ctx context.Context) (driver.Conn, error) {
-    if ctx.Err() != nil {
-        return nil, ctx.Err()
-    }
-    yasConn := &YasConn{}
-    return yasConn, nil
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	yasConn := &YasConn{}
+	return yasConn, nil
 }

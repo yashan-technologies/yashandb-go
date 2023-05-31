@@ -9,32 +9,32 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 import (
-    "os"
-    "regexp"
-    "strings"
+	"os"
+	"regexp"
+	"strings"
 )
 
 const (
-    dsnRegExpr = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
-    urlRegExpr = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
-    udsRegExpr = `^(.*?)(\?(.*?))?$`
+	dsnRegExpr = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
+	urlRegExpr = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
+	udsRegExpr = `^(.*?)(\?(.*?))?$`
 )
 
 var (
-    specialChars = map[string]string{
-        `\`: "{dsn_placeholder_1}",
-        `/`: "{dsn_placeholder_2}",
-        `@`: "{dsn_placeholder_3}",
-    }
-    escapeChar = `\`
+	specialChars = map[string]string{
+		`\`: "{dsn_placeholder_1}",
+		`/`: "{dsn_placeholder_2}",
+		`@`: "{dsn_placeholder_3}",
+	}
+	escapeChar = `\`
 )
 
 type DataSourceName struct {
-    User         string
-    Password     string
-    Url          string
-    DataPath     string
-    IsAutoCommit bool
+	User         string
+	Password     string
+	Url          string
+	DataPath     string
+	IsAutoCommit bool
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -48,88 +48,88 @@ type DataSourceName struct {
 //
 // autocommit - When it is true, the transaction will be automatically committed every time an SQL statement is executed. Default is false
 func ParseDSN(dsnStr string) (*DataSourceName, error) {
-    if dsnStr == "" {
-        return nil, ErrDsnNoSet()
-    }
-    if isDsn(dsnStr) {
-        return parseDSN(dsnStr)
-    }
-    return parseUDS(dsnStr)
+	if dsnStr == "" {
+		return nil, ErrDsnNoSet()
+	}
+	if isDsn(dsnStr) {
+		return parseDSN(dsnStr)
+	}
+	return parseUDS(dsnStr)
 }
 
 func parseDSN(dsnStr string) (*DataSourceName, error) {
-    dsnStr = replaceSpecialChars(dsnStr)
-    dsnReg, _ := regexp.Compile(dsnRegExpr)
-    urlReg, _ := regexp.Compile(urlRegExpr)
+	dsnStr = replaceSpecialChars(dsnStr)
+	dsnReg, _ := regexp.Compile(dsnRegExpr)
+	urlReg, _ := regexp.Compile(urlRegExpr)
 
-    if !dsnReg.MatchString(dsnStr) {
-        return nil, ErrDsnNoStandard(dsnStr)
-    }
-    matchStrs := dsnReg.FindStringSubmatch(dsnStr)
-    dsn := &DataSourceName{
-        User:     recoverySpecialChars(matchStrs[1]),
-        Password: recoverySpecialChars(matchStrs[2]),
-        Url:      matchStrs[3],
-        DataPath: "",
-    }
-    if !urlReg.MatchString(dsn.Url) {
-        return nil, ErrDsnNoStandard(dsnStr)
-    }
-    parseArgs(dsn, matchStrs[4])
-    return dsn, nil
+	if !dsnReg.MatchString(dsnStr) {
+		return nil, ErrDsnNoStandard(dsnStr)
+	}
+	matchStrs := dsnReg.FindStringSubmatch(dsnStr)
+	dsn := &DataSourceName{
+		User:     recoverySpecialChars(matchStrs[1]),
+		Password: recoverySpecialChars(matchStrs[2]),
+		Url:      matchStrs[3],
+		DataPath: "",
+	}
+	if !urlReg.MatchString(dsn.Url) {
+		return nil, ErrDsnNoStandard(dsnStr)
+	}
+	parseArgs(dsn, matchStrs[4])
+	return dsn, nil
 }
 
 func parseUDS(dsnStr string) (*DataSourceName, error) {
-    udsReg, _ := regexp.Compile(udsRegExpr)
-    if !udsReg.MatchString(dsnStr) {
-        return nil, ErrDsnNoStandard(dsnStr)
-    }
-    matchStrs := udsReg.FindStringSubmatch(dsnStr)
-    dsn := &DataSourceName{
-        User:     "sys",
-        Password: "",
-        Url:      "",
-        DataPath: matchStrs[1],
-    }
-    _, err := os.Stat(dsn.DataPath)
-    if err != nil && !os.IsExist(err) {
-        return nil, ErrDataPathNoExist(dsnStr)
-    }
-    parseArgs(dsn, matchStrs[2])
-    return dsn, nil
+	udsReg, _ := regexp.Compile(udsRegExpr)
+	if !udsReg.MatchString(dsnStr) {
+		return nil, ErrDsnNoStandard(dsnStr)
+	}
+	matchStrs := udsReg.FindStringSubmatch(dsnStr)
+	dsn := &DataSourceName{
+		User:     "sys",
+		Password: "",
+		Url:      "",
+		DataPath: matchStrs[1],
+	}
+	_, err := os.Stat(dsn.DataPath)
+	if err != nil && !os.IsExist(err) {
+		return nil, ErrDataPathNoExist(dsnStr)
+	}
+	parseArgs(dsn, matchStrs[2])
+	return dsn, nil
 }
 
 func parseArgs(dsn *DataSourceName, argStr string) {
-    if argStr == "" {
-        return
-    }
-    paramStr := argStr
-    if argStr[0] == '?' || argStr[0] == '&' {
-        paramStr = strings.ToLower(argStr[1:])
-    }
-    connParams := strings.Split(paramStr, "&")
-    for _, param := range connParams {
-        if param == "autocommit=1" || param == "autocommit=true" {
-            dsn.IsAutoCommit = true
-        }
-    }
+	if argStr == "" {
+		return
+	}
+	paramStr := argStr
+	if argStr[0] == '?' || argStr[0] == '&' {
+		paramStr = strings.ToLower(argStr[1:])
+	}
+	connParams := strings.Split(paramStr, "&")
+	for _, param := range connParams {
+		if param == "autocommit=1" || param == "autocommit=true" {
+			dsn.IsAutoCommit = true
+		}
+	}
 }
 
 func isDsn(dsnStr string) bool {
-    dsnReg, _ := regexp.Compile(dsnRegExpr)
-    return dsnReg.MatchString(dsnStr)
+	dsnReg, _ := regexp.Compile(dsnRegExpr)
+	return dsnReg.MatchString(dsnStr)
 }
 
 func replaceSpecialChars(dsnStr string) string {
-    for k, v := range specialChars {
-        dsnStr = strings.ReplaceAll(dsnStr, escapeChar+k, v)
-    }
-    return dsnStr
+	for k, v := range specialChars {
+		dsnStr = strings.ReplaceAll(dsnStr, escapeChar+k, v)
+	}
+	return dsnStr
 }
 
 func recoverySpecialChars(str string) string {
-    for k, v := range specialChars {
-        str = strings.ReplaceAll(str, v, k)
-    }
-    return str
+	for k, v := range specialChars {
+		str = strings.ReplaceAll(str, v, k)
+	}
+	return str
 }

@@ -17,74 +17,74 @@ package yasdb
 */
 import "C"
 import (
-    "database/sql/driver"
-    "unsafe"
+	"database/sql/driver"
+	"unsafe"
 )
 
 type YasdbDriver struct{}
 
 // Open returns a new connection to the database.
 func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
-    dsn, err := ParseDSN(dsnStr)
-    if err != nil {
-        return nil, err
-    }
-    conn, err := yasDriver.getYasConn(dsn)
-    if err != nil {
-        return nil, err
-    }
-    return conn, nil
+	dsn, err := ParseDSN(dsnStr)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := yasDriver.getYasConn(dsn)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
 
 func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
-    var env *C.YapiEnv
-    if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
-        return nil, err
-    }
-    if dsn.DataPath != "" {
-        dataPath := stringToYasChar(dsn.DataPath)
-        defer C.free(unsafe.Pointer(dataPath))
+	var env *C.YapiEnv
+	if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
+		return nil, err
+	}
+	if dsn.DataPath != "" {
+		dataPath := stringToYasChar(dsn.DataPath)
+		defer C.free(unsafe.Pointer(dataPath))
 
-        dpLen := intToYacInt32(len(dsn.DataPath))
-        if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen)); err != nil {
-            return nil, err
-        }
-    }
-    var conn *C.YapiConnect
+		dpLen := intToYacInt32(len(dsn.DataPath))
+		if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen)); err != nil {
+			return nil, err
+		}
+	}
+	var conn *C.YapiConnect
 
-    url := stringToYasChar(dsn.Url)
-    defer C.free(unsafe.Pointer(url))
-    user := stringToYasChar(dsn.User)
-    defer C.free(unsafe.Pointer(user))
-    password := stringToYasChar(dsn.Password)
-    defer C.free(unsafe.Pointer(password))
-    urlLen := intToYacInt16(len(dsn.Url))
-    userLen := intToYacInt16(len(dsn.User))
-    pwLen := intToYacInt16(len(dsn.Password))
-    if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
-        return nil, err
-    }
-    yasConn := &YasConn{
-        Env:        env,
-        Conn:       conn,
-        autoCommit: dsn.IsAutoCommit,
-    }
-    if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
-        return nil, err
-    }
-    return yasConn, nil
+	url := stringToYasChar(dsn.Url)
+	defer C.free(unsafe.Pointer(url))
+	user := stringToYasChar(dsn.User)
+	defer C.free(unsafe.Pointer(user))
+	password := stringToYasChar(dsn.Password)
+	defer C.free(unsafe.Pointer(password))
+	urlLen := intToYacInt16(len(dsn.Url))
+	userLen := intToYacInt16(len(dsn.User))
+	pwLen := intToYacInt16(len(dsn.Password))
+	if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
+		return nil, err
+	}
+	yasConn := &YasConn{
+		Env:        env,
+		Conn:       conn,
+		autoCommit: dsn.IsAutoCommit,
+	}
+	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
+		return nil, err
+	}
+	return yasConn, nil
 }
 
 type YasTx struct {
-    Conn *YasConn
+	Conn *YasConn
 }
 
 // Commit transaction commit
 func (tx *YasTx) Commit() error {
-    return tx.Conn.yacCommit()
+	return tx.Conn.yacCommit()
 }
 
 // Rollback transaction rollback
 func (tx *YasTx) Rollback() error {
-    return tx.Conn.yacRollback()
+	return tx.Conn.yacRollback()
 }
