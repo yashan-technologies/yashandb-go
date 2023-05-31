@@ -20,164 +20,164 @@ package yasdb
 */
 import "C"
 import (
-    "database/sql"
-    "strings"
-    "sync"
-    "unsafe"
+	"database/sql"
+	"strings"
+	"sync"
+	"unsafe"
 )
 
 const (
-    _LobBufLen      = 8192
-    _OutputBindSize = 8192
+	_LobBufLen      = 8192
+	_OutputBindSize = 8192
 )
 
 var (
-    mutex = &sync.Mutex{}
+	mutex = &sync.Mutex{}
 
-    byteBufferPool = sync.Pool{
-        New: func() interface{} {
-            return make([]byte, _LobBufLen)
-        },
-    }
+	byteBufferPool = sync.Pool{
+		New: func() interface{} {
+			return make([]byte, _LobBufLen)
+		},
+	}
 
-    keySqls = []string{
-        "create or replace procedure",
-        "create procedure",
-        "create or replace trigger",
-        "create trigger",
-        "create or replace function",
-        "create function",
-        "create or replace package",
-        "create package",
-        "create or replace package body",
-        "create package body",
-        "create or replace type body",
-        "create type body",
-        "begin",
-        "declare",
-    }
+	keySqls = []string{
+		"create or replace procedure",
+		"create procedure",
+		"create or replace trigger",
+		"create trigger",
+		"create or replace function",
+		"create function",
+		"create or replace package",
+		"create package",
+		"create or replace package body",
+		"create package body",
+		"create or replace type body",
+		"create type body",
+		"begin",
+		"declare",
+	}
 )
 
 type bindStruct struct {
-    direction C.YapiParamDirection
-    yacType   C.YapiType
-    value     C.YapiPointer
-    bindSize  C.int32_t
-    bufLength C.int32_t
-    indicator *C.int32_t
-    out       sql.Out
+	direction C.YapiParamDirection
+	yacType   C.YapiType
+	value     C.YapiPointer
+	bindSize  C.int32_t
+	bufLength C.int32_t
+	indicator *C.int32_t
+	out       sql.Out
 }
 
 func stringToYasChar(str string) *C.char {
-    p := C.malloc(C.size_t(len(str) + 1))
-    pp := (*[1 << 30]byte)(p)
-    copy(pp[:], str)
-    pp[len(str)] = 0
-    return (*C.char)(p)
+	p := C.malloc(C.size_t(len(str) + 1))
+	pp := (*[1 << 30]byte)(p)
+	copy(pp[:], str)
+	pp[len(str)] = 0
+	return (*C.char)(p)
 }
 
 func intToYacInt16(n int) C.int16_t {
-    return C.int16_t(n)
+	return C.int16_t(n)
 }
 
 func intToYacUint16(n int) C.uint16_t {
-    return C.uint16_t(n)
+	return C.uint16_t(n)
 }
 
 func intToYacInt32(n int) C.int32_t {
-    return C.int32_t(n)
+	return C.int32_t(n)
 }
 
 func intToYacUint32(n int) C.uint32_t {
-    return C.uint32_t(n)
+	return C.uint32_t(n)
 }
 
 func yacPointerToInt64(p C.YapiPointer) int64 {
-    return int64(*(*C.int64_t)(p))
+	return int64(*(*C.int64_t)(p))
 }
 
 func yacPointerToUint64(p C.YapiPointer) uint64 {
-    return uint64(*(*C.uint64_t)(p))
+	return uint64(*(*C.uint64_t)(p))
 }
 
 func yacPointerToFloat64(p C.YapiPointer) float64 {
-    return float64(*(*C.double)(p))
+	return float64(*(*C.double)(p))
 }
 
 func yacPointerToBool(p C.YapiPointer) bool {
-    return bool(*(*C.bool)(p))
+	return bool(*(*C.bool)(p))
 }
 
 func mallocBytes(size uint32) unsafe.Pointer {
-    p := C.malloc(C.size_t(size))
-    pp := (*[1 << 30]byte)(p)
-    return unsafe.Pointer(pp)
+	p := C.malloc(C.size_t(size))
+	pp := (*[1 << 30]byte)(p)
+	return unsafe.Pointer(pp)
 }
 
 func sizeToAlign4(size uint32) uint32 {
-    margin := uint32(size % 4)
-    if margin == 0 {
-        return size
-    }
-    return size + (4 - margin)
+	margin := uint32(size % 4)
+	if margin == 0 {
+		return size
+	}
+	return size + (4 - margin)
 }
 
 func freeFetchRows(rows []*yasRow) {
-    if len(rows) == 0 || rows == nil {
-        return
-    }
-    for i := 0; i < len(rows); i++ {
-        if rows[i] == nil {
-            continue
-        }
-        switch rows[i].yacType {
-        case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
-            lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(rows[i].Data))
-            C.yapiLobDescFree(unsafe.Pointer(*lobLocator), rows[i].yacType)
-        default:
-            C.free(rows[i].Data)
-        }
+	if len(rows) == 0 || rows == nil {
+		return
+	}
+	for i := 0; i < len(rows); i++ {
+		if rows[i] == nil {
+			continue
+		}
+		switch rows[i].yacType {
+		case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+			lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(rows[i].Data))
+			C.yapiLobDescFree(unsafe.Pointer(*lobLocator), rows[i].yacType)
+		default:
+			C.free(rows[i].Data)
+		}
 
-        if rows[i].Indicator != nil {
-            C.free(unsafe.Pointer(rows[i].Indicator))
-        }
-        rows[i].Data = nil
-        rows[i].Indicator = nil
-    }
+		if rows[i].Indicator != nil {
+			C.free(unsafe.Pointer(rows[i].Indicator))
+		}
+		rows[i].Data = nil
+		rows[i].Indicator = nil
+	}
 }
 
 func checkYasError(ret C.YapiResult) error {
-    if int(ret) == 0 {
-        return nil
-    }
-    mutex.Lock()
-    defer mutex.Unlock()
-    var yapErr C.YapiErrorInfo
-    C.yapiGetLastError(&yapErr)
-    err := &YasDBError{
-        Code:     int(yapErr.errCode),
-        Msg:      C.GoString(yapErr.message),
-        SqlState: C.GoString(yapErr.sqlState),
-        Line:     int(yapErr.pos.line),
-        Column:   int(yapErr.pos.column),
-    }
-    return err
+	if int(ret) == 0 {
+		return nil
+	}
+	mutex.Lock()
+	defer mutex.Unlock()
+	var yapErr C.YapiErrorInfo
+	C.yapiGetLastError(&yapErr)
+	err := &YasDBError{
+		Code:     int(yapErr.errCode),
+		Msg:      C.GoString(yapErr.message),
+		SqlState: C.GoString(yapErr.sqlState),
+		Line:     int(yapErr.pos.line),
+		Column:   int(yapErr.pos.column),
+	}
+	return err
 }
 
 func tryRmSqlSemicolon(query string) string {
-    if isKeySql(query) {
-        return query
-    }
-    return strings.TrimSuffix(strings.TrimSpace(query), ";")
+	if isKeySql(query) {
+		return query
+	}
+	return strings.TrimSuffix(strings.TrimSpace(query), ";")
 }
 
 func isKeySql(query string) bool {
-    strs := strings.Fields(strings.TrimSpace(query))
-    sqlStr := strings.ToLower(strings.Join(strs, " "))
-    for _, v := range keySqls {
-        if strings.HasPrefix(sqlStr, v) {
-            return true
-        }
-    }
-    return false
+	strs := strings.Fields(strings.TrimSpace(query))
+	sqlStr := strings.ToLower(strings.Join(strs, " "))
+	for _, v := range keySqls {
+		if strings.HasPrefix(sqlStr, v) {
+			return true
+		}
+	}
+	return false
 }

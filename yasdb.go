@@ -9,9 +9,9 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 import (
-    "database/sql"
+	"database/sql"
 )
 
 func init() {
-    sql.Register("yasdb", &YasdbDriver{})
+	sql.Register("yasdb", &YasdbDriver{})
 }
