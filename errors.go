@@ -29,33 +29,44 @@ type YasDBError struct {
 }
 
 func (e *YasDBError) Error() string {
-	return fmt.Sprintf("%s:%d:%d [%d:%s]", e.SqlState, e.Line, e.Column, e.Code, e.Msg)
+	if e.Line > 0 || e.Column > 0 {
+		return fmt.Sprintf("[%d:%d]YAS-%05d %s", e.Line, e.Column, e.Code, e.Msg)
+	}
+	return fmt.Sprintf("YAS-%05d %s", e.Code, e.Msg)
 }
 
 func ErrDsnNoStandard(dsn string) *YasBaseError {
 	return &YasBaseError{Code: 1001, Msg: "dsn is nonstandard"}
 }
+
 func ErrDsnNoSet() *YasBaseError {
 	return &YasBaseError{Code: 1002, Msg: "dsn is unset"}
 }
+
 func ErrDataPathNoExist(p string) *YasBaseError {
 	return &YasBaseError{Code: 1009, Msg: fmt.Sprintf("YASDB_DATA:%s is not existed", p)}
 }
+
 func ErrNoConnect() *YasBaseError {
 	return &YasBaseError{Code: 1003, Msg: "yasdb is not connected"}
 }
+
 func ErrStmtInit() *YasBaseError {
 	return &YasBaseError{Code: 1004, Msg: "yasdb stmt init failed"}
 }
+
 func ErrStmtNoOpen() *YasBaseError {
 	return &YasBaseError{Code: 1005, Msg: "yasdb stmt is not open"}
 }
+
 func ErrDbTypeUnsupport(dbType int) *YasBaseError {
 	return &YasBaseError{Code: 1006, Msg: fmt.Sprintf("yasdb type %d is not support", dbType)}
 }
+
 func ErrDbFetchEOF() *YasBaseError {
 	return &YasBaseError{Code: 1007, Msg: "fetch is over"}
 }
+
 func ErrUnknowType(v interface{}) *YasBaseError {
 	return &YasBaseError{Code: 1008, Msg: fmt.Sprintf("Unknow: %s", reflect.TypeOf(v).String())}
 }
