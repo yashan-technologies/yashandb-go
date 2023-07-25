@@ -16,6 +16,7 @@ package yasdb
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"database/sql/driver"
 	"unsafe"

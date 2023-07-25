@@ -10,9 +10,9 @@ import (
 func TestParseDsn(t *testing.T) {
 	t.Parallel()
 
-	os.Mkdir("./test", 0755)
+	os.Mkdir("./test", 0o755)
 
-	var dsnTests = []struct {
+	dsnTests := []struct {
 		dsnStr      string
 		expectedDSN *DataSourceName
 	}{
@@ -27,6 +27,9 @@ func TestParseDsn(t *testing.T) {
 		{`./test?autocommit=true`, &DataSourceName{User: "sys", Password: "", Url: "", IsAutoCommit: true, DataPath: "./test"}},
 		{`./test`, &DataSourceName{User: "sys", Password: "", Url: "", IsAutoCommit: false, DataPath: "./test"}},
 		{`/a/b/c?autocommit=true`, nil},
+		{`sys/yasdb_123@[::1]:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[::1]:1688", IsAutoCommit: true, DataPath: ""}},
+		{`sys/yasdb_123@[fe80::8535:da9e:9517:1775]:7000?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[fe80::8535:da9e:9517:1775]:7000", IsAutoCommit: true, DataPath: ""}},
+		{`sys/yasdb_123@[fe80::d5a0:6043:483c:4bfd%ens192]:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[fe80::d5a0:6043:483c:4bfd%ens192]:1688", IsAutoCommit: true, DataPath: ""}},
 	}
 
 	for index, dt := range dsnTests {
