@@ -30,14 +30,10 @@ type YasConn struct {
 	closed     bool
 }
 
-// Prepare returns a prepared statement, bound to this connection.
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
 	return conn.PrepareContext(context.Background(), query)
 }
 
-// PrepareContext returns a prepared statement, bound to this connection.
-// context is for the preparation of the statement,
-// it must not store the context within the statement itself.
 func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -79,25 +75,10 @@ func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.S
 	return yasStmt, nil
 }
 
-// Begin starts and returns a new transaction.
-//
-// Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
 func (conn *YasConn) Begin() (driver.Tx, error) {
 	return conn.BeginTx(context.Background(), driver.TxOptions{})
 }
 
-// BeginTx starts and returns a new transaction.
-// If the context is canceled by the user the sql package will
-// call Tx.Rollback before discarding and closing the connection.
-//
-// This must check opts.Isolation to determine if there is a set
-// isolation level. If the driver does not support a non-default
-// level and one is set or if there is a non-default isolation level
-// that is not supported, an error must be returned.
-//
-// This must also check opts.ReadOnly to determine if the read-only
-// value is true to either set the read-only transaction property if supported
-// or return an error if it is not supported.
 func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -105,9 +86,6 @@ func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 	return &YasTx{Conn: conn}, nil
 }
 
-// Close invalidates and potentially stops any current
-// prepared statements and transactions, marking this
-// connection as no longer in use.
 func (conn *YasConn) Close() error {
 	if conn.closed {
 		return nil
@@ -116,7 +94,6 @@ func (conn *YasConn) Close() error {
 	return conn.yapiReleaseConn()
 }
 
-// Ping checks the connection's state.
 func (conn *YasConn) Ping(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ctx.Err()

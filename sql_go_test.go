@@ -79,23 +79,24 @@ func TestManyQueryRow_gosql(t *testing.T) {
 
 func testManyQueryRow_gosql(t *sqlTest) {
 	if testing.Short() {
-		t.Logf("skipping in short mode")
+		t.Logf("it is short")
 		return
 	}
 	t.sqlGenInfo = &sqlGenInfo{}
-	t.tableName = tablePrefix + "manyqueryrow"
+	t.tableName = tablePrefix + "MQR"
 	t.columnNameType = [][2]string{
 		{"id", "integer primary key"},
 		{"name", "varchar(50)"},
 	}
 	t.genTableTest()
 
-	t.mustExec(fmt.Sprintf("insert into %s (id, name) values(?,?)", t.tableName), 1, "bob")
+	t.mustExec(fmt.Sprintf("insert into %s (id, name) values(?,?)", t.tableName), 1, "ezreal")
 	var name string
-	for i := 0; i < 10000; i++ {
+	total := 10000
+	for i := 0; i < total; i++ {
 		err := t.QueryRow(fmt.Sprintf("select name from %s where id = ?", t.tableName), 1).Scan(&name)
-		if err != nil || name != "bob" {
-			t.Fatalf("on query %d: err=%v, name=%q", i, err, name)
+		if err != nil || name != "ezreal" {
+			t.Fatalf("query row %d:%q failed, %v", i, name, err)
 		}
 	}
 }
@@ -126,25 +127,25 @@ func testTxQuery_gosql(t *sqlTest) {
 		t.Fatal(err)
 	}
 
-	r, err := tx.Query(fmt.Sprintf("select name from %s where id = ?", t.tableName), 1)
+	rows, err := tx.Query(fmt.Sprintf("select name from %s where id = ?", t.tableName), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer r.Close()
+	defer rows.Close()
 
-	if !r.Next() {
-		if r.Err() != nil {
+	if !rows.Next() {
+		if rows.Err() != nil {
 			t.Fatal(err)
 		}
-		t.Fatal("expected one rows")
+		t.Fatal("row next failed")
 	}
 
 	var got string
-	err = r.Scan(&got)
+	err = rows.Scan(&got)
 	if err != nil {
-		t.Errorf("string scan: %v", err)
+		t.Errorf("rows scan failed, %v", err)
 	} else if got != want {
-		t.Errorf("for string, got %q; want %q", got, want)
+		t.Errorf("rows scan, but got no same %q != %q", got, want)
 	}
 }
 
@@ -159,43 +160,46 @@ func testPrepareStmt_gosql(t *sqlTest) {
 	t.columnNameType = [][2]string{{"count", "int"}}
 	t.genTableTest()
 
-	sel, err := t.Prepare(fmt.Sprintf("SELECT count FROM %s ORDER BY count DESC", t.tableName))
+	selectStmt, err := t.Prepare(fmt.Sprintf("SELECT count FROM %s ORDER BY count DESC", t.tableName))
 	if err != nil {
-		t.Fatalf("prepare 1: %v", err)
+		t.Fatalf("select prepare failed, %v", err)
 	}
-	ins, err := t.Prepare(fmt.Sprintf("INSERT INTO %s (count) VALUES (?)", t.tableName))
+	insertStmt, err := t.Prepare(fmt.Sprintf("INSERT INTO %s (count) VALUES (?)", t.tableName))
 	if err != nil {
-		t.Fatalf("prepare 2: %v", err)
+		t.Fatalf("insert prepare failed, %v", err)
 	}
 
-	for n := 1; n <= 3; n++ {
-		if _, err := ins.Exec(n); err != nil {
-			t.Fatalf("insert(%d) = %v", n, err)
+	for i := 1; i <= 3; i++ {
+		if _, err := insertStmt.Exec(i); err != nil {
+			t.Fatalf("execute %d failed, %v", i, err)
 		}
 	}
 
-	const nRuns = 10
-	ch := make(chan bool)
-	for i := 0; i < nRuns; i++ {
+	total := 10
+	queryChan := make(chan struct{})
+	for x := 0; x < total; x++ {
 		go func() {
 			defer func() {
-				ch <- true
+				queryChan <- struct{}{}
 			}()
-			for j := 0; j < 10; j++ {
-				count := 0
-				if err := sel.QueryRow().Scan(&count); err != nil && err != sql.ErrNoRows {
-					t.Errorf("Query: %v", err)
-					return
+			for y := 0; y < 10; y++ {
+				sum := 0
+				if err := selectStmt.QueryRow().Scan(&sum); err != nil {
+					if err != sql.ErrNoRows {
+						t.Errorf("query %d failed, %v", y, err)
+						return
+					}
+
 				}
-				if _, err := ins.Exec(rand.Intn(100)); err != nil {
-					t.Errorf("Insert: %v", err)
+				if _, err := insertStmt.Exec(rand.Intn(total * 10)); err != nil {
+					t.Errorf("insert %d failed, %v", y, err)
 					return
 				}
 			}
 		}()
 	}
-	for i := 0; i < nRuns; i++ {
-		<-ch
+	for i := 0; i < total; i++ {
+		<-queryChan
 	}
 }
 
