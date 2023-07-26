@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	dsnRegExpr = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
-	urlRegExpr = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
-	udsRegExpr = `^(.*?)(\?(.*?))?$`
+	dsnRegExpr     = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
+	ipv4UrlRegExpr = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
+	ipv6UrlRegExpr = `^\[[:|\d|a-z|%]+\]:\d+$`
+	udsRegExpr     = `^(.*?)(\?(.*?))?$`
 )
 
 var (
@@ -60,7 +61,8 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
 func parseDSN(dsnStr string) (*DataSourceName, error) {
 	dsnStr = replaceSpecialChars(dsnStr)
 	dsnReg, _ := regexp.Compile(dsnRegExpr)
-	urlReg, _ := regexp.Compile(urlRegExpr)
+	ipv4UrlReg, _ := regexp.Compile(ipv4UrlRegExpr)
+	ipv6UrlReg, _ := regexp.Compile(ipv6UrlRegExpr)
 
 	if !dsnReg.MatchString(dsnStr) {
 		return nil, ErrDsnNoStandard(dsnStr)
@@ -72,7 +74,7 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 		Url:      matchStrs[3],
 		DataPath: "",
 	}
-	if !urlReg.MatchString(dsn.Url) {
+	if !ipv4UrlReg.MatchString(dsn.Url) && !ipv6UrlReg.MatchString(dsn.Url) {
 		return nil, ErrDsnNoStandard(dsnStr)
 	}
 	parseArgs(dsn, matchStrs[4])
