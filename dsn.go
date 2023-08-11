@@ -16,9 +16,9 @@ import (
 
 const (
 	dsnRegExpr       = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
-	ipv4UrlRegExpr   = `^\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}:\d+$`
+	ipv4UrlRegExpr   = `^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$`
 	ipv6UrlRegExpr   = `^\[[:|\d|A-Z|a-z|%]+\]:\d+$`
-	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z]|\.\]:\d+$`
+	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
 	udsRegExpr       = `^(.*?)(\?(.*?))?$`
 )
 
