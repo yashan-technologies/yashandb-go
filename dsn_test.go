@@ -16,6 +16,7 @@ func TestParseDsn(t *testing.T) {
 		dsnStr      string
 		expectedDSN *DataSourceName
 	}{
+		{`sys/yasdb_123@[::ffff:127.0.0.1]:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[::ffff:127.0.0.1]:1688", IsAutoCommit: true, DataPath: ""}},
 		{`sys/yasdb_123@127.0.0.1:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: true, DataPath: ""}},
 		{`sys/yasdb\@_123@127.0.0.1:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb@_123", Url: "127.0.0.1:1688", IsAutoCommit: true, DataPath: ""}},
 		{`sys\//yasdb\@_123@127.0.0.1:1688?autocommit=true`, &DataSourceName{User: "sys/", Password: "yasdb@_123", Url: "127.0.0.1:1688", IsAutoCommit: true, DataPath: ""}},
