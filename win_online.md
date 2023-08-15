@@ -22,6 +22,18 @@
 go env -w GOPRIVATE=git.yasdb.com
 ```
 
+#### 安装GCC
+编译cgo需要使用64位的gcc编译器，可以从[tdm-gcc](https://jmeubank.github.io/tdm-gcc/download)或者[mingw-w64](https://www.mingw-w64.org/downloads/)下载并安装。
+以通过tdm-gcc安装gcc为例：
+
+1. 运行tdm-gcc的安装程序，选择安装目录。
+![安装目录](images/gcc%E5%AE%89%E8%A3%85.png)
+
+2. 完成安装后，tdm-gcc安装程序会自动将目录下的bin文件夹（C:\TDM-GCC-64\bin）添加到环境变量中，如图所示。如果是其他方法安装mingw，则需要注意手动添加环境变量。
+![gcc添加环境变量](images/gcc-%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F.png)
+
+3. 重新打开一个CMD窗口，输入`gcc --version`，没有报错则安装成功。
+
 #### LD_LIBRARY_PATH
 
 为了正确使用go驱动，需要安装YashanDB C驱动客户端并设置环境变量。
@@ -29,7 +41,8 @@ go env -w GOPRIVATE=git.yasdb.com
 2. 下载并解压到本地路径，如D:\yashandb\yashandb-client。
 3. 设置环境变量PATH，指向该文件路径下的lib文件夹，如D:\yashandb\yashandb-client\lib。
 
-![Alt text](/images/添加环境变量.png)
+![c驱动添加环境变量](/images/c驱动-环境变量.png)
+
 
 
 ### 创建项目
