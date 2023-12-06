@@ -92,6 +92,7 @@ typedef enum EnYapiType {
     YAPI_TYPE_ROWID = 32,
     YAPI_TYPE_NCLOB = 33,
     YAPI_TYPE_CURSOR = 34,
+    YAPI_TYPE_NUMBER_FLOAT = 40,
     __YAPI_TYPES_COUNT__
 } YapiType;
 
