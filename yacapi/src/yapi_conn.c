@@ -51,7 +51,7 @@ YapiResult yapiCancel(YapiConnect* hConn)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return YAPI_ERROR;
+    return yapiCliCancel(hConn->connHandler, &error);
 }
 
 YapiResult yapiCommit(YapiConnect* hConn)
