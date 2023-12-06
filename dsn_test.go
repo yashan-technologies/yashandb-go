@@ -31,6 +31,8 @@ func TestParseDsn(t *testing.T) {
 		{`sys/yasdb_123@[::1]:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[::1]:1688", IsAutoCommit: true, DataPath: ""}},
 		{`sys/yasdb_123@[fe80::8535:da9e:9517:1775]:7000?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[fe80::8535:da9e:9517:1775]:7000", IsAutoCommit: true, DataPath: ""}},
 		{`sys/yasdb_123@[fe80::d5a0:6043:483c:4bfd%ens192]:1688?autocommit=true`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "[fe80::d5a0:6043:483c:4bfd%ens192]:1688", IsAutoCommit: true, DataPath: ""}},
+		{"sys/Cod-2022@primary:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304", &DataSourceName{User: "sys", Password: "Cod-2022", Url: "primary:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304"}},
+		{"sys/Cod-2022@192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304", &DataSourceName{User: "sys", Password: "Cod-2022", Url: "192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304"}},
 	}
 
 	for index, dt := range dsnTests {

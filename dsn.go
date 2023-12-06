@@ -62,9 +62,6 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
 func parseDSN(dsnStr string) (*DataSourceName, error) {
 	dsnStr = replaceSpecialChars(dsnStr)
 	dsnReg, _ := regexp.Compile(dsnRegExpr)
-	ipv4UrlReg, _ := regexp.Compile(ipv4UrlRegExpr)
-	ipv6UrlReg, _ := regexp.Compile(ipv6UrlRegExpr)
-	mappedUrlReg, _ := regexp.Compile(mappedUrlRegExpr)
 
 	if !dsnReg.MatchString(dsnStr) {
 		return nil, ErrDsnNoStandard(dsnStr)
@@ -76,9 +73,11 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 		Url:      matchStrs[3],
 		DataPath: "",
 	}
-	if !ipv4UrlReg.MatchString(dsn.Url) && !ipv6UrlReg.MatchString(dsn.Url) && !mappedUrlReg.MatchString(dsn.Url) {
-		return nil, ErrDsnNoStandard(dsnStr)
+
+	if err := checkUrl(dsn.Url); err != nil {
+		return nil, err
 	}
+
 	parseArgs(dsn, matchStrs[4])
 	return dsn, nil
 }
@@ -136,4 +135,21 @@ func recoverySpecialChars(str string) string {
 		str = strings.ReplaceAll(str, v, k)
 	}
 	return str
+}
+
+func checkUrl(url string) error {
+	ipv4UrlReg, _ := regexp.Compile(ipv4UrlRegExpr)
+	ipv6UrlReg, _ := regexp.Compile(ipv6UrlRegExpr)
+	mappedUrlReg, _ := regexp.Compile(mappedUrlRegExpr)
+	primaryStr := "primary:"
+	strs := strings.Split(strings.ToLower(url), ",")
+	for i, str := range strs {
+		if i == 0 && strings.HasPrefix(str, primaryStr) {
+			str = strings.TrimPrefix(str, primaryStr)
+		}
+		if !ipv4UrlReg.MatchString(str) && !ipv6UrlReg.MatchString(str) && !mappedUrlReg.MatchString(str) {
+			return ErrDsnNoStandard(str)
+		}
+	}
+	return nil
 }
