@@ -291,7 +291,7 @@ func (conn *YasConn) ResetSession(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	stmt, err := conn.PrepareContext(ctx, "select * from v$instance")
+	stmt, err := conn.PrepareContext(ctx, "select 1 from dual")
 	if err != nil {
 		return conn.handleRestSessionErr(err)
 	}
@@ -308,5 +308,3 @@ func (conn *YasConn) handleRestSessionErr(err error) error {
 	}
 	return nil
 }
-
-
