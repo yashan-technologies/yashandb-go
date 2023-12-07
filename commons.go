@@ -19,6 +19,7 @@ package yasdb
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"database/sql"
 	"strings"
@@ -178,6 +179,17 @@ func isKeySql(query string) bool {
 		if strings.HasPrefix(sqlStr, v) {
 			return true
 		}
+	}
+	return false
+}
+
+func isDisconnetionErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	if strings.Contains(errStr, "YAS-08012") || strings.Contains(errStr, "YAS-00406") {
+		return true
 	}
 	return false
 }

@@ -17,6 +17,7 @@ package yasdb
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"context"
 	"database/sql/driver"
@@ -201,7 +202,7 @@ func (conn *YasConn) lobWrite(yacType C.YapiType, data []byte) (*unsafe.Pointer,
 }
 
 func (conn *YasConn) yacLobDescAlloc(yacType C.YapiType) (*unsafe.Pointer, error) {
-	var desc = new(unsafe.Pointer)
+	desc := new(unsafe.Pointer)
 	if err := checkYasError(C.yapiLobDescAlloc(conn.Conn, yacType, desc)); err != nil {
 		return nil, err
 	}
@@ -285,3 +286,27 @@ func (conn *YasConn) handleYacCancel(ctx context.Context, done <-chan struct{}) 
 func (conn *YasConn) yacCancel() error {
 	return checkYasError(C.yapiCancel(conn.Conn))
 }
+
+func (conn *YasConn) ResetSession(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	stmt, err := conn.PrepareContext(ctx, "select * from v$instance")
+	if err != nil {
+		return conn.handleRestSessionErr(err)
+	}
+	defer stmt.Close()
+	return nil
+}
+
+func (conn *YasConn) handleRestSessionErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	if isDisconnetionErr(err) {
+		return driver.ErrBadConn
+	}
+	return nil
+}
+
+
