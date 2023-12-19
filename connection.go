@@ -21,6 +21,7 @@ import "C"
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"unsafe"
 )
 
@@ -92,7 +93,17 @@ func (conn *YasConn) Close() error {
 		return nil
 	}
 	conn.closed = true
-	return conn.yapiReleaseConn()
+
+	connErr := releaseConn(conn.Conn)
+	envErr := releaseEnv(conn.Env)
+	if envErr != nil && connErr != nil {
+		return fmt.Errorf("release env err: %s ; release conn err: %s", envErr, connErr)
+	} else if envErr != nil {
+		return envErr
+	} else if connErr != nil {
+		return connErr
+	}
+	return nil
 }
 
 func (conn *YasConn) Ping(ctx context.Context) error {
@@ -262,13 +273,6 @@ func (conn *YasConn) lobFree(yacType C.YapiType, lobLocator *C.YapiLobLocator) {
 	}
 	C.yapiLobFreeTemporary(conn.Conn, lobLocator)
 	C.yapiLobDescFree(unsafe.Pointer(lobLocator), yacType)
-}
-
-func (conn *YasConn) yapiReleaseConn() error {
-	if err := checkYasError(C.yapiReleaseConn(conn.Conn)); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (conn *YasConn) handleYacCancel(ctx context.Context, done <-chan struct{}) {
