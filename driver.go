@@ -48,6 +48,7 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
 
 		dpLen := intToYacInt32(len(dsn.DataPath))
 		if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen)); err != nil {
+			_ = releaseEnv(env)
 			return nil, err
 		}
 	}
@@ -63,6 +64,7 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
 	userLen := intToYacInt16(len(dsn.User))
 	pwLen := intToYacInt16(len(dsn.Password))
 	if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
+		_ = releaseEnv(env)
 		return nil, err
 	}
 	yasConn := &YasConn{
@@ -71,6 +73,8 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
 		autoCommit: dsn.IsAutoCommit,
 	}
 	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
+		_ = releaseConn(conn)
+		_ = releaseEnv(env)
 		return nil, err
 	}
 	return yasConn, nil
