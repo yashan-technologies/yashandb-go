@@ -45,7 +45,10 @@ YapiResult yapiReleaseConn(YapiConnect* hConn)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler, &error);
+    YAPI_CALL(yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler, &error));
+    yapiFreeMem(hConn);
+
+    return YAPI_SUCCESS;
 }
 
 YapiResult yapiCancel(YapiConnect* hConn)
