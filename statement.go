@@ -16,6 +16,7 @@ package yasdb
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"context"
 	"database/sql"
@@ -32,7 +33,7 @@ type YasStmt struct {
 	closed  bool
 	SqlType uint32
 	ctx     context.Context
-	binds   []bindStruct
+	binds   []*bindStruct
 	sync.Mutex
 }
 
@@ -177,9 +178,13 @@ func (stmt *YasStmt) yacExecute() error {
 }
 
 func (stmt *YasStmt) yapiReleaseStmt() error {
+	if stmt.Stmt == nil {
+		return nil
+	}
 	if err := checkYasError(C.yapiReleaseStmt(stmt.Stmt)); err != nil {
 		return err
 	}
+	stmt.Stmt = nil
 	return nil
 }
 
@@ -210,31 +215,41 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(32))
 	row := NewYasRow(size, yacType)
 	bufLen := int32(size)
+	freeType := notFree
+
 	switch yacType {
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
 		bufLen = int32(sizeToAlign4(size)) + 1
 		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
 	case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
 		yacType = C.YAPI_TYPE_VARCHAR
 		bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
 		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
 		bufLen = 12
 		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
 	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
-		var desc = new(unsafe.Pointer)
+		desc := new(unsafe.Pointer)
 		if err := checkYasError(C.yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc)); err != nil {
 			return nil, err
 		}
 		bufLen = -1
 		row.Data = unsafe.Pointer(desc)
+		freeType = lobFree
 	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE:
 		row.Data = mallocBytes(size)
+		freeType = normalFree
 	default:
 		yacType = C.YAPI_TYPE_VARCHAR
 		bufLen = int32(sizeToAlign4(size)) + 1
 		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
 	}
+	row.Indicator = indicator
+	row.freeType = freeType
 	if err := checkYasError(
 		C.yapiBindColumn(
 			stmt.Stmt,
@@ -245,10 +260,10 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 			indicator,
 		),
 	); err != nil {
+		freeFetchRow(row)
 		return nil, err
 	}
 	row.name = C.GoString(item.name)
-	row.Indicator = indicator
 	return row, nil
 }
 
@@ -272,12 +287,12 @@ func (stmt *YasStmt) bindValues(args []driver.NamedValue) error {
 	if len(args) == 0 {
 		return nil
 	}
-	stmt.binds = make([]bindStruct, 0, len(args))
+	stmt.binds = make([]*bindStruct, 0, len(args))
 	var err error
 	for index, narg := range args {
 		arg := narg.Value
 		sqlOut, isOut := arg.(sql.Out)
-		bind := bindStruct{}
+		bind := &bindStruct{}
 
 		if isOut {
 			bind, err = stmt.getOutputBindValue(sqlOut)
@@ -303,7 +318,7 @@ func (stmt *YasStmt) bindValues(args []driver.NamedValue) error {
 	return nil
 }
 
-func (stmt *YasStmt) yacBindParameter(b bindStruct, pos C.uint16_t) error {
+func (stmt *YasStmt) yacBindParameter(b *bindStruct, pos C.uint16_t) error {
 	if err := checkYasError(
 		C.yapiBindParameter(
 			stmt.Stmt,
@@ -321,11 +336,13 @@ func (stmt *YasStmt) yacBindParameter(b bindStruct, pos C.uint16_t) error {
 	return nil
 }
 
-func (stmt *YasStmt) yacBindParameterByName(b bindStruct, name string) error {
+func (stmt *YasStmt) yacBindParameterByName(b *bindStruct, name string) error {
+	charName := stringToYasChar(name)
+	defer C.free(unsafe.Pointer(charName))
 	if err := checkYasError(
 		C.yapiBindParameterByName(
 			stmt.Stmt,
-			stringToYasChar(name),
+			charName,
 			b.direction,
 			b.yacType,
 			b.value,
@@ -339,20 +356,22 @@ func (stmt *YasStmt) yacBindParameterByName(b bindStruct, name string) error {
 	return nil
 }
 
-func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
-	bind := bindStruct{}
+func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
+	bind := &bindStruct{}
 	var (
 		yacType   C.YapiType
 		bindSize  C.int32_t
 		value     C.YapiPointer
 		indicator *C.int32_t
 		bufLength C.int32_t
+		freeType  valueFreeType
 	)
 
 	bindSize = C.int32_t(unsafe.Sizeof(arg)) + 1
 	bufLength = C.int32_t(bindSize - 1)
 	indicator = new(C.int32_t)
 	*indicator = C.int32_t(bindSize - 1)
+	freeType = notFree
 
 	switch v := arg.(type) {
 	case int64:
@@ -370,16 +389,18 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
 		bufLength = C.int32_t(bindSize - 1)
 		indicator = nil
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
+		freeType = normalFree
 	case []byte:
 		desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
 		if err != nil {
-			return bind, err
+			return nil, err
 		}
 		yacType = C.YAPI_TYPE_BLOB
 		bindSize = -1
 		bufLength = -1
 		indicator = nil
 		value = C.YapiPointer(desc)
+		freeType = lobFree
 	case time.Time:
 		yacType = C.YAPI_TYPE_TIMESTAMP
 		t := v.UnixNano() / 1e3
@@ -390,7 +411,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
 		*indicator = C.YAPI_NULL_DATA
 		value = C.YapiPointer(unsafe.Pointer(&v))
 	default:
-		return bind, ErrUnknowType(arg)
+		return nil, ErrUnknowType(arg)
 	}
 
 	bind.yacType = yacType
@@ -399,10 +420,11 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (bindStruct, error) {
 	bind.bufLength = bufLength
 	bind.indicator = indicator
 	bind.direction = C.YAPI_PARAM_INPUT
+	bind.freeType = freeType
 	return bind, nil
 }
 
-func (stmt *YasStmt) getOutputBindValue(sqlOut sql.Out) (bindStruct, error) {
+func (stmt *YasStmt) getOutputBindValue(sqlOut sql.Out) (*bindStruct, error) {
 	if obi, ok := sqlOut.Dest.(*outputBindInfo); ok {
 		return stmt.getOutputBindValueByInfo(obi)
 	} else {
@@ -410,8 +432,8 @@ func (stmt *YasStmt) getOutputBindValue(sqlOut sql.Out) (bindStruct, error) {
 	}
 }
 
-func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, error) {
-	bind := bindStruct{}
+func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (*bindStruct, error) {
+	bind := &bindStruct{}
 	var (
 		yacType   C.YapiType
 		bindSize  C.int32_t
@@ -420,6 +442,8 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
 		bufLength C.int32_t
 		arg       driver.Value
 		err       error
+
+		freeType = notFree
 	)
 
 	arg, err = driver.DefaultParameterConverter.ConvertValue(dest)
@@ -462,6 +486,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
 		bindSize = _OutputBindSize
 		bufLength = C.int32_t(bindSize - 1)
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
+		freeType = normalFree
 	case []byte:
 		desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
 		if err != nil {
@@ -472,6 +497,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
 		bufLength = -1
 		indicator = nil
 		value = C.YapiPointer(desc)
+		freeType = lobFree
 	case time.Time:
 		yacType = C.YAPI_TYPE_TIMESTAMP
 		t := int64(0)
@@ -491,17 +517,20 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (bindStruct, err
 	bind.bufLength = bufLength
 	bind.indicator = indicator
 	bind.direction = C.YAPI_PARAM_OUTPUT
+	bind.freeType = freeType
 	return bind, nil
 }
 
-func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, error) {
-	bind := bindStruct{}
+func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct, error) {
+	bind := &bindStruct{}
 	var (
 		yacType   C.YapiType = obi.yacType
 		bindSize  C.int32_t
 		value     C.YapiPointer
 		indicator *C.int32_t
 		bufLength C.int32_t
+
+		freeType = notFree
 	)
 
 	if obi.bindSize == 0 {
@@ -527,6 +556,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
 		bufLength = -1
 		indicator = nil
 		value = C.YapiPointer(desc)
+		freeType = lobFree
 	case C.YAPI_TYPE_CLOB:
 		v, err := obi.getClobBindDest()
 		if err != nil {
@@ -540,6 +570,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
 		bufLength = -1
 		indicator = nil
 		value = C.YapiPointer(desc)
+		freeType = lobFree
 	case C.YAPI_TYPE_CHAR:
 		v, err := obi.getCharBindDest()
 		if err != nil {
@@ -547,6 +578,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
 		}
 		bufLength = C.int32_t(bindSize - 1)
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
+		freeType = normalFree
 	case C.YAPI_TYPE_VARCHAR:
 		v, err := obi.getCharBindDest()
 		if err != nil {
@@ -554,6 +586,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
 		}
 		bufLength = C.int32_t(bindSize - 1)
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
+		freeType = normalFree
 	default:
 		return bind, ErrUnknowType(yacType)
 	}
@@ -564,6 +597,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (bindStruct, 
 	bind.bufLength = bufLength
 	bind.indicator = indicator
 	bind.direction = C.YAPI_PARAM_OUTPUT
+	bind.freeType = freeType
 	return bind, nil
 }
 
@@ -646,17 +680,17 @@ func (stmt *YasStmt) getBindValueDest() error {
 func (stmt *YasStmt) freeBindValues() {
 	for _, bind := range stmt.binds {
 		if bind.value != nil {
-			switch bind.yacType {
-			case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_CLOB:
+			switch bind.freeType {
+			case lobFree:
 				lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
 				stmt.Conn.lobFree(bind.yacType, *lobLocator)
-			case C.YAPI_TYPE_VARCHAR:
+			case normalFree:
 				C.free(unsafe.Pointer(bind.value))
 			}
 			bind.value = nil
 		}
 	}
-	stmt.binds = []bindStruct{}
+	stmt.binds = []*bindStruct{}
 }
 
 type outputBindInfo struct {

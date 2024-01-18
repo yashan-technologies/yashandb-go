@@ -32,8 +32,12 @@ const (
 	_OutputBindSize = 8192
 )
 
+type valueFreeType int8
+
 var (
 	mutex = &sync.Mutex{}
+
+	yapiErr C.YapiErrorInfo
 
 	byteBufferPool = sync.Pool{
 		New: func() interface{} {
@@ -57,6 +61,10 @@ var (
 		"begin",
 		"declare",
 	}
+
+	notFree    valueFreeType = 0
+	normalFree valueFreeType = 1
+	lobFree    valueFreeType = 2
 )
 
 type bindStruct struct {
@@ -67,6 +75,7 @@ type bindStruct struct {
 	bufLength C.int32_t
 	indicator *C.int32_t
 	out       sql.Out
+	freeType  valueFreeType
 }
 
 func stringToYasChar(str string) *C.char {
@@ -131,20 +140,27 @@ func freeFetchRows(rows []*yasRow) {
 		if rows[i] == nil {
 			continue
 		}
-		switch rows[i].yacType {
-		case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
-			lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(rows[i].Data))
-			C.yapiLobDescFree(unsafe.Pointer(*lobLocator), rows[i].yacType)
-		default:
-			C.free(rows[i].Data)
-		}
-
-		if rows[i].Indicator != nil {
-			C.free(unsafe.Pointer(rows[i].Indicator))
-		}
-		rows[i].Data = nil
-		rows[i].Indicator = nil
+		freeFetchRow(rows[i])
 	}
+}
+
+func freeFetchRow(row *yasRow) {
+	if row == nil {
+		return
+	}
+	switch row.freeType {
+	case lobFree:
+		lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(row.Data))
+		C.yapiLobDescFree(unsafe.Pointer(*lobLocator), row.yacType)
+	case normalFree:
+		C.free(row.Data)
+	}
+
+	if row.Indicator != nil {
+		C.free(unsafe.Pointer(row.Indicator))
+	}
+	row.Data = nil
+	row.Indicator = nil
 }
 
 func checkYasError(ret C.YapiResult) error {
@@ -152,15 +168,22 @@ func checkYasError(ret C.YapiResult) error {
 		return nil
 	}
 	mutex.Lock()
-	defer mutex.Unlock()
-	var yapErr C.YapiErrorInfo
-	C.yapiGetLastError(&yapErr)
+	defer func() {
+		yapiErr.errCode = 0
+		yapiErr.pos.line = 0
+		yapiErr.pos.column = 0
+		yapiErr.message = nil
+		yapiErr.sqlState = nil
+		mutex.Unlock()
+	}()
+
+	C.yapiGetLastError(&yapiErr)
 	err := &YasDBError{
-		Code:     int(yapErr.errCode),
-		Msg:      C.GoString(yapErr.message),
-		SqlState: C.GoString(yapErr.sqlState),
-		Line:     int(yapErr.pos.line),
-		Column:   int(yapErr.pos.column),
+		Code:     int(yapiErr.errCode),
+		Msg:      C.GoString(yapiErr.message),
+		SqlState: C.GoString(yapiErr.sqlState),
+		Line:     int(yapiErr.pos.line),
+		Column:   int(yapiErr.pos.column),
 	}
 	return err
 }
