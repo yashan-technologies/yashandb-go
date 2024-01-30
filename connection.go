@@ -204,9 +204,12 @@ func (conn *YasConn) lobWrite(yacType C.YapiType, data []byte) (*unsafe.Pointer,
 	}
 	lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(desc))
 	if err := conn.yacLobCreateTemporary(*lobLocator); err != nil {
+		C.yapiLobDescFree(unsafe.Pointer(*lobLocator), yacType)
 		return nil, err
 	}
 	if err := conn.yacLobWrite(*lobLocator, data); err != nil {
+		C.yapiLobFreeTemporary(conn.Conn, *lobLocator)
+		C.yapiLobDescFree(unsafe.Pointer(*lobLocator), yacType)
 		return nil, err
 	}
 	return desc, nil

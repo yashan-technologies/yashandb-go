@@ -16,6 +16,7 @@ package yasdb
 #include <stdlib.h>
 */
 import "C"
+
 import (
 	"database/sql/driver"
 	"io"
@@ -35,6 +36,7 @@ type yasRow struct {
 	Indicator  *C.int32_t
 	yacType    C.YapiType
 	name       string
+	freeType   valueFreeType
 }
 
 func NewYasRow(size uint32, yacType C.YapiType) *yasRow {
