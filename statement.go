@@ -239,7 +239,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		bufLen = -1
 		row.Data = unsafe.Pointer(desc)
 		freeType = lobFree
-	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE:
+	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BINARY:
 		row.Data = mallocBytes(size)
 		freeType = normalFree
 	default:
