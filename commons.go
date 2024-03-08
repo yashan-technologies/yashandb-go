@@ -22,6 +22,7 @@ import "C"
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"strings"
 	"sync"
 	"unsafe"
@@ -100,6 +101,10 @@ func intToYacInt32(n int) C.int32_t {
 
 func intToYacUint32(n int) C.uint32_t {
 	return C.uint32_t(n)
+}
+
+func intToYacInt(n int) C.int {
+	return C.int(n)
 }
 
 func yacPointerToInt64(p C.YapiPointer) int64 {
@@ -237,4 +242,26 @@ func releaseEnv(env *C.YapiEnv) error {
 	}
 	env = nil
 	return nil
+}
+
+func ConvertToNameValue(args ...any) ([]driver.NamedValue, error) {
+	nargs := make([]driver.NamedValue, len(args))
+	for i, arg := range args {
+		var (
+			nargValue driver.Value
+			err       error
+		)
+		outValue, isOut := arg.(sql.Out)
+		if isOut {
+			nargValue = outValue
+		} else {
+			nargValue, err = driver.DefaultParameterConverter.ConvertValue(arg)
+			if err != nil {
+				return nil, err
+			}
+		}
+		nargs[i].Ordinal = i + 1
+		nargs[i].Value = nargValue
+	}
+	return nargs, nil
 }

@@ -26,18 +26,15 @@ type YasdbDriver struct{}
 
 // Open returns a new connection to the database.
 func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
+	return GenYasconn(dsnStr)
+}
+
+func GenYasconn(dsnStr string) (*YasConn, error) {
 	dsn, err := ParseDSN(dsnStr)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := yasDriver.getYasConn(dsn)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
 
-func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
 	var env *C.YapiEnv
 	if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
 		return nil, err

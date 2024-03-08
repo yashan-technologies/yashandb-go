@@ -33,48 +33,11 @@ type YasConn struct {
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
-	return conn.PrepareContext(context.Background(), query)
+	return PrepareContext(conn, context.Background(), query)
 }
 
 func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
-	var stmt *C.YapiStmt
-	queryP := C.CString(tryRmSqlSemicolon(query))
-	defer C.free(unsafe.Pointer(queryP))
-	sqlLength := C.int32_t(len(query))
-	if err := checkYasError(
-		C.yapiPrepare(
-			conn.Conn,
-			queryP,
-			sqlLength,
-			&stmt,
-		)); err != nil {
-		return nil, err
-	}
-
-	var sqltype C.uint32_t
-	sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
-	if err := checkYasError(
-		C.yapiGetStmtAttr(
-			stmt,
-			C.YAPI_ATTR_SQLTYPE,
-			unsafe.Pointer(&sqltype),
-			sqlSize,
-			&sqlLength,
-		)); err != nil {
-		return nil, err
-	}
-
-	yasStmt := &YasStmt{
-		Conn:    conn,
-		Stmt:    stmt,
-		SqlType: (uint32)(sqltype),
-	}
-
-	return yasStmt, nil
+	return PrepareContext(conn, ctx, query)
 }
 
 func (conn *YasConn) Begin() (driver.Tx, error) {
@@ -314,4 +277,46 @@ func (conn *YasConn) handleRestSessionErr(err error) error {
 		return driver.ErrBadConn
 	}
 	return nil
+}
+
+func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	var stmt *C.YapiStmt
+	nQuery := tryRmSqlSemicolon(query)
+	queryP := C.CString(nQuery)
+	defer C.free(unsafe.Pointer(queryP))
+	sqlLength := C.int32_t(len(nQuery))
+	if err := checkYasError(
+		C.yapiPrepare(
+			conn.Conn,
+			queryP,
+			sqlLength,
+			&stmt,
+		)); err != nil {
+		return nil, err
+	}
+
+	var sqltype C.uint32_t
+	sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
+	if err := checkYasError(
+		C.yapiGetStmtAttr(
+			stmt,
+			C.YAPI_ATTR_SQLTYPE,
+			unsafe.Pointer(&sqltype),
+			sqlSize,
+			&sqlLength,
+		)); err != nil {
+		return nil, err
+	}
+
+	yasStmt := &YasStmt{
+		Conn:    conn,
+		Stmt:    stmt,
+		SqlType: (uint32)(sqltype),
+	}
+
+	return yasStmt, nil
 }
