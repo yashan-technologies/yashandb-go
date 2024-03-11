@@ -423,6 +423,23 @@ YapiResult yapiLobWrite(YapiConnect* hConn, YapiLobLocator* loc, uint64_t* bytes
 YapiResult yapiLobCreateTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 
+//-----------------------------------------------------------------------------
+// plsql debug Function
+//-----------------------------------------------------------------------------
+YapiResult yapiPdbgStart(YapiStmt* hStmt, char* procName, uint32_t procNameLen);
+YapiResult yapiPdbgAbort(YapiStmt* hStmt);
+YapiResult yapiPdbgContinue(YapiStmt* hStmt);
+YapiResult yapiPdbgStepInto(YapiStmt* hStmt);
+YapiResult yapiPdbgStepOut(YapiStmt* hStmt);
+YapiResult yapiPdbgStepNext(YapiStmt* hStmt);
+YapiResult yapiPdbgShowSource(YapiStmt* hStmt);
+YapiResult yapiPdbgDeleteAllBreakpoints(YapiStmt* hStmt);
+YapiResult yapiPdbgAddBreakpoint(YapiStmt* hStmt, int lineNum, uint32_t* bpID);
+YapiResult yapiPdbgDeleteBreakpoint(YapiStmt* hStmt, uint32_t bpID);
+YapiResult yapiPdbgShowBreakpoints(YapiStmt* hStmt);
+YapiResult yapiPdbgShowFrameVariables(YapiStmt* hStmt);
+YapiResult yapiPdbgShowFrames(YapiStmt* hStmt);
+
 #ifdef __cplusplus
 }
 #endif

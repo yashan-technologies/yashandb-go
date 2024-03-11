@@ -23,7 +23,7 @@
     }
 
 #define YAPI_CHECK_CLI_RETURN() \
-    if (ret != YAPI_SUCCESS) {   \
+    if (ret != YAPI_SUCCESS) {  \
         yapiGetCliError(error); \
     }                           \
     return ret;
@@ -57,7 +57,8 @@ static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error, char* e
     // convert to UTF-8 encoding
     if (length > 0) {
         strcpy_s(error->buf->message, T2S_BUFFER_SIZE, errMsgPrefix);
-        length = WideCharToMultiByte(CP_UTF8, 0, errBuf, -1, error->buf->message + strlen(errMsgPrefix), T2S_BUFFER_SIZE, NULL, NULL);
+        length = WideCharToMultiByte(CP_UTF8, 0, errBuf, -1, error->buf->message + strlen(errMsgPrefix),
+                                     T2S_BUFFER_SIZE, NULL, NULL);
     }
     LocalFree(errBuf);
     return YAPI_SUCCESS;
@@ -163,8 +164,8 @@ YapiResult yapiCliGetVersion(char** version, YapiErrorMsg* error)
 
 YapiResult yapiCliGetLastError(YapiErrorMsg* error)
 {
-    char *msg;
-    char *stat;
+    char* msg;
+    char* stat;
     YAPI_LOAD_SYMBOL("yacGetLastError", yapiSymbols.fnGetLastError)
     (*yapiSymbols.fnGetLastError)(&error->buf->code, &msg, &stat, &error->buf->pos);
     strcpy(error->buf->message, msg);
@@ -172,8 +173,7 @@ YapiResult yapiCliGetLastError(YapiErrorMsg* error)
     return YAPI_SUCCESS;
 }
 
-YapiResult yapiCliSetEnvAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t length,
-                             YapiErrorMsg* error)
+YapiResult yapiCliSetEnvAttr(YapiEnv* hEnv, YapiEnvAttr attr, void* value, int32_t length, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -221,7 +221,7 @@ YapiResult yapiCliSetConnAttr(YacHandle hConn, YapiConnAttr attr, void* value, i
 YapiResult yapiCliGetConnAttr(YacHandle hConn, YapiConnAttr attr, void* value, int32_t bufLength, int32_t* stringLength,
                               YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacGetConnAttr", yapiSymbols.fnGetConnAttr)
     ret = (*yapiSymbols.fnGetConnAttr)(hConn, attr, value, bufLength, stringLength);
@@ -230,7 +230,7 @@ YapiResult yapiCliGetConnAttr(YacHandle hConn, YapiConnAttr attr, void* value, i
 
 YapiResult yapiCliCommit(YacHandle hConn, YapiErrorMsg* error)
 {
-       YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacCommit", yapiSymbols.fnCommit)
     ret = (*yapiSymbols.fnCommit)(hConn);
@@ -239,7 +239,7 @@ YapiResult yapiCliCommit(YacHandle hConn, YapiErrorMsg* error)
 
 YapiResult yapiCliRollback(YacHandle hConn, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacRollback", yapiSymbols.fnRollback)
     ret = (*yapiSymbols.fnRollback)(hConn);
@@ -248,7 +248,7 @@ YapiResult yapiCliRollback(YacHandle hConn, YapiErrorMsg* error)
 
 YapiResult yapiCliCancel(YacHandle hConn, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacCancel", yapiSymbols.fnCancel)
     ret = (*yapiSymbols.fnCancel)(hConn);
@@ -257,7 +257,7 @@ YapiResult yapiCliCancel(YacHandle hConn, YapiErrorMsg* error)
 
 YapiResult yapiCliDirectExecute(YacHandle hStmt, const char* sql, int32_t sqlLength, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacDirectExecute", yapiSymbols.fnDirectExecute)
     ret = (*yapiSymbols.fnDirectExecute)(hStmt, sql, sqlLength);
@@ -266,7 +266,7 @@ YapiResult yapiCliDirectExecute(YacHandle hStmt, const char* sql, int32_t sqlLen
 
 YapiResult yapiCliPrepare(YacHandle hStmt, const char* sql, int32_t sqlLength, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacPrepare", yapiSymbols.fnPrepare)
     ret = (*yapiSymbols.fnPrepare)(hStmt, sql, sqlLength);
@@ -275,7 +275,7 @@ YapiResult yapiCliPrepare(YacHandle hStmt, const char* sql, int32_t sqlLength, Y
 
 YapiResult yapiCliExecute(YacHandle hStmt, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacExecute", yapiSymbols.fnExecute)
     ret = (*yapiSymbols.fnExecute)(hStmt);
@@ -284,16 +284,17 @@ YapiResult yapiCliExecute(YacHandle hStmt, YapiErrorMsg* error)
 
 YapiResult yapiCliSetStmtAttr(YacHandle hStmt, YapiStmtAttr attr, void* value, int32_t length, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacSetStmtAttr", yapiSymbols.fnSetStmtAttr)
     ret = (*yapiSymbols.fnSetStmtAttr)(hStmt, attr, value, length);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCliGetStmtAttr(YacHandle hStmt, YapiStmtAttr attr, void* value, int32_t bufLength, int32_t* stringLength, YapiErrorMsg* error)
+YapiResult yapiCliGetStmtAttr(YacHandle hStmt, YapiStmtAttr attr, void* value, int32_t bufLength, int32_t* stringLength,
+                              YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacGetStmtAttr", yapiSymbols.fnGetStmtAttr)
     ret = (*yapiSymbols.fnGetStmtAttr)(hStmt, attr, value, bufLength, stringLength);
@@ -302,7 +303,7 @@ YapiResult yapiCliGetStmtAttr(YacHandle hStmt, YapiStmtAttr attr, void* value, i
 
 YapiResult yapiCliFetch(YacHandle hStmt, uint32_t* rows, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacFetch", yapiSymbols.fnFetch)
     ret = (*yapiSymbols.fnFetch)(hStmt, rows);
@@ -311,7 +312,7 @@ YapiResult yapiCliFetch(YacHandle hStmt, uint32_t* rows, YapiErrorMsg* error)
 
 YapiResult yapiCliDescribeCol2(YacHandle hStmt, uint16_t id, YapiColumnDesc* desc, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacDescribeCol2", yapiSymbols.fnDescribeCol2)
     ret = (*yapiSymbols.fnDescribeCol2)(hStmt, id, desc);
@@ -321,7 +322,7 @@ YapiResult yapiCliDescribeCol2(YacHandle hStmt, uint16_t id, YapiColumnDesc* des
 YapiResult yapiCliBindColumn(YacHandle hStmt, uint16_t id, YapiType type, YapiPointer value, int32_t bufLen,
                              int32_t* indicator, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacBindColumn", yapiSymbols.fnBindColumn)
     ret = (*yapiSymbols.fnBindColumn)(hStmt, id, type, value, bufLen, indicator);
@@ -329,9 +330,10 @@ YapiResult yapiCliBindColumn(YacHandle hStmt, uint16_t id, YapiType type, YapiPo
 }
 
 YapiResult yapiCliBindParameter(YacHandle hStmt, uint16_t id, YapiParamDirection direction, YapiType bindType,
-                                YapiPointer value, int32_t bindSize, int32_t bufLength, int32_t* indicator, YapiErrorMsg* error)
+                                YapiPointer value, int32_t bindSize, int32_t bufLength, int32_t* indicator,
+                                YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacBindParameter", yapiSymbols.fnBindParameter)
     ret = (*yapiSymbols.fnBindParameter)(hStmt, id, direction, bindType, value, bindSize, bufLength, indicator);
@@ -339,9 +341,10 @@ YapiResult yapiCliBindParameter(YacHandle hStmt, uint16_t id, YapiParamDirection
 }
 
 YapiResult yapiCliBindParameterByName(YacHandle hStmt, char* name, YapiParamDirection direction, YapiType bindType,
-                                      YapiPointer value, int32_t bindSize, int32_t bufLength, int32_t* indicator, YapiErrorMsg* error)
+                                      YapiPointer value, int32_t bindSize, int32_t bufLength, int32_t* indicator,
+                                      YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacBindParameterByName", yapiSymbols.fnBindParameterByName)
     ret = (*yapiSymbols.fnBindParameterByName)(hStmt, name, direction, bindType, value, bindSize, bufLength, indicator);
@@ -350,7 +353,7 @@ YapiResult yapiCliBindParameterByName(YacHandle hStmt, char* name, YapiParamDire
 
 YapiResult yapiCliNumResultCols(YacHandle hStmt, int16_t* count, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacNumResultCols", yapiSymbols.fnNumResultCols)
     ret = (*yapiSymbols.fnNumResultCols)(hStmt, count);
@@ -358,7 +361,7 @@ YapiResult yapiCliNumResultCols(YacHandle hStmt, int16_t* count, YapiErrorMsg* e
 }
 
 YapiResult yapiCliColAttribute(YacHandle hStmt, uint16_t id, YapiColAttr attr, void* value, int32_t bufLen,
-                              int32_t* stringLength, YapiErrorMsg* error)
+                               int32_t* stringLength, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -378,7 +381,7 @@ YapiResult yapiCliNumParams(YacHandle hStmt, int16_t* count, YapiErrorMsg* error
 
 YapiResult yapiCliGetDateStruct(YapiDate date, YapiDateStruct* ds, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacGetDateStruct", yapiSymbols.fnGetDateStruct)
     ret = (*yapiSymbols.fnGetDateStruct)(date, ds);
@@ -387,7 +390,7 @@ YapiResult yapiCliGetDateStruct(YapiDate date, YapiDateStruct* ds, YapiErrorMsg*
 
 YapiResult yapiCliLobDescAlloc(YacHandle* hConn, YapiType type, void** desc, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacLobDescAlloc", yapiSymbols.fnLobDescAlloc)
     ret = (*yapiSymbols.fnLobDescAlloc)(hConn, type, desc);
@@ -396,7 +399,7 @@ YapiResult yapiCliLobDescAlloc(YacHandle* hConn, YapiType type, void** desc, Yap
 
 YapiResult yapiCliLobDescFree(void* desc, YapiType type, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacLobDescFree", yapiSymbols.fnLobDescFree)
     ret = (*yapiSymbols.fnLobDescFree)(desc, type);
@@ -405,7 +408,7 @@ YapiResult yapiCliLobDescFree(void* desc, YapiType type, YapiErrorMsg* error)
 
 YapiResult yapiCliLobGetChunkSize(YacHandle* hConn, YapiLobLocator* locator, uint16_t* chunkSize, YapiErrorMsg* error)
 {
-    YapiResult    ret;
+    YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacLobGetChunkSize", yapiSymbols.fnLobGetChunkSize)
     ret = (*yapiSymbols.fnLobGetChunkSize)(hConn, locator, chunkSize);
@@ -469,7 +472,7 @@ YapiResult yapiCliDateGetDate(const YapiDate date, int16_t* year, uint8_t* month
 }
 
 YapiResult yapiCliShortTimeGetShortTime(const YapiShortTime time, uint8_t* hour, uint8_t* minute, uint8_t* second,
-                                       uint32_t* fraction, YapiErrorMsg* error)
+                                        uint32_t* fraction, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -479,8 +482,8 @@ YapiResult yapiCliShortTimeGetShortTime(const YapiShortTime time, uint8_t* hour,
 }
 
 YapiResult yapiCliTimestampGetTimestamp(const YapiTimestamp timestamp, int16_t* year, uint8_t* month, uint8_t* day,
-                                       uint8_t* hour, uint8_t* minute, uint8_t* second, uint32_t* fraction,
-                                       YapiErrorMsg* error)
+                                        uint8_t* hour, uint8_t* minute, uint8_t* second, uint32_t* fraction,
+                                        YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -490,7 +493,7 @@ YapiResult yapiCliTimestampGetTimestamp(const YapiTimestamp timestamp, int16_t* 
 }
 
 YapiResult yapiCliYMIntervalGetYearMonth(const YapiYMInterval ymInterval, int32_t* year, int32_t* month,
-                                        YapiErrorMsg* error)
+                                         YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -500,7 +503,7 @@ YapiResult yapiCliYMIntervalGetYearMonth(const YapiYMInterval ymInterval, int32_
 }
 
 YapiResult yapiCliDSIntervalGetDaySecond(const YapiDSInterval dsInterval, int32_t* day, int32_t* hour, int32_t* minute,
-                                        int32_t* second, int32_t* fraction, YapiErrorMsg* error)
+                                         int32_t* second, int32_t* fraction, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -519,7 +522,7 @@ YapiResult yapiCliDateSetDate(YapiDate* date, int16_t year, uint8_t month, uint8
 }
 
 YapiResult yapiCliShortTimeSetShortTime(YapiShortTime* time, uint8_t hour, uint8_t minute, uint8_t second,
-                                       uint32_t fraction, YapiErrorMsg* error)
+                                        uint32_t fraction, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -529,8 +532,8 @@ YapiResult yapiCliShortTimeSetShortTime(YapiShortTime* time, uint8_t hour, uint8
 }
 
 YapiResult yapiCliTimestampSetTimestamp(YapiTimestamp* timestamp, int16_t year, uint8_t month, uint8_t day,
-                                        uint8_t hour,
-                                       uint8_t minute, uint8_t second, uint32_t fraction, YapiErrorMsg* error)
+                                        uint8_t hour, uint8_t minute, uint8_t second, uint32_t fraction,
+                                        YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -549,7 +552,7 @@ YapiResult yapiCliYMIntervalSetYearMonth(YapiYMInterval* ymInterval, int32_t yea
 }
 
 YapiResult yapiCliDSIntervalSetDaySecond(YapiDSInterval* dsInterval, int32_t day, int32_t hour, int32_t minute,
-                                        int32_t second, int32_t fraction, YapiErrorMsg* error)
+                                         int32_t second, int32_t fraction, YapiErrorMsg* error)
 {
     YapiResult ret;
 
@@ -564,5 +567,122 @@ YapiResult yapiCliNumberRound(YapiNumber* n, int32_t precision, int32_t scale, Y
 
     YAPI_LOAD_SYMBOL("yacNumberRound", yapiSymbols.fnNumberRound)
     ret = (*yapiSymbols.fnNumberRound)(n, precision, scale);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgStart(YacHandle hStmt, char* procName, uint32_t procNameLen, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgStart", yapiSymbols.fnPdbgStart)
+    ret = (*yapiSymbols.fnPdbgStart)(hStmt, procName, procNameLen);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgAbort(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgAbort", yapiSymbols.fnPdbgAbort)
+    ret = (*yapiSymbols.fnPdbgAbort)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgContinue(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgContinue", yapiSymbols.fnPdbgContinue)
+    ret = (*yapiSymbols.fnPdbgContinue)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgStepInto(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgStepInto", yapiSymbols.fnPdbgStepInto)
+    ret = (*yapiSymbols.fnPdbgStepInto)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgStepOut(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgStepOut", yapiSymbols.fnPdbgStepOut)
+    ret = (*yapiSymbols.fnPdbgStepOut)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgStepNext(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgStepNext", yapiSymbols.fnPdbgStepNext)
+    ret = (*yapiSymbols.fnPdbgStepNext)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgShowSource(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgShowSource", yapiSymbols.fnPdbgShowSource)
+    ret = (*yapiSymbols.fnPdbgShowSource)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgDeleteAllBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgDeleteAllBreakpoints", yapiSymbols.fnPdbgDeleteAllBreakpoints)
+    ret = (*yapiSymbols.fnPdbgDeleteAllBreakpoints)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgAddBreakpoint(YacHandle hStmt, int lineNum, uint32_t* bpID, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgAddBreakpoint", yapiSymbols.fnPdbgAddBreakpoint)
+    ret = (*yapiSymbols.fnPdbgAddBreakpoint)(hStmt, lineNum, bpID);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgDeleteBreakpoint(YacHandle hStmt, uint32_t bpID, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgDeleteBreakpoint", yapiSymbols.fnPdbgDeleteAllBreakpoints)
+    ret = (*yapiSymbols.fnPdbgDeleteAllBreakpoints)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgShowBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgShowBreakpoints", yapiSymbols.fnPdbgShowBreakpoints)
+    ret = (*yapiSymbols.fnPdbgShowBreakpoints)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgShowFrameVariables(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgShowFrameVariables", yapiSymbols.fnPdbgShowFrameVariables)
+    ret = (*yapiSymbols.fnPdbgShowFrameVariables)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgShowFrames(YacHandle hStmt, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgShowSource", yapiSymbols.fnPdbgShowSource)
+    ret = (*yapiSymbols.fnPdbgShowSource)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
