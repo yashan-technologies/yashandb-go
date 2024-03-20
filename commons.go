@@ -265,3 +265,44 @@ func ConvertToNameValue(args ...any) ([]driver.NamedValue, error) {
 	}
 	return nargs, nil
 }
+
+func GetDatabaseTypeName(yapiType uint32) string {
+	switch C.YapiType(yapiType) {
+	case C.YAPI_TYPE_BOOL:
+		return "BOOLEAN"
+	case C.YAPI_TYPE_TINYINT:
+		return "TINYINT"
+	case C.YAPI_TYPE_SMALLINT:
+		return "SMALLINT"
+	case C.YAPI_TYPE_INTEGER:
+		return "INTEGER"
+	case C.YAPI_TYPE_BIGINT:
+		return "BIGINT"
+	case C.YAPI_TYPE_FLOAT:
+		return "FLOAT"
+	case C.YAPI_TYPE_DOUBLE:
+		return "DOUBLE"
+	case C.YAPI_TYPE_NUMBER:
+		return "NUMBER"
+	case C.YAPI_TYPE_DATE:
+		return "DATE"
+	case C.YAPI_TYPE_TIMESTAMP:
+		return "TIMESTAMP"
+	case C.YAPI_TYPE_CHAR:
+		return "CHAR"
+	case C.YAPI_TYPE_NCHAR:
+		return "NCHAR"
+	case C.YAPI_TYPE_VARCHAR:
+		return "VARCHAR"
+	case C.YAPI_TYPE_NVARCHAR:
+		return "NVARCHAR"
+	case C.YAPI_TYPE_CLOB:
+		return "CLOB"
+	case C.YAPI_TYPE_BLOB:
+		return "BLOB"
+	case C.YAPI_TYPE_BINARY:
+		return "RAW"
+	default:
+		return ""
+	}
+}

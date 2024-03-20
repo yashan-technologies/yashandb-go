@@ -679,18 +679,24 @@ func (stmt *YasStmt) getBindValueDest() error {
 
 func (stmt *YasStmt) freeBindValues() {
 	for _, bind := range stmt.binds {
-		if bind.value != nil {
-			switch bind.freeType {
-			case lobFree:
-				lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
-				stmt.Conn.lobFree(bind.yacType, *lobLocator)
-			case normalFree:
-				C.free(unsafe.Pointer(bind.value))
-			}
-			bind.value = nil
-		}
+		stmt.freeBIndValue(bind)
 	}
 	stmt.binds = []*bindStruct{}
+}
+
+func (stmt *YasStmt) freeBIndValue(bind *bindStruct) {
+	if bind.value == nil {
+		return
+	}
+	switch bind.freeType {
+	case lobFree:
+		lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
+		stmt.Conn.lobFree(bind.yacType, *lobLocator)
+	case normalFree:
+		C.free(unsafe.Pointer(bind.value))
+	}
+	bind.value = nil
+
 }
 
 type outputBindInfo struct {
