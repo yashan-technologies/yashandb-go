@@ -15,11 +15,20 @@ var (
                end;`
 
 	callPlSql_1 = `call procAdd(?,?,?)`
+
+	plsql_2 = `
+	CREATE OR REPLACE PROCEDURE LX_PROC(i INT,b varchar) is
+	begin
+		DBMS_OUTPUT.PUT_LINE(to_char(i));
+		DBMS_OUTPUT.PUT_LINE(b);
+	end;`
+
+	callPlSql_2 = `call LX_PROC(?,?)`
 	// select OBJECT_ID,SUBPROGRAM_ID from dba_procedures where  object_name = 'PROCADD';
 	// select VERSION from DBA_SOURCE where OWNER = UPPER(?) AND NAME = UPPER(?)
 )
 
-func createProcedute(t *testing.T) {
+func createProcedute(t *testing.T, sqlStr string) {
 	db, err := sql.Open("yasdb", fmt.Sprintf("%s?%s", testDsn, "autocommit=true"))
 	if err != nil {
 		t.Fatalf("open database err: %v", err)
@@ -27,7 +36,7 @@ func createProcedute(t *testing.T) {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(plsql_1)
+	_, err = db.Exec(sqlStr)
 	if err != nil {
 		t.Fatalf(err.Error())
 		return
@@ -44,7 +53,7 @@ func TestNewPlsqlDebug(t *testing.T) {
 }
 
 func TestPdbgStart(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 1
 	v2 := 100
@@ -63,7 +72,7 @@ func TestPdbgStart(t *testing.T) {
 }
 
 func TestPdbgContinte(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -89,7 +98,7 @@ func TestPdbgContinte(t *testing.T) {
 }
 
 func TestPdgStepNextStepInto(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -111,7 +120,7 @@ func TestPdgStepNextStepInto(t *testing.T) {
 }
 
 func TestPdgStepNext(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -130,7 +139,7 @@ func TestPdgStepNext(t *testing.T) {
 }
 
 func TestPdbgStepOut(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -146,7 +155,7 @@ func TestPdbgStepOut(t *testing.T) {
 }
 
 func TestPdbgGetRunningData(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -203,7 +212,7 @@ func TestPdbgGetRunningData(t *testing.T) {
 }
 
 func TestPdbgGetFrameData(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -278,7 +287,7 @@ func TestPdbgGetFrameData(t *testing.T) {
 }
 
 func TestPdbgGetAllVars(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -299,7 +308,7 @@ func TestPdbgGetAllVars(t *testing.T) {
 }
 
 func TestPdbgGetAllFrames(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -320,7 +329,7 @@ func TestPdbgGetAllFrames(t *testing.T) {
 }
 
 func TestPdbgAddBreakpoint(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -353,7 +362,7 @@ func TestPdbgAddBreakpoint(t *testing.T) {
 }
 
 func TestPdbgGetBreakpointData(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -411,7 +420,7 @@ func TestPdbgGetBreakpointData(t *testing.T) {
 }
 
 func TestPdbgDeleteBrakPoint(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -471,7 +480,7 @@ func TestPdbgDeleteBrakPoint(t *testing.T) {
 }
 
 func TestPdbgDeleteAllBreakpoints(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
 	if err != nil {
@@ -512,7 +521,7 @@ func TestPdbgDeleteAllBreakpoints(t *testing.T) {
 }
 
 func TestPdbgGetVarData(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -566,7 +575,7 @@ func TestPdbgGetVarData(t *testing.T) {
 }
 
 func TestPdbgGetVarValue(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -596,7 +605,7 @@ func TestPdbgGetVarValue(t *testing.T) {
 }
 
 func TestPdbgGetAllData(t *testing.T) {
-	createProcedute(t)
+	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
 	v2 := 100
@@ -651,4 +660,28 @@ func TestPdbgGetAllData(t *testing.T) {
 	for _, v := range bPData {
 		fmt.Println(*v)
 	}
+}
+
+func TestPdbgGetAllRunningData(t *testing.T) {
+	createProcedute(t, plsql_2)
+
+	v1 := 102
+	v2 := 100
+	p, err := NewPlsqlDebug(testDsn, callPlSql_2, v1, v2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	if err := p.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	runningData, err := p.GetAllRunningData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf(" className: %s;	len: %d\n", runningData.ClassName, len(runningData.ClassName))
+	fmt.Printf("methodName: %s;	len:%d\n", runningData.MethodName, len(runningData.MethodName))
+	fmt.Println(*runningData)
 }
