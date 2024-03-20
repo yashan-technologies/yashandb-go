@@ -122,6 +122,49 @@ typedef struct StYapiColumnDesc {
     uint8_t  nullable;
 } YapiColumnDesc;
 
+typedef enum EnYapiDebugRunningAttr {
+    YAPI_DBG_RUNNING_ATTR_STATUS = 0,
+    YAPI_DBG_RUNNING_ATTR_OBJ_ID = 1,
+    YAPI_DBG_RUNNING_ATTR_SUB_ID = 2,
+    YAPI_DBG_RUNNING_ATTR_LINE_NO = 3,
+    YAPI_DBG_RUNNING_ATTR_CLASS_NAME_LEN = 4,
+    YAPI_DBG_RUNNING_ATTR_METHOD_NAME_LEN = 5,
+    YAPI_DBG_RUNNING_ATTR_CLASS_NAME = 6,
+    YAPI_DBG_RUNNING_ATTR_METHOD_NAME = 7,
+} YapiDebugRunningAttr;
+
+typedef enum EnYapiDebugFrameAttr {
+    YAPI_DBG_FRAME_ATTR_OBJ_ID = 0,
+    YAPI_DBG_FRAME_ATTR_SUB_ID = 1,
+    YAPI_DBG_FRAME_ATTR_LINE_NO = 2,
+    YAPI_DBG_FRAME_ATTR_STACK_NO = 3,
+    YAPI_DBG_FRAME_ATTR_CLASS_NAME_LEN = 4,
+    YAPI_DBG_FRAME_ATTR_METHOD_NAME_LEN = 5,
+    YAPI_DBG_FRAME_ATTR_CLASS_NAME = 6,
+    YAPI_DBG_FRAME_ATTR_METHOD_NAME = 7,
+} YapiDebugFrameAttr;
+
+typedef enum EnYapiDebugVarAttr {
+    YAPI_DBG_VAR_ATTR_BLOCK_NO = 0,
+    YAPI_DBG_VAR_ATTR_TYPE = 1,
+    YAPI_DBG_VAR_ATTR_IS_GLOBAL = 2,
+    YAPI_DBG_VAR_ATTR_NAME_LEN = 3,
+    YAPI_DBG_VAR_ATTR_NAME = 4,
+    YAPI_DBG_VAR_ATTR_VALUE_SIZE = 5,
+} YapiDebugVarAttr;
+
+typedef enum EnYapiDebugBpAttr {
+    YAPI_DBG_BP_ATTR_OBJ_ID = 0,
+    YAPI_DBG_BP_ATTR_SUB_ID = 1,
+    YAPI_DBG_BP_ATTR_LINE_NO = 2,
+    YAPI_DBG_BP_ATTR_BP_ID = 3,
+} YapiDebugBpAttr;
+
+typedef enum EnYapiDebuggerStatus {
+    YAPI_DBG_STATUS_OFF = 0,
+    YAPI_DBG_STATUS_ON = 1,
+} YapiDebuggerStatus;
+
 typedef enum EnYapiBindType {
     YAPI_BIND_COLUMN = 0,
     YAPI_BIND_PARAM = 1,
@@ -426,19 +469,29 @@ YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 //-----------------------------------------------------------------------------
 // plsql debug Function
 //-----------------------------------------------------------------------------
-YapiResult yapiPdbgStart(YapiStmt* hStmt, char* procName, uint32_t procNameLen);
+YapiResult yapiPdbgStart(YapiStmt* hStmt);
+YapiResult yapiPdbgCheckVersion(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t version);
 YapiResult yapiPdbgAbort(YapiStmt* hStmt);
 YapiResult yapiPdbgContinue(YapiStmt* hStmt);
 YapiResult yapiPdbgStepInto(YapiStmt* hStmt);
 YapiResult yapiPdbgStepOut(YapiStmt* hStmt);
 YapiResult yapiPdbgStepNext(YapiStmt* hStmt);
-YapiResult yapiPdbgShowSource(YapiStmt* hStmt);
+
 YapiResult yapiPdbgDeleteAllBreakpoints(YapiStmt* hStmt);
-YapiResult yapiPdbgAddBreakpoint(YapiStmt* hStmt, int lineNum, uint32_t* bpID);
-YapiResult yapiPdbgDeleteBreakpoint(YapiStmt* hStmt, uint32_t bpID);
-YapiResult yapiPdbgShowBreakpoints(YapiStmt* hStmt);
-YapiResult yapiPdbgShowFrameVariables(YapiStmt* hStmt);
-YapiResult yapiPdbgShowFrames(YapiStmt* hStmt);
+YapiResult yapiPdbgAddBreakpoint(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t lineNo, uint32_t* bpId);
+YapiResult yapiPdbgDeleteBreakpoint(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t lineNo);
+YapiResult yapiPdbgGetBreakpointsCount(YapiStmt* hStmt, uint32_t* bpCount);
+YapiResult yapiPdbgGetAllVars(YapiStmt* hStmt, uint32_t* bpCount);
+YapiResult yapiPdbgGetAllFrames(YapiStmt* hStmt, uint32_t* bpCount);
+
+YapiResult yapiPdbgGetRunningData(YapiStmt* hStmt, YapiDebugRunningAttr attr, YapiPointer value, int32_t bufLen);
+YapiResult yapiPdbgGetFrameData(YapiStmt* hStmt, uint32_t id, YapiDebugFrameAttr attr, YapiPointer value,
+                                int32_t bufLen);
+YapiResult yapiPdbgGetVarData(YapiStmt* hStmt, uint32_t id, YapiDebugVarAttr attr, YapiPointer value, int32_t bufLen);
+YapiResult yapiPdbgGetVarValue(YapiStmt* hStmt, uint32_t id, uint32_t valueType, YapiPointer value, int32_t bufLen,
+                               int32_t* indicator);
+YapiResult yapiPdbgGetBreakpointData(YapiStmt* hStmt, uint32_t id, YapiDebugBpAttr attr, YapiPointer value,
+                                     int32_t bufLen);
 
 #ifdef __cplusplus
 }

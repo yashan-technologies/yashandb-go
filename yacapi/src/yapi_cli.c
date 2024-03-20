@@ -570,12 +570,22 @@ YapiResult yapiCliNumberRound(YapiNumber* n, int32_t precision, int32_t scale, Y
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgStart(YacHandle hStmt, char* procName, uint32_t procNameLen, YapiErrorMsg* error)
+YapiResult yapiCiPdbgStart(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
     YAPI_LOAD_SYMBOL("pdbgStart", yapiSymbols.fnPdbgStart)
-    ret = (*yapiSymbols.fnPdbgStart)(hStmt, procName, procNameLen);
+    ret = (*yapiSymbols.fnPdbgStart)(hStmt);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgCheckVersion(YacHandle hStmt, uint64_t objId, uint16_t subId, uint32_t version,
+                                  YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgCheckVersion", yapiSymbols.fnPdbgCheckVersion)
+    ret = (*yapiSymbols.fnPdbgCheckVersion)(hStmt, objId, subId, version);
     YAPI_CHECK_CLI_RETURN();
 }
 
@@ -624,15 +634,6 @@ YapiResult yapiCiPdbgStepNext(YacHandle hStmt, YapiErrorMsg* error)
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgShowSource(YacHandle hStmt, YapiErrorMsg* error)
-{
-    YapiResult ret;
-
-    YAPI_LOAD_SYMBOL("pdbgShowSource", yapiSymbols.fnPdbgShowSource)
-    ret = (*yapiSymbols.fnPdbgShowSource)(hStmt);
-    YAPI_CHECK_CLI_RETURN();
-}
-
 YapiResult yapiCiPdbgDeleteAllBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
@@ -642,47 +643,99 @@ YapiResult yapiCiPdbgDeleteAllBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgAddBreakpoint(YacHandle hStmt, int lineNum, uint32_t* bpID, YapiErrorMsg* error)
+YapiResult yapiCiPdbgAddBreakpoint(YacHandle hStmt, uint64_t objId, uint16_t subId, uint32_t lineNo, uint32_t* bpId,
+                                   YapiErrorMsg* error)
 {
     YapiResult ret;
 
     YAPI_LOAD_SYMBOL("pdbgAddBreakpoint", yapiSymbols.fnPdbgAddBreakpoint)
-    ret = (*yapiSymbols.fnPdbgAddBreakpoint)(hStmt, lineNum, bpID);
+    ret = (*yapiSymbols.fnPdbgAddBreakpoint)(hStmt, objId, subId, lineNo, bpId);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgDeleteBreakpoint(YacHandle hStmt, uint32_t bpID, YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetBreakpointsCount(YacHandle hStmt, uint32_t* bpCount, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgDeleteBreakpoint", yapiSymbols.fnPdbgDeleteAllBreakpoints)
-    ret = (*yapiSymbols.fnPdbgDeleteAllBreakpoints)(hStmt);
+    YAPI_LOAD_SYMBOL("pdbgGetBreakpointsCount", yapiSymbols.fnPdbgGetBreakpointsCount)
+    ret = (*yapiSymbols.fnPdbgGetBreakpointsCount)(hStmt, bpCount);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgShowBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
+YapiResult yapiCiPdbgDeleteBreakpoint(YacHandle hStmt, uint64_t objId, uint16_t subId, uint32_t lineNo,
+                                      YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgShowBreakpoints", yapiSymbols.fnPdbgShowBreakpoints)
-    ret = (*yapiSymbols.fnPdbgShowBreakpoints)(hStmt);
+    YAPI_LOAD_SYMBOL("pdbgDeleteBreakpoint", yapiSymbols.fnPdbgDeleteBreakpoint)
+    ret = (*yapiSymbols.fnPdbgDeleteBreakpoint)(hStmt, objId, subId, lineNo);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgShowFrameVariables(YacHandle hStmt, YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetAllVars(YacHandle hStmt, uint32_t* varCount, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgShowFrameVariables", yapiSymbols.fnPdbgShowFrameVariables)
-    ret = (*yapiSymbols.fnPdbgShowFrameVariables)(hStmt);
+    YAPI_LOAD_SYMBOL("pdbgGetAllVars", yapiSymbols.fnPdbgPdbgGetAllVars)
+    ret = (*yapiSymbols.fnPdbgPdbgGetAllVars)(hStmt, varCount);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgShowFrames(YacHandle hStmt, YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetAllFrames(YacHandle hStmt, uint32_t* frameCount, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgShowSource", yapiSymbols.fnPdbgShowSource)
-    ret = (*yapiSymbols.fnPdbgShowSource)(hStmt);
+    YAPI_LOAD_SYMBOL("pdbgGetAllFrames", yapiSymbols.fnPdbgGetAllFrames)
+    ret = (*yapiSymbols.fnPdbgGetAllFrames)(hStmt, frameCount);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgGetRunningData(YacHandle hStmt, YapiDebugRunningAttr attr, void* value, int32_t bufLen,
+                                    YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgGetRunningData", yapiSymbols.fnPdbgGetRunningData)
+    ret = (*yapiSymbols.fnPdbgGetRunningData)(hStmt, attr, value, bufLen);
+    YAPI_CHECK_CLI_RETURN();
+}
+YapiResult yapiCiPdbgGetFrameData(YacHandle hStmt, uint32_t id, YapiDebugFrameAttr attr, void* value, int32_t bufLen,
+                                  YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgGetFrameData", yapiSymbols.fnPdbgGetFrameData)
+    ret = (*yapiSymbols.fnPdbgGetFrameData)(hStmt, id, attr, value, bufLen);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgGetVarData(YacHandle hStmt, uint32_t id, YapiDebugVarAttr attr, void* value, int32_t bufLen,
+                                YapiErrorMsg* error)
+
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgGetVarData", yapiSymbols.fnPdbgGetVarData)
+    ret = (*yapiSymbols.fnPdbgGetVarData)(hStmt, id, attr, value, bufLen);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgGetVarValue(YacHandle hStmt, uint32_t id, uint32_t valueType, void* value, int32_t bufLen,
+                                 int32_t* indicator, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgGetVarValue", yapiSymbols.fnPdbgGetVarValue)
+    ret = (*yapiSymbols.fnPdbgGetVarValue)(hStmt, id, valueType, value, bufLen, indicator);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCiPdbgGetBreakpointData(YacHandle hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen,
+                                       YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("pdbgGetBreakpointData", yapiSymbols.fnPdbgGetBreakpointData)
+    ret = (*yapiSymbols.fnPdbgGetBreakpointData)(hStmt, id, attr, value, bufLen);
     YAPI_CHECK_CLI_RETURN();
 }
