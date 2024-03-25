@@ -49,6 +49,13 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 			return nil, err
 		}
 	}
+
+	charset := C.YAPI_CHARSET_UTF8
+	if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4)); err != nil {
+		_ = releaseEnv(env)
+		return nil, err
+	}
+
 	var conn *C.YapiConnect
 
 	url := stringToYasChar(dsn.Url)
@@ -74,6 +81,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		_ = releaseEnv(env)
 		return nil, err
 	}
+
 	return yasConn, nil
 }
 
