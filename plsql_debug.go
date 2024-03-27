@@ -245,8 +245,7 @@ func PdbgDeleteAllBreakpoints(stmt *YasStmt) error {
 }
 
 func PdbgAddBreakpoint(stmt *YasStmt, objId uint64, subId uint16, lineNo uint32) (uint32, error) {
-	bpID := (*C.uint32_t)(C.malloc(32))
-	defer C.free(unsafe.Pointer(bpID))
+	bpID := new(C.uint32_t)
 	err := checkYasError(C.yapiPdbgAddBreakpoint(stmt.Stmt, C.uint64_t(objId), C.uint16_t(subId), C.uint32_t(lineNo), bpID))
 	if err != nil {
 		return 0, err
@@ -364,9 +363,10 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 		if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_CLASS_NAME_LEN, &nameLen); err != nil {
 			return err
 		}
-		className := (*C.char)(mallocBytes(nameLen))
+		bufLen := nameLen * stmt.Conn.charsetRatio
+		className := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(className))
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_CLASS_NAME, C.YapiPointer(className), C.int32_t(nameLen)))
+		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_CLASS_NAME, C.YapiPointer(className), C.int32_t(bufLen)))
 		if err != nil {
 			return err
 		}
@@ -394,9 +394,10 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 		if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_METHOD_NAME_LEN, &nameLen); err != nil {
 			return err
 		}
-		methodName := (*C.char)(mallocBytes(nameLen))
+		bufLen := nameLen * stmt.Conn.charsetRatio
+		methodName := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(methodName))
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_METHOD_NAME, C.YapiPointer(methodName), C.int32_t(nameLen)))
+		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_METHOD_NAME, C.YapiPointer(methodName), C.int32_t(bufLen)))
 		if err != nil {
 			return err
 		}
@@ -485,10 +486,11 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 			return err
 		}
 
-		outValue := (*C.char)(mallocBytes(nameLen))
+		bufLen := nameLen * stmt.Conn.charsetRatio
+		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
 
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_CLASS_NAME, C.YapiPointer(outValue), C.int32_t(nameLen)))
+		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_CLASS_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
 		if err != nil {
 			return err
 		}
@@ -515,9 +517,10 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 		if err := PdbgGetFrameData(stmt, id, DBG_FRAME_ATTR_METHOD_NAME_LEN, &nameLen); err != nil {
 			return err
 		}
-		outValue := (*C.char)(mallocBytes(nameLen))
+		bufLen := nameLen * stmt.Conn.charsetRatio
+		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_METHOD_NAME, C.YapiPointer(outValue), C.int32_t(nameLen)))
+		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_METHOD_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
 		if err != nil {
 			return err
 		}
@@ -592,10 +595,11 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 		if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_NAME_LEN, &nameLen); err != nil {
 			return err
 		}
+		bufLen := nameLen * stmt.Conn.charsetRatio
 
-		outValue := (*C.char)(mallocBytes(nameLen))
+		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_NAME, C.YapiPointer(outValue), C.int32_t(nameLen)))
+		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
 		if err != nil {
 			return err
 		}
@@ -621,15 +625,73 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 }
 
 func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
+	var (
+		bufLen     int32
+		value      C.YapiPointer
+		bindType   C.YapiType
+		actualType C.YapiType
+		isLob      bool
+		err        error
+		dataType   uint8
+	)
+	if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
+		return "", err
+	}
+
+	bindType = C.YAPI_TYPE_VARCHAR
+	actualType = C.YapiType(dataType)
+	switch actualType {
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_BINARY:
+		var valueSize uint32
+		if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
+			return "", err
+		}
+		bufLen = int32(stmt.Conn.charsetRatio*valueSize) + 1
+		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+		desc, err := stmt.Conn.lobWrite(actualType, nil)
+		if err != nil {
+			return "", err
+		}
+		value = C.YapiPointer(desc)
+		bufLen = -1
+		isLob = true
+		bindType = actualType
+	default:
+		size, err := GetDatabaseTypeSize(actualType)
+		if err != nil {
+			return "", err
+		}
+		bufLen = int32(size)
+		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+	}
+
 	indicator := new(C.int32_t)
-	value := C.YapiPointer(unsafe.Pointer(stringToYasChar("")))
-	err := checkYasError(C.yapiPdbgGetVarValue(stmt.Stmt, C.uint32_t(id), C.uint32_t(C.YAPI_TYPE_VARCHAR), value, 300, indicator))
+	err = checkYasError(C.yapiPdbgGetVarValue(stmt.Stmt, C.uint32_t(id), C.uint32_t(bindType), value, C.int32_t(bufLen), indicator))
 	if err != nil {
 		return "", err
 	}
-	defer C.free(unsafe.Pointer(value))
+
+	defer func() {
+		if isLob {
+			lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(value))
+			stmt.Conn.lobFree(actualType, *lobLocator)
+		} else {
+			C.free(unsafe.Pointer(value))
+		}
+	}()
+
 	if *indicator == C.YAPI_NULL_DATA {
 		return "", nil
+	}
+
+	if isLob {
+		lobLocator := (**C.YapiLobLocator)(value)
+		byteValue, err := stmt.Conn.lobRead(*lobLocator)
+		if err != nil {
+			return "", err
+		}
+		return string(byteValue), nil
 	}
 	return C.GoString((*C.char)(value)), nil
 }
