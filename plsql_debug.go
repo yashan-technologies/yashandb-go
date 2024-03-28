@@ -658,7 +658,7 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 		isLob = true
 		bindType = actualType
 	default:
-		bufLen = GetDatabaseTypeSize(actualType)
+		bufLen = 125
 		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
 	}
 
