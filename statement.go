@@ -242,9 +242,14 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BINARY:
 		row.Data = mallocBytes(size)
 		freeType = normalFree
+	case C.YAPI_TYPE_ROWID:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 44
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
 	default:
 		yacType = C.YAPI_TYPE_VARCHAR
-		bufLen = int32(sizeToAlign4(size)) + 1
+		bufLen = _DefaultSize
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	}
