@@ -77,8 +77,12 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		autoCommit: dsn.IsAutoCommit,
 	}
 	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
-		_ = releaseConn(conn)
-		_ = releaseEnv(env)
+		_ = yasConn.Close()
+		return nil, err
+	}
+
+	if err := yasConn.getCharsetRatio(); err != nil {
+		_ = yasConn.Close()
 		return nil, err
 	}
 

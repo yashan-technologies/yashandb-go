@@ -26,10 +26,11 @@ import (
 )
 
 type YasConn struct {
-	Env        *C.YapiEnv
-	Conn       *C.YapiConnect
-	autoCommit bool
-	closed     bool
+	Env          *C.YapiEnv
+	Conn         *C.YapiConnect
+	autoCommit   bool
+	closed       bool
+	charsetRatio uint32 // 字符集转换对应的偏移量
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
@@ -79,6 +80,16 @@ func (conn *YasConn) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (conn *YasConn) getCharsetRatio() error {
+	var ratio C.uint32_t
+	size := C.int32_t(unsafe.Sizeof(ratio))
+	if err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_CHARSET_RATIO, unsafe.Pointer(&ratio), size); err != nil {
+		return err
+	}
+	conn.charsetRatio = uint32(ratio)
+	return nil
+}
+
 func (conn *YasConn) setAutoCommit(auto bool) error {
 	var a C.int32_t = 0
 	if auto {
@@ -99,6 +110,20 @@ func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, 
 			attr,
 			value,
 			bufLength,
+		)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (conn *YasConn) yapiGetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
+	if err := checkYasError(
+		C.yapiGetConnAttr(
+			conn.Conn,
+			attr,
+			value,
+			bufLength,
+			nil,
 		)); err != nil {
 		return err
 	}

@@ -23,6 +23,7 @@ import "C"
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"strings"
 	"sync"
 	"unsafe"
@@ -304,5 +305,26 @@ func GetDatabaseTypeName(yapiType uint32) string {
 		return "RAW"
 	default:
 		return ""
+	}
+}
+
+func GetDatabaseTypeSize(yType C.YapiType) (int, error) {
+	switch yType {
+	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_UTINYINT:
+		return 1, nil
+	case C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_USMALLINT:
+		return 2, nil
+	case C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_UINTEGER, C.YAPI_TYPE_FLOAT:
+		return 4, nil
+	case C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_UBIGINT:
+		return 8, nil
+	case C.YAPI_TYPE_NUMBER:
+		return 22, nil
+	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_TIMESTAMP_TZ, C.YAPI_TYPE_TIMESTAMP_LTZ, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
+		return 12, nil
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+		return -1, nil
+	default:
+		return 0, fmt.Errorf("unknow yasdb type %v", yType)
 	}
 }
