@@ -104,7 +104,7 @@ typedef YacResult (*yapiFuncDSIntervalSetDaySecond)(YapiDSInterval* dsInterval, 
 
 typedef YacResult (*yapiFuncNumberRound)(YapiNumber* n, int32_t precision, int32_t scale);
 
-typedef YacResult (*yapiFuncPdbgStart)(YacHandle stmt);
+typedef YacResult (*yapiFuncPdbgStart)(YacHandle stmt, uint64_t objId, uint16_t subId);
 
 typedef YacResult (*yapiFuncPdbgCheckVersion)(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t version);
 
@@ -352,7 +352,7 @@ void yapiGetCliError(YapiErrorMsg* error);
 YapiResult yapiAllocMem(const char* name, size_t numMembers, size_t memberSize, void** ptr, YapiErrorMsg* error);
 void       yapiFreeMem(void* ptr);
 
-YapiResult yapiCiPdbgStart(YacHandle hStmt, YapiErrorMsg* error);
+YapiResult yapiCiPdbgStart(YacHandle hStmt, uint64_t objId, uint16_t subId, YapiErrorMsg* error);
 YapiResult yapiCiPdbgCheckVersion(YacHandle hStmt, uint64_t objId, uint16_t subId, uint32_t version,
                                   YapiErrorMsg* error);
 YapiResult yapiCiPdbgAbort(YacHandle hStmt, YapiErrorMsg* error);

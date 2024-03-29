@@ -570,12 +570,12 @@ YapiResult yapiCliNumberRound(YapiNumber* n, int32_t precision, int32_t scale, Y
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgStart(YacHandle hStmt, YapiErrorMsg* error)
+YapiResult yapiCiPdbgStart(YacHandle hStmt, uint64_t objId, uint16_t subId, YapiErrorMsg* error)
 {
     YapiResult ret;
 
     YAPI_LOAD_SYMBOL("pdbgStart", yapiSymbols.fnPdbgStart)
-    ret = (*yapiSymbols.fnPdbgStart)(hStmt);
+    ret = (*yapiSymbols.fnPdbgStart)(hStmt, objId, subId);
     YAPI_CHECK_CLI_RETURN();
 }
 

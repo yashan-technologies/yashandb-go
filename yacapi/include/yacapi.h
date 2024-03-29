@@ -469,7 +469,7 @@ YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 //-----------------------------------------------------------------------------
 // plsql debug Function
 //-----------------------------------------------------------------------------
-YapiResult yapiPdbgStart(YapiStmt* hStmt);
+YapiResult yapiPdbgStart(YapiStmt* hStmt, uint64_t objId, uint16_t subId);
 YapiResult yapiPdbgCheckVersion(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t version);
 YapiResult yapiPdbgAbort(YapiStmt* hStmt);
 YapiResult yapiPdbgContinue(YapiStmt* hStmt);
