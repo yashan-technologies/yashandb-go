@@ -287,6 +287,8 @@ func GetDatabaseTypeName(yapiType uint32) string {
 		return "NUMBER"
 	case C.YAPI_TYPE_DATE:
 		return "DATE"
+	case C.YAPI_TYPE_SHORTTIME:
+		return "TIME"
 	case C.YAPI_TYPE_TIMESTAMP:
 		return "TIMESTAMP"
 	case C.YAPI_TYPE_CHAR:
