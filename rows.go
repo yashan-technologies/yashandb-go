@@ -134,7 +134,7 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
 		return reflect.TypeOf(time.Time{})
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB:
 		return reflect.TypeOf("")
-	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY:
+	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		return reflect.TypeOf([]byte(nil))
 	default:
 		return reflect.TypeOf(nil)
@@ -221,7 +221,10 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 				value = data
 			}
 		case C.YAPI_TYPE_BINARY:
-			data := (*[8000]byte)(row.Data)[0:row.Size]
+			data := (*[8000]byte)(row.Data)[0:*row.Indicator]
+			value = data
+		case C.YAPI_TYPE_BIT:
+			data := (*[64]byte)(row.Data)[0:*row.Indicator]
 			value = data
 		default:
 			value = (C.GoString((*C.char)(row.Data)))
