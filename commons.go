@@ -303,6 +303,8 @@ func GetDatabaseTypeName(yapiType uint32) string {
 		return "BLOB"
 	case C.YAPI_TYPE_BINARY:
 		return "RAW"
+	case C.YAPI_TYPE_ROWID:
+		return "ROWID"
 	default:
 		return ""
 	}

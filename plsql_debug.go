@@ -75,8 +75,8 @@ func NewPlsqlDebug(dsn string, sql string, args ...any) (*PlsqlDebug, error) {
 	return &PlsqlDebug{Stmt: stmt}, nil
 }
 
-func (p *PlsqlDebug) Start() error {
-	return PdbgStart(p.Stmt)
+func (p *PlsqlDebug) Start(objId uint64, subId uint16) error {
+	return PdbgStart(p.Stmt, objId, subId)
 }
 
 func (p *PlsqlDebug) CheckVersion(objId uint64, subId uint16, version uint32) error {
@@ -197,8 +197,8 @@ func GenPdbgStatement(dsn string, sql string, args ...any) (*YasStmt, error) {
 	return stmt, nil
 }
 
-func PdbgStart(stmt *YasStmt) error {
-	return checkYasError(C.yapiPdbgStart(stmt.Stmt))
+func PdbgStart(stmt *YasStmt, objId uint64, subId uint16) error {
+	return checkYasError(C.yapiPdbgStart(stmt.Stmt, C.uint64_t(objId), C.uint16_t(subId)))
 }
 
 func PdbgCheckVersion(stmt *YasStmt, objId uint64, subId uint16, version uint32) error {
