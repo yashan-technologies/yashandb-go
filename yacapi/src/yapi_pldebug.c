@@ -1,11 +1,11 @@
 #include "yapi_inc.h"
 #include "stdlib.h"
 
-YapiResult yapiPdbgStart(YapiStmt* hStmt)
+YapiResult yapiPdbgStart(YapiStmt* hStmt, uint64_t objId, uint16_t subId)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCiPdbgStart(hStmt->stmtHandler, &error);
+    return yapiCiPdbgStart(hStmt->stmtHandler, objId, subId, &error);
 }
 
 YapiResult yapiPdbgCheckVersion(YapiStmt* hStmt, uint64_t objId, uint16_t subId, uint32_t version)

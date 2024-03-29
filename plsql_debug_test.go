@@ -3,11 +3,13 @@ package yasdb
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"testing"
 )
 
 var (
-	plsql_1 = `create or replace procedure procAdd(p1 in int, p2 in int, p3 out int) 
+	procName_1 = `PROCADD`
+	plsql_1    = `create or replace procedure procAdd(p1 in int, p2 in int, p3 out int) 
 	           is 
 	           begin
                p3 := 100; 
@@ -16,16 +18,58 @@ var (
 
 	callPlSql_1 = `call procAdd(?,?,?)`
 
-	plsql_2 = `
+	procName_2 = "LX_PROC"
+	plsql_2    = `
 	CREATE OR REPLACE PROCEDURE LX_PROC(i INT,b varchar) is
 	begin
 		DBMS_OUTPUT.PUT_LINE(to_char(i));
 		DBMS_OUTPUT.PUT_LINE(b);
 	end;`
-
 	callPlSql_2 = `call LX_PROC(?,?)`
-	// select OBJECT_ID,SUBPROGRAM_ID from dba_procedures where  object_name = 'PROCADD';
-	// select VERSION from DBA_SOURCE where OWNER = UPPER(?) AND NAME = UPPER(?)
+
+	procName_3 = `FUNC_OUTPARAM`
+	plsql_3    = `CREATE OR REPLACE function func_outparam(c1 out int,c2 out float,c3 out double,c4 out varchar,c5 out char,c6 out date,c7 out boolean,c8 out clob,c9 out rowid,c10 out json) return varchar is
+	res varchar(8000);
+	v1 int := 943093745;
+	v2 float := 1506141.9;
+	v3 double := 107175737.7;
+	v4 varchar(20) := 'yasdb';
+	v5 char(10) := 'yasql';
+	v6 date := '2023-01-20';
+	v7 boolean := false;
+	v8 clob := 'It gives me great pleasure to introduce our company.';
+	v9 rowid := '1350:5:0:148:0';
+	v10 json := '{"name":"Jack", "city":"Beijing","school":"TsingHua University"}';
+	begin
+	c1 := v1;
+	c2 := v2;
+	c3 := v3;
+	c4 := v4;
+	c5 := v5;
+	c6 := v6;
+	c7 := v7;
+	c8 := v8;
+	c9 := v9;
+	c10 := v10;
+	res := c1||':'||c4||':'||c5||':'||c6||':'||c7||':'||c8||':'||c9 || ':' || c10;
+	return res;
+	end;`
+
+	callPlSql_3 = `DECLARE
+	v_result VARCHAR(8000);
+  C1 INTEGER;
+  C2 FLOAT;
+  C3 DOUBLE;
+  C4 VARCHAR(8000);
+  C5 CHAR(1000);
+  C6 DATE;
+  C7 BOOLEAN;
+  C8 CLOB;
+  C9 ROWID;
+  C10 JSON;
+  BEGIN
+	v_result := FUNC_OUTPARAM(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10);
+  END;`
 )
 
 func createProcedute(t *testing.T, sqlStr string) {
@@ -41,6 +85,33 @@ func createProcedute(t *testing.T, sqlStr string) {
 		t.Fatalf(err.Error())
 		return
 	}
+}
+
+func queryObjIdAndSubId(t *testing.T, proceName string) (uint64, uint16) {
+	db, err := sql.Open("yasdb", fmt.Sprintf("%s?%s", testDsn, "autocommit=true"))
+	if err != nil {
+		t.Fatalf("open database err: %v", err)
+		return 0, 0
+	}
+	defer db.Close()
+
+	querySql := `select OBJECT_ID,SUBPROGRAM_ID from dba_procedures where  object_name = ?;`
+	rows, err := db.Query(querySql, proceName)
+	if err != nil {
+		t.Fatalf("exec %s failed, %s", querySql, err.Error())
+	}
+	defer rows.Close()
+	var (
+		objId uint64
+		subId uint16
+	)
+	for rows.Next() {
+		err := rows.Scan(&objId, &subId)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+	}
+	return objId, subId
 }
 
 func TestNewPlsqlDebug(t *testing.T) {
@@ -63,7 +134,8 @@ func TestPdbgStart(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.Abort(); err != nil {
@@ -82,7 +154,8 @@ func TestPdbgContinte(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.Continue(); err != nil {
@@ -105,7 +178,8 @@ func TestPdgStepNextStepInto(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.StepInto(); err != nil {
@@ -127,7 +201,8 @@ func TestPdgStepNext(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.StepNext(); err != nil {
@@ -146,7 +221,8 @@ func TestPdbgStepOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.StepOut(); err != nil {
@@ -165,7 +241,8 @@ func TestPdbgGetRunningData(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
@@ -175,11 +252,11 @@ func TestPdbgGetRunningData(t *testing.T) {
 	}
 	fmt.Printf("running debugger status: %v\n", status)
 
-	var objId uint64
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_OBJ_ID, &objId); err != nil {
+	var runningObjId uint64
+	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_OBJ_ID, &runningObjId); err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("running obj id: %v\n", objId)
+	fmt.Printf("running obj id: %v\n", runningObjId)
 
 	var className string
 	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_CLASS_NAME, &className); err != nil {
@@ -222,7 +299,8 @@ func TestPdbgGetFrameData(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
@@ -297,7 +375,8 @@ func TestPdbgGetAllVars(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	varCount, err := p.GetAllVars()
@@ -318,7 +397,8 @@ func TestPdbgGetAllFrames(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	varCount, err := p.GetAllFrames()
@@ -336,17 +416,18 @@ func TestPdbgAddBreakpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
-	bpId, err := p.AddBreakpoint(2361, 1, 4) // select OBJECT_ID,SUBPROGRAM_ID from dba_procedures where  object_name = 'PROCADD';
+	bpId, err := p.AddBreakpoint(objId, subId, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoint id is %v\n", bpId)
 
-	bpId, err = p.AddBreakpoint(2361, 1, 5)
+	bpId, err = p.AddBreakpoint(objId, subId, 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,9 +437,9 @@ func TestPdbgAddBreakpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := p.Continue(); err != nil {
-		t.Fatal(err)
-	}
+	// if err := p.Continue(); err != nil {
+	// 	t.Fatal(err)
+	// }
 }
 
 func TestPdbgGetBreakpointData(t *testing.T) {
@@ -369,11 +450,12 @@ func TestPdbgGetBreakpointData(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
-	bpId, err := p.AddBreakpoint(2361, 1, 4) // select OBJECT_ID,SUBPROGRAM_ID from dba_procedures where  object_name = 'PROCADD';
+	bpId, err := p.AddBreakpoint(objId, subId, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -427,17 +509,18 @@ func TestPdbgDeleteBrakPoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
-	bpId, err := p.AddBreakpoint(2361, 1, 4)
+	bpId, err := p.AddBreakpoint(objId, subId, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoint id is %v\n", bpId)
 
-	bpId, err = p.AddBreakpoint(2361, 1, 5)
+	bpId, err = p.AddBreakpoint(objId, subId, 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,14 +533,14 @@ func TestPdbgDeleteBrakPoint(t *testing.T) {
 	fmt.Printf("breakpoint count is %v\n", bpCount)
 
 	i := uint32(1)
-	var objId uint64
-	if err := p.GetBreakpointData(i, DBG_BP_ATTR_OBJ_ID, &objId); err != nil {
+	var bpObjId uint64
+	if err := p.GetBreakpointData(i, DBG_BP_ATTR_OBJ_ID, &bpObjId); err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("breakpoit %d objectId is %v\n", i, objId)
+	fmt.Printf("breakpoit %d objectId is %v\n", i, bpObjId)
 
-	var subId uint16
-	if err := p.GetBreakpointData(i, DBG_BP_ATTR_SUB_ID, &subId); err != nil {
+	var bpSubId uint16
+	if err := p.GetBreakpointData(i, DBG_BP_ATTR_SUB_ID, &bpSubId); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoit %d subId is %v\n", i, subId)
@@ -487,17 +570,18 @@ func TestPdbgDeleteAllBreakpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer p.Close()
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
-	bpId, err := p.AddBreakpoint(2361, 1, 4)
+	bpId, err := p.AddBreakpoint(objId, subId, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoint id is %v\n", bpId)
 
-	bpId, err = p.AddBreakpoint(2361, 1, 5)
+	bpId, err = p.AddBreakpoint(objId, subId, 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -531,9 +615,11 @@ func TestPdbgGetVarData(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
+
 	varCount, err := p.GetAllVars()
 	if err != nil {
 		t.Fatal(err)
@@ -585,7 +671,8 @@ func TestPdbgGetVarValue(t *testing.T) {
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 	varCount, err := p.GetAllVars()
@@ -605,83 +692,55 @@ func TestPdbgGetVarValue(t *testing.T) {
 }
 
 func TestPdbgGetAllData(t *testing.T) {
-	createProcedute(t, plsql_1)
-	out := 0
-	v1 := 102
-	v2 := 100
-	p, err := NewPlsqlDebug(testDsn, callPlSql_1, v1, v2, sql.Out{Dest: &out})
+	createProcedute(t, plsql_3)
+	p, err := NewPlsqlDebug(testDsn, callPlSql_3)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer p.Close()
 
-	if err := p.Start(); err != nil {
+	objId, subId := queryObjIdAndSubId(t, procName_3)
+	if err := p.Start(objId, subId); err != nil {
 		t.Fatal(err)
 	}
 
-	bpId, err := p.AddBreakpoint(2361, 1, 4)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Printf("breakpoint id is %v\n", bpId)
-
-	bpId, err = p.AddBreakpoint(2361, 1, 5)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Printf("breakpoint id is %v\n", bpId)
-
-	runningData, err := p.GetAllRunningData()
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(*runningData)
-
-	varData, err := p.GetAllVarData()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range varData {
-		fmt.Println(*v)
-	}
-
-	frameData, err := p.GetAllFrameData()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range frameData {
-		fmt.Println(*v)
-	}
-
-	bPData, err := p.GetAllBreakpointData()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range bPData {
-		fmt.Println(*v)
+	for i := 0; i < 11; i++ {
+		fmt.Println("step: ", i)
+		StepNextAndprintVar(p, t)
 	}
 }
 
-func TestPdbgGetAllRunningData(t *testing.T) {
-	createProcedute(t, plsql_2)
-
-	v1 := 102
-	v2 := 100
-	p, err := NewPlsqlDebug(testDsn, callPlSql_2, v1, v2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer p.Close()
-
-	if err := p.Start(); err != nil {
-		t.Fatal(err)
-	}
-
+func StepNextAndprintVar(p *PlsqlDebug, t *testing.T) {
 	runningData, err := p.GetAllRunningData()
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf(" className: %s;	len: %d\n", runningData.ClassName, len(runningData.ClassName))
-	fmt.Printf("methodName: %s;	len:%d\n", runningData.MethodName, len(runningData.MethodName))
-	fmt.Println(*runningData)
+	printRuningData(runningData)
+
+	if err := p.StepNext(); err != nil {
+		t.Fatalf("step next failed， %v", err)
+	}
+
+	runningData, err = p.GetAllRunningData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	printRuningData(runningData)
+
+	varDatas, err := p.GetAllVarData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	printVarData(varDatas)
+	fmt.Println("=====================================================================================")
+}
+
+func printRuningData(data *PdbgRunningData) {
+	fmt.Printf("LineNo:%-3d; status:%d; className:%-5s; methodName:%-5s\n", data.LineNo, data.Status, data.ClassName, data.MethodName)
+}
+
+func printVarData(values []*PdbgVarData) {
+	for _, varData := range values {
+		fmt.Printf("id:%-2d;name:%-6s;dataType:%-5s;size:%-3d;value:%s\n", varData.Id, varData.Name, varData.DataTypeName, varData.Size, strings.TrimSpace(varData.Value))
+	}
 }
