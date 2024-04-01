@@ -310,7 +310,7 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	}
 
 	var stmt *C.YapiStmt
-	nQuery := tryRmSqlSemicolon(query)
+	nQuery := rmCommnetAndlSemicolon(query)
 	queryP := C.CString(nQuery)
 	defer C.free(unsafe.Pointer(queryP))
 	sqlLength := C.int32_t(len(nQuery))
