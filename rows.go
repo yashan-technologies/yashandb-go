@@ -200,9 +200,17 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 			value = (*(*float32)(row.Data))
 		case C.YAPI_TYPE_DOUBLE:
 			value = (*(*float64)(row.Data))
-		case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
-			value = time.Unix(0, (*(*int64)(row.Data))*1e3)
-		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_ROWID:
+		case C.YAPI_TYPE_DATE:
+			value = time.UnixMicro(*(*int64)(row.Data)).UTC()
+		case C.YAPI_TYPE_TIMESTAMP:
+			value = (*(*int64)(row.Data))
+		case C.YAPI_TYPE_SHORTDATE:
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), 0, 0, 0.0, 0, time.UTC)
+		case C.YAPI_TYPE_SHORTTIME:
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(0, 0, 0, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)
+		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
 			value = (C.GoString((*C.char)(row.Data)))
 		case C.YAPI_TYPE_NUMBER:
 			value, err = strconv.ParseFloat(C.GoString((*C.char)(row.Data)), 64)

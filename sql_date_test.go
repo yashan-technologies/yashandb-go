@@ -28,7 +28,7 @@ func testDate(t *sqlTest) {
 			{t1c1, t1c2},
 		},
 		queryResult: [][]interface{}{
-			{t1c1, t1c2},
+			{t1c1, t1c2.UnixMicro()},
 		},
 	}
 	t.genTableTest()
