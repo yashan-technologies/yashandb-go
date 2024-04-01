@@ -23,6 +23,7 @@ import "C"
 import (
 	"database/sql"
 	"database/sql/driver"
+	"regexp"
 	"strings"
 	"sync"
 	"unsafe"
@@ -67,6 +68,11 @@ var (
 	notFree    valueFreeType = 0
 	normalFree valueFreeType = 1
 	lobFree    valueFreeType = 2
+
+	commentRegStrs = []string{
+		`^/\*[\s|\S]*?\*/`,
+		`^--.*`,
+	}
 )
 
 type bindStruct struct {
@@ -194,11 +200,12 @@ func checkYasError(ret C.YapiResult) error {
 	return err
 }
 
-func tryRmSqlSemicolon(query string) string {
+func rmCommnetAndlSemicolon(query string) string {
+	query = rmComment(query)
 	if isKeySql(query) {
 		return query
 	}
-	return strings.TrimSuffix(strings.TrimSpace(query), ";")
+	return strings.TrimSuffix(query, ";")
 }
 
 func isKeySql(query string) bool {
@@ -210,6 +217,17 @@ func isKeySql(query string) bool {
 		}
 	}
 	return false
+}
+
+func rmComment(query string) string {
+	for _, str := range commentRegStrs {
+		reg, _ := regexp.Compile(str)
+		if !reg.MatchString(query) {
+			continue
+		}
+		query = reg.ReplaceAllString(strings.TrimSpace(query), "")
+	}
+	return strings.TrimSpace(query)
 }
 
 func isDisconnetionErr(err error) bool {
