@@ -309,6 +309,14 @@ func GetDatabaseTypeName(yapiType uint32) string {
 		return "ROWID"
 	case C.YAPI_TYPE_BIT:
 		return "BIT"
+	case C.YAPI_TYPE_NCLOB:
+		return "NCLOB"
+	case C.YAPI_TYPE_JSON:
+		return "JSON"
+	case C.YAPI_TYPE_YM_INTERVAL:
+		return "INTERVAL YEAR TO MONTH"
+	case C.YAPI_TYPE_DS_INTERVAL:
+		return "INTERVAL DAY TO SECOND"
 	default:
 		return ""
 	}
