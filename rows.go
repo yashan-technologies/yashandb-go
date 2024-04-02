@@ -201,12 +201,13 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 		case C.YAPI_TYPE_DOUBLE:
 			value = (*(*float64)(row.Data))
 		case C.YAPI_TYPE_DATE:
-			value = time.UnixMicro(*(*int64)(row.Data)).UTC()
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), 0, time.UTC)
 		case C.YAPI_TYPE_TIMESTAMP:
-			value = (*(*int64)(row.Data))
+			value = time.UnixMicro(*(*int64)(row.Data)).UTC()
 		case C.YAPI_TYPE_SHORTDATE:
 			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
-			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), 0, 0, 0.0, 0, time.UTC)
+			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), 0, 0, 0, 0, time.UTC)
 		case C.YAPI_TYPE_SHORTTIME:
 			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
 			value = time.Date(0, 0, 0, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)

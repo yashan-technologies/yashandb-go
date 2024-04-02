@@ -47,9 +47,9 @@ func main() {
 	defer rows.Close()
 	for rows.Next() {
 		var d1 time.Time
-		var d2 int64
+		var d2 time.Time
 		rows.Scan(&d1, &d2)
-		if date1.Unix() != d1.Unix() || date2.UnixMicro() != d2 {
+		if date1.Unix() != d1.Unix() || date2.UnixMicro() != d2.UnixMicro() {
 			fmt.Println(date1, date2)
 			fmt.Println(d1, d2)
 			fmt.Println("date doesn't work correctly")
