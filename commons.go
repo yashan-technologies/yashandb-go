@@ -69,10 +69,8 @@ var (
 	normalFree valueFreeType = 1
 	lobFree    valueFreeType = 2
 
-	commentRegStrs = []string{
-		`^/\*[\s|\S]*?\*/`,
-		`^--.*`,
-	}
+	commentRegStr_1 = `\/\*([^*]|\*+[^*/])*\*+\/`
+	commentRegStr_2 = `^--.*`
 )
 
 type bindStruct struct {
@@ -200,15 +198,15 @@ func checkYasError(ret C.YapiResult) error {
 	return err
 }
 
-func rmCommnetAndlSemicolon(query string) string {
-	query = rmComment(query)
+func tryRmSemicolon(query string) string {
 	if isKeySql(query) {
 		return query
 	}
-	return strings.TrimSuffix(query, ";")
+	return strings.TrimSuffix(strings.TrimSpace(query), ";")
 }
 
 func isKeySql(query string) bool {
+	query = rmComment(query)
 	strs := strings.Fields(strings.TrimSpace(query))
 	sqlStr := strings.ToLower(strings.Join(strs, " "))
 	for _, v := range keySqls {
@@ -220,14 +218,24 @@ func isKeySql(query string) bool {
 }
 
 func rmComment(query string) string {
-	for _, str := range commentRegStrs {
-		reg, _ := regexp.Compile(str)
-		if !reg.MatchString(query) {
+	reg1, _ := regexp.Compile(commentRegStr_1)
+	if reg1.MatchString(query) {
+		query = reg1.ReplaceAllString(query, "")
+	}
+
+	nQuery := ""
+	reg2, _ := regexp.Compile(commentRegStr_2)
+	for _, line := range strings.Split(query, "\n") {
+		nline := strings.TrimSpace(line)
+		if nline == "" {
 			continue
 		}
-		query = reg.ReplaceAllString(strings.TrimSpace(query), "")
+		if reg2.MatchString(nline) {
+			continue
+		}
+		nQuery += nline + "\n"
 	}
-	return strings.TrimSpace(query)
+	return nQuery
 }
 
 func isDisconnetionErr(err error) bool {
