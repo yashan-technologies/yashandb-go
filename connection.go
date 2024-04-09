@@ -179,7 +179,7 @@ func (conn *YasConn) yacLobRead(lobLocator *C.YapiLobLocator, lobLen uint64) ([]
 				buf,
 				_LobBufLen,
 			)); err != nil {
-			return nil, nil
+			return nil, err
 		}
 		data = append(data, readBuffer[:uint64(bytes)]...)
 		if uint64(bytes) < _LobBufLen {
