@@ -42,9 +42,10 @@ func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.S
 	}
 
 	var stmt *C.YapiStmt
-	queryP := C.CString(tryRmSqlSemicolon(query))
+	nQuery := tryRmSqlSemicolon(query)
+	queryP := C.CString(nQuery)
 	defer C.free(unsafe.Pointer(queryP))
-	sqlLength := C.int32_t(len(query))
+	sqlLength := C.int32_t(len(nQuery))
 	if err := checkYasError(
 		C.yapiPrepare(
 			conn.Conn,
