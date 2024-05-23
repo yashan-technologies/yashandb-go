@@ -169,7 +169,7 @@ func checkYasError(ret C.YapiResult) error {
 	}
 	mutex.Lock()
 	defer func() {
-		yapiErr.errCode = 0
+		yapiErr.errCode = -1
 		yapiErr.pos.line = 0
 		yapiErr.pos.column = 0
 		yapiErr.message = nil

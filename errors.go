@@ -29,6 +29,17 @@ type YasDBError struct {
 }
 
 func (e *YasDBError) Error() string {
+	if e.Code == 0 {
+		return "yasdb return code is zero"
+	}
+
+	if e.Code == -1 {
+		if e.Line > 0 || e.Column > 0 {
+			return fmt.Sprintf("[%d:%d]YAS%d %s", e.Line, e.Column, e.Code, e.Msg)
+		}
+		return fmt.Sprintf("YAS%d %s", e.Code, e.Msg)
+	}
+
 	if e.Line > 0 || e.Column > 0 {
 		return fmt.Sprintf("[%d:%d]YAS-%05d %s", e.Line, e.Column, e.Code, e.Msg)
 	}

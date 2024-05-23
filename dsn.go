@@ -9,6 +9,7 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -20,6 +21,9 @@ const (
 	ipv6UrlRegExpr   = `^\[[:|\d|A-Z|a-z|%]+\]:\d+$`
 	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
 	udsRegExpr       = `^(.*?)(\?(.*?))?$`
+
+	_UkeyName = `ukey_name`
+	_UkeyPin  = `ukey_pin`
 )
 
 var (
@@ -37,6 +41,8 @@ type DataSourceName struct {
 	Url          string
 	DataPath     string
 	IsAutoCommit bool
+	ukeyName     string
+	ukeyPin      string
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -78,7 +84,11 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 		return nil, err
 	}
 
-	parseArgs(dsn, matchStrs[4])
+	if err := parseParams(dsn, matchStrs[4]); err != nil {
+		return nil, err
+	}
+	genUkeyUrl(dsn)
+
 	return dsn, nil
 }
 
@@ -98,13 +108,15 @@ func parseUDS(dsnStr string) (*DataSourceName, error) {
 	if err != nil && !os.IsExist(err) {
 		return nil, ErrDataPathNoExist(dsnStr)
 	}
-	parseArgs(dsn, matchStrs[2])
+	if err := parseParams(dsn, matchStrs[2]); err != nil {
+		return nil, err
+	}
 	return dsn, nil
 }
 
-func parseArgs(dsn *DataSourceName, argStr string) {
+func parseParams(dsn *DataSourceName, argStr string) error {
 	if argStr == "" {
-		return
+		return nil
 	}
 	paramStr := argStr
 	if argStr[0] == '?' || argStr[0] == '&' {
@@ -115,6 +127,28 @@ func parseArgs(dsn *DataSourceName, argStr string) {
 		if param == "autocommit=1" || param == "autocommit=true" {
 			dsn.IsAutoCommit = true
 		}
+		strs := strings.Split(param, "=")
+		if len(strs) < 2 {
+			return ErrDsnNoStandard(argStr)
+		}
+		if strs[0] == _UkeyName {
+			dsn.ukeyName = strs[1]
+		}
+		if strs[0] == _UkeyPin {
+			dsn.ukeyPin = strs[1]
+		}
+	}
+
+	return nil
+}
+
+func genUkeyUrl(dsn *DataSourceName) {
+	if dsn.ukeyName != "" && dsn.ukeyPin != "" {
+		dsn.Url += fmt.Sprintf("?%s=%s&%s=%s", _UkeyName, dsn.ukeyName, _UkeyPin, dsn.ukeyPin)
+	} else if dsn.ukeyName != "" {
+		dsn.Url += fmt.Sprintf("?%s=%s", _UkeyName, dsn.ukeyName)
+	} else if dsn.ukeyPin != "" {
+		dsn.Url += fmt.Sprintf("?%s=%s", _UkeyPin, dsn.ukeyPin)
 	}
 }
 
