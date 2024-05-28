@@ -22,8 +22,9 @@ const (
 	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
 	udsRegExpr       = `^(.*?)(\?(.*?))?$`
 
-	_UkeyName = `ukey_name`
-	_UkeyPin  = `ukey_pin`
+	_UkeyName   = `ukey_name`
+	_UkeyPin    = `ukey_pin`
+	_Autocommit = "autocommit"
 )
 
 var (
@@ -120,22 +121,26 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 	}
 	paramStr := argStr
 	if argStr[0] == '?' || argStr[0] == '&' {
-		paramStr = strings.ToLower(argStr[1:])
+		paramStr = argStr[1:]
 	}
 	connParams := strings.Split(paramStr, "&")
 	for _, param := range connParams {
-		if param == "autocommit=1" || param == "autocommit=true" {
-			dsn.IsAutoCommit = true
-		}
 		strs := strings.Split(param, "=")
 		if len(strs) < 2 {
 			return ErrDsnNoStandard(argStr)
 		}
-		if strs[0] == _UkeyName {
+		switch strings.ToLower(strs[0]) {
+		case _Autocommit:
+			value := strings.ToLower(strs[1])
+			if value == "1" || value == "true" {
+				dsn.IsAutoCommit = true
+			}
+		case _UkeyName:
 			dsn.ukeyName = strs[1]
-		}
-		if strs[0] == _UkeyPin {
+		case _UkeyPin:
 			dsn.ukeyPin = strs[1]
+		default:
+			return fmt.Errorf("unknown param %s", strs[0])
 		}
 	}
 
