@@ -92,25 +92,28 @@ YapiResult yapiPdbgGetAllFrames(YapiStmt* hStmt, uint32_t* frameCount)
     return yapiCiPdbgGetAllFrames(hStmt->stmtHandler, frameCount, &error);
 }
 
-YapiResult yapiPdbgGetRunningData(YapiStmt* hStmt, YapiDebugRunningAttr attr, void* value, int32_t bufLen)
+YapiResult yapiPdbgGetRunningAttrs(YapiStmt* hStmt, YapiDebugRunningAttr attr, void* value, int32_t bufLen,
+                                   int32_t* stringLength)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCiPdbgGetRunningData(hStmt->stmtHandler, attr, value, bufLen, &error);
+    return yapiCiPdbgGetRunningAttrs(hStmt->stmtHandler, attr, value, bufLen, stringLength, &error);
 }
 
-YapiResult yapiPdbgGetFrameData(YapiStmt* hStmt, uint32_t id, YapiDebugFrameAttr attr, void* value, int32_t bufLen)
+YapiResult yapiPdbgGetFrameAttrs(YapiStmt* hStmt, uint32_t id, YapiDebugFrameAttr attr, void* value, int32_t bufLen,
+                                 int32_t* stringLength)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCiPdbgGetFrameData(hStmt->stmtHandler, id, attr, value, bufLen, &error);
+    return yapiCiPdbgGetFrameAttrs(hStmt->stmtHandler, id, attr, value, bufLen, stringLength, &error);
 }
 
-YapiResult yapiPdbgGetVarData(YapiStmt* hStmt, uint32_t id, YapiDebugVarAttr attr, void* value, int32_t bufLen)
+YapiResult yapiPdbgGetVarAttrs(YapiStmt* hStmt, uint32_t id, YapiDebugVarAttr attr, void* value, int32_t bufLen,
+                               int32_t* stringLength)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCiPdbgGetVarData(hStmt->stmtHandler, id, attr, value, bufLen, &error);
+    return yapiCiPdbgGetVarAttrs(hStmt->stmtHandler, id, attr, value, bufLen, stringLength, &error);
 }
 
 YapiResult yapiPdbgGetVarValue(YapiStmt* hStmt, uint32_t id, uint32_t valueType, void* value, int32_t bufLen,
@@ -121,9 +124,10 @@ YapiResult yapiPdbgGetVarValue(YapiStmt* hStmt, uint32_t id, uint32_t valueType,
     return yapiCiPdbgGetVarValue(hStmt->stmtHandler, id, valueType, value, bufLen, indicator, &error);
 }
 
-YapiResult yapiPdbgGetBreakpointData(YapiStmt* hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen)
+YapiResult yapiPdbgGetBreakpointAttrs(YapiStmt* hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen,
+                                      int32_t* stringLength)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
-    return yapiCiPdbgGetBreakpointData(hStmt->stmtHandler, id, attr, value, bufLen, &error);
+    return yapiCiPdbgGetBreakpointAttrs(hStmt->stmtHandler, id, attr, value, bufLen, stringLength, &error);
 }

@@ -230,7 +230,7 @@ func TestPdbgStepOut(t *testing.T) {
 	}
 }
 
-func TestPdbgGetRunningData(t *testing.T) {
+func TestPdbgGetRunningAttrs(t *testing.T) {
 	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
@@ -247,25 +247,25 @@ func TestPdbgGetRunningData(t *testing.T) {
 	}
 
 	var status DebuggerStatus
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_STATUS, &status); err != nil {
+	if err := PdbgGetRunningAttrs(p.Stmt, DBG_RUNNING_ATTR_STATUS, &status); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("running debugger status: %v\n", status)
 
 	var runningObjId uint64
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_OBJ_ID, &runningObjId); err != nil {
+	if err := PdbgGetRunningAttrs(p.Stmt, DBG_RUNNING_ATTR_OBJ_ID, &runningObjId); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("running obj id: %v\n", runningObjId)
 
 	var className string
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_CLASS_NAME, &className); err != nil {
+	if err := PdbgGetRunningAttrs(p.Stmt, DBG_RUNNING_ATTR_CLASS_NAME, &className); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("running class name: %v\n", className)
 
 	var methodName string
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_METHOD_NAME, &methodName); err != nil {
+	if err := PdbgGetRunningAttrs(p.Stmt, DBG_RUNNING_ATTR_METHOD_NAME, &methodName); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("running method name: %v\n", methodName)
@@ -274,7 +274,7 @@ func TestPdbgGetRunningData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := PdbgGetRunningData(p.Stmt, DBG_RUNNING_ATTR_STATUS, &status); err != nil {
+	if err := PdbgGetRunningAttrs(p.Stmt, DBG_RUNNING_ATTR_STATUS, &status); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("running debugger status: %v\n", status)
@@ -288,7 +288,7 @@ func TestPdbgGetRunningData(t *testing.T) {
 	fmt.Println(out)
 }
 
-func TestPdbgGetFrameData(t *testing.T) {
+func TestPdbgGetFrameAttrs(t *testing.T) {
 	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
@@ -315,37 +315,37 @@ func TestPdbgGetFrameData(t *testing.T) {
 
 	for i := uint32(0); i < count; i++ {
 		var objId uint64
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_OBJ_ID, &objId); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_OBJ_ID, &objId); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,object id: %d\n", i, objId)
 
 		var subId uint16
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_SUB_ID, &subId); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_SUB_ID, &subId); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,subid: %d\n", i, subId)
 
 		var lineNo uint32
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_LINE_NO, &lineNo); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_LINE_NO, &lineNo); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,lineNo: %d\n", i, subId)
 
 		var stackNo uint32
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_STACK_NO, &stackNo); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_STACK_NO, &stackNo); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,stackNo: %d\n", i, subId)
 
 		var className string
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_CLASS_NAME, &className); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_CLASS_NAME, &className); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,className: %s\n", i, className)
 
 		var methodName string
-		if err := PdbgGetFrameData(p.Stmt, i, DBG_FRAME_ATTR_METHOD_NAME, &methodName); err != nil {
+		if err := PdbgGetFrameAttrs(p.Stmt, i, DBG_FRAME_ATTR_METHOD_NAME, &methodName); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("frame: %d ,methodName: %s\n", i, methodName)
@@ -442,7 +442,7 @@ func TestPdbgAddBreakpoint(t *testing.T) {
 	// }
 }
 
-func TestPdbgGetBreakpointData(t *testing.T) {
+func TestPdbgGetBreakpointAttrs(t *testing.T) {
 	createProcedute(t, plsql_1)
 	out := int64(0)
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
@@ -475,29 +475,22 @@ func TestPdbgGetBreakpointData(t *testing.T) {
 
 	for i := uint32(0); i < bpCount; i++ {
 		var objId uint64
-		if err := p.GetBreakpointData(i, DBG_BP_ATTR_OBJ_ID, &objId); err != nil {
+		if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_OBJ_ID, &objId); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("breakpoit %d objectId is %v\n", i, objId)
 
 		var subId uint16
-		if err := p.GetBreakpointData(i, DBG_BP_ATTR_SUB_ID, &subId); err != nil {
+		if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_SUB_ID, &subId); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("breakpoit %d subId is %v\n", i, subId)
 
 		var lineNo uint32
-		if err := p.GetBreakpointData(i, DBG_BP_ATTR_LINE_NO, &lineNo); err != nil {
+		if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_LINE_NO, &lineNo); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("breakpoit %d lineNo is %v\n", i, lineNo)
-
-		var bpId uint32
-		if err := p.GetBreakpointData(i, DBG_BP_ATTR_BP_ID, &bpId); err != nil {
-			t.Fatal(err)
-		}
-		fmt.Printf("breakpoit %d bpId is %v\n", i, bpId)
-
 	}
 }
 
@@ -534,19 +527,19 @@ func TestPdbgDeleteBrakPoint(t *testing.T) {
 
 	i := uint32(1)
 	var bpObjId uint64
-	if err := p.GetBreakpointData(i, DBG_BP_ATTR_OBJ_ID, &bpObjId); err != nil {
+	if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_OBJ_ID, &bpObjId); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoit %d objectId is %v\n", i, bpObjId)
 
 	var bpSubId uint16
-	if err := p.GetBreakpointData(i, DBG_BP_ATTR_SUB_ID, &bpSubId); err != nil {
+	if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_SUB_ID, &bpSubId); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoit %d subId is %v\n", i, subId)
 
 	var lineNo uint32
-	if err := p.GetBreakpointData(i, DBG_BP_ATTR_LINE_NO, &lineNo); err != nil {
+	if err := p.GetBreakpointAttrs(i, DBG_BP_ATTR_LINE_NO, &lineNo); err != nil {
 		t.Fatal(err)
 	}
 	fmt.Printf("breakpoit %d lineNo is %v\n", i, lineNo)
@@ -604,7 +597,7 @@ func TestPdbgDeleteAllBreakpoints(t *testing.T) {
 	fmt.Printf("breakpoint count is %v\n", bpCount)
 }
 
-func TestPdbgGetVarData(t *testing.T) {
+func TestPdbgGetVarAttrs(t *testing.T) {
 	createProcedute(t, plsql_1)
 	out := 0
 	v1 := 102
@@ -628,31 +621,31 @@ func TestPdbgGetVarData(t *testing.T) {
 
 	for i := uint32(0); i < varCount; i++ {
 		var blockNo uint32
-		if err := p.GetVarData(i, DBG_VAR_ATTR_BLOCK_NO, &blockNo); err != nil {
+		if err := p.GetVarAttrs(i, DBG_VAR_ATTR_BLOCK_NO, &blockNo); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("var %d blockNo is %v\n", i, blockNo)
 
 		var dataType uint8
-		if err := p.GetVarData(i, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
+		if err := p.GetVarAttrs(i, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("var %d dataType number is %v; dataType name is %s\n", i, dataType, GetDatabaseTypeName(uint32(dataType)))
 
 		var isGlobal bool
-		if err := p.GetVarData(i, DBG_VAR_ATTR_IS_GLOBAL, &isGlobal); err != nil {
+		if err := p.GetVarAttrs(i, DBG_VAR_ATTR_IS_GLOBAL, &isGlobal); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("var %d isGlobal is %v\n", i, isGlobal)
 
 		var name string
-		if err := p.GetVarData(i, DBG_VAR_ATTR_NAME, &name); err != nil {
+		if err := p.GetVarAttrs(i, DBG_VAR_ATTR_NAME, &name); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("var %d name is %v\n", i, name)
 
 		var valueSize uint32
-		if err := p.GetVarData(i, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
+		if err := p.GetVarAttrs(i, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
 			t.Fatal(err)
 		}
 		fmt.Printf("var %d valueSize is %v\n", i, valueSize)
@@ -711,7 +704,7 @@ func TestPdbgGetAllData(t *testing.T) {
 }
 
 func StepNextAndprintVar(p *PlsqlDebug, t *testing.T) {
-	runningData, err := p.GetAllRunningData()
+	runningData, err := p.GetAllRunningAttrs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -721,13 +714,13 @@ func StepNextAndprintVar(p *PlsqlDebug, t *testing.T) {
 		t.Fatalf("step next failed， %v", err)
 	}
 
-	runningData, err = p.GetAllRunningData()
+	runningData, err = p.GetAllRunningAttrs()
 	if err != nil {
 		t.Fatal(err)
 	}
 	printRuningData(runningData)
 
-	varDatas, err := p.GetAllVarData()
+	varDatas, err := p.GetAllVarAttrs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -735,11 +728,11 @@ func StepNextAndprintVar(p *PlsqlDebug, t *testing.T) {
 	fmt.Println("=====================================================================================")
 }
 
-func printRuningData(data *PdbgRunningData) {
+func printRuningData(data *PdbgRunningAttr) {
 	fmt.Printf("LineNo:%-3d; status:%d; className:%-5s; methodName:%-5s\n", data.LineNo, data.Status, data.ClassName, data.MethodName)
 }
 
-func printVarData(values []*PdbgVarData) {
+func printVarData(values []*PdbgVarAttr) {
 	for _, varData := range values {
 		fmt.Printf("id:%-2d;name:%-6s;dataType:%-5s;size:%-3d;value:%s\n", varData.Id, varData.Name, varData.DataTypeName, varData.Size, strings.TrimSpace(varData.Value))
 	}

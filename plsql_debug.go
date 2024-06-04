@@ -29,38 +29,34 @@ type DebugBpAttr int8
 type DebuggerStatus int8
 
 const (
-	DBG_RUNNING_ATTR_STATUS          DebugRunningAttr = 0
-	DBG_RUNNING_ATTR_OBJ_ID          DebugRunningAttr = 1
-	DBG_RUNNING_ATTR_SUB_ID          DebugRunningAttr = 2
-	DBG_RUNNING_ATTR_LINE_NO         DebugRunningAttr = 3
-	DBG_RUNNING_ATTR_CLASS_NAME_LEN  DebugRunningAttr = 4
-	DBG_RUNNING_ATTR_METHOD_NAME_LEN DebugRunningAttr = 5
-	DBG_RUNNING_ATTR_CLASS_NAME      DebugRunningAttr = 6
-	DBG_RUNNING_ATTR_METHOD_NAME     DebugRunningAttr = 7
+	DBG_RUNNING_ATTR_STATUS      DebugRunningAttr = 0
+	DBG_RUNNING_ATTR_OBJ_ID      DebugRunningAttr = 1
+	DBG_RUNNING_ATTR_SUB_ID      DebugRunningAttr = 2
+	DBG_RUNNING_ATTR_LINE_NO     DebugRunningAttr = 3
+	DBG_RUNNING_ATTR_CLASS_NAME  DebugRunningAttr = 4
+	DBG_RUNNING_ATTR_METHOD_NAME DebugRunningAttr = 5
 
-	DBG_FRAME_ATTR_OBJ_ID          DebugFrameAttr = 0
-	DBG_FRAME_ATTR_SUB_ID          DebugFrameAttr = 1
-	DBG_FRAME_ATTR_LINE_NO         DebugFrameAttr = 2
-	DBG_FRAME_ATTR_STACK_NO        DebugFrameAttr = 3
-	DBG_FRAME_ATTR_CLASS_NAME_LEN  DebugFrameAttr = 4
-	DBG_FRAME_ATTR_METHOD_NAME_LEN DebugFrameAttr = 5
-	DBG_FRAME_ATTR_CLASS_NAME      DebugFrameAttr = 6
-	DBG_FRAME_ATTR_METHOD_NAME     DebugFrameAttr = 7
+	DBG_FRAME_ATTR_OBJ_ID      DebugFrameAttr = 0
+	DBG_FRAME_ATTR_SUB_ID      DebugFrameAttr = 1
+	DBG_FRAME_ATTR_LINE_NO     DebugFrameAttr = 2
+	DBG_FRAME_ATTR_STACK_NO    DebugFrameAttr = 3
+	DBG_FRAME_ATTR_CLASS_NAME  DebugFrameAttr = 4
+	DBG_FRAME_ATTR_METHOD_NAME DebugFrameAttr = 5
 
 	DBG_VAR_ATTR_BLOCK_NO   DebugVarAttr = 0
 	DBG_VAR_ATTR_TYPE       DebugVarAttr = 1
 	DBG_VAR_ATTR_IS_GLOBAL  DebugVarAttr = 2
-	DBG_VAR_ATTR_NAME_LEN   DebugVarAttr = 3
-	DBG_VAR_ATTR_NAME       DebugVarAttr = 4
-	DBG_VAR_ATTR_VALUE_SIZE DebugVarAttr = 5
+	DBG_VAR_ATTR_NAME       DebugVarAttr = 3
+	DBG_VAR_ATTR_VALUE_SIZE DebugVarAttr = 4
 
 	DBG_BP_ATTR_OBJ_ID  DebugBpAttr = 0
 	DBG_BP_ATTR_SUB_ID  DebugBpAttr = 1
 	DBG_BP_ATTR_LINE_NO DebugBpAttr = 2
-	DBG_BP_ATTR_BP_ID   DebugBpAttr = 3
 
 	DBG_STATUS_OFF DebuggerStatus = 0
 	DBG_STATUS_ON  DebuggerStatus = 1
+
+	DEFAULT_ATTRS_BUFFER = 68*2 + 1
 )
 
 type PlsqlDebug struct {
@@ -127,40 +123,40 @@ func (p *PlsqlDebug) GetAllFrames() (uint32, error) {
 	return PdbgGetAllFrames(p.Stmt)
 }
 
-func (p *PlsqlDebug) GetRunningData(attr DebugRunningAttr, value interface{}) error {
-	return PdbgGetRunningData(p.Stmt, attr, value)
+func (p *PlsqlDebug) GetRunningAttrs(attr DebugRunningAttr, value interface{}) error {
+	return PdbgGetRunningAttrs(p.Stmt, attr, value)
 }
 
-func (p *PlsqlDebug) GetFrameData(id uint32, attr DebugFrameAttr, value interface{}) error {
-	return PdbgGetFrameData(p.Stmt, id, attr, value)
+func (p *PlsqlDebug) GetFrameAttrs(id uint32, attr DebugFrameAttr, value interface{}) error {
+	return PdbgGetFrameAttrs(p.Stmt, id, attr, value)
 }
 
-func (p *PlsqlDebug) GetVarData(id uint32, attr DebugVarAttr, value interface{}) error {
-	return PdbgGetVarData(p.Stmt, id, attr, value)
+func (p *PlsqlDebug) GetVarAttrs(id uint32, attr DebugVarAttr, value interface{}) error {
+	return PdbgGetVarAttrs(p.Stmt, id, attr, value)
 }
 
 func (p *PlsqlDebug) GetVarValue(id uint32) (string, error) {
 	return PdbgGetVarValue(p.Stmt, id)
 }
 
-func (p *PlsqlDebug) GetBreakpointData(id uint32, attr DebugBpAttr, value interface{}) error {
-	return PdbgGetBreakpointData(p.Stmt, id, attr, value)
+func (p *PlsqlDebug) GetBreakpointAttrs(id uint32, attr DebugBpAttr, value interface{}) error {
+	return PdbgGetBreakpointAttrs(p.Stmt, id, attr, value)
 }
 
-func (p *PlsqlDebug) GetAllRunningData() (*PdbgRunningData, error) {
-	return PdbgGetAllRunningData(p.Stmt)
+func (p *PlsqlDebug) GetAllRunningAttrs() (*PdbgRunningAttr, error) {
+	return PdbgGetAllRunningAttrs(p.Stmt)
 }
 
-func (p *PlsqlDebug) GetAllBreakpointData() ([]*PdbgBreakpointData, error) {
-	return PdbgGetAllBreakpointData(p.Stmt)
+func (p *PlsqlDebug) GetAllBreakpointAttrs() ([]*PdbgBreakpointAttr, error) {
+	return PdbgGetAllBreakpointAttrs(p.Stmt)
 }
 
-func (p *PlsqlDebug) GetAllVarData() ([]*PdbgVarData, error) {
-	return PdbgGetAllVarData(p.Stmt)
+func (p *PlsqlDebug) GetAllVarAttrs() ([]*PdbgVarAttr, error) {
+	return PdbgGetAllVarAttrs(p.Stmt)
 }
 
-func (p *PlsqlDebug) GetAllFrameData() ([]*PdbgFrameData, error) {
-	return PdbgGetAllFrameData(p.Stmt)
+func (p *PlsqlDebug) GetAllFrameAttrs() ([]*PdbgFrameData, error) {
+	return PdbgGetAllFrameAttrs(p.Stmt)
 }
 
 func (p *PlsqlDebug) Close() error {
@@ -284,7 +280,7 @@ func PdbgGetAllFrames(stmt *YasStmt) (uint32, error) {
 	return uint32(*frameCount), nil
 }
 
-func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{}) error {
+func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}) error {
 	switch attr {
 	case DBG_RUNNING_ATTR_STATUS:
 		data, ok := value.(*DebuggerStatus)
@@ -292,7 +288,8 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 			return fmt.Errorf("the value parameter type must be *DebuggerStatus")
 		}
 		status := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_STATUS, C.YapiPointer(status), 4))
+		stringLen := C.int32_t(0)
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_STATUS, C.YapiPointer(status), 4, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -309,7 +306,8 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 		}
 
 		objId := new(C.uint64_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_OBJ_ID, C.YapiPointer(objId), 8))
+		stringLen := C.int32_t(0)
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_OBJ_ID, C.YapiPointer(objId), 8, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -322,7 +320,8 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 		}
 
 		subId := new(C.uint16_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_SUB_ID, C.YapiPointer(subId), 2))
+		stringLen := C.int32_t(0)
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_SUB_ID, C.YapiPointer(subId), 2, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -335,69 +334,38 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 		}
 
 		lineNo := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_LINE_NO, C.YapiPointer(lineNo), 4))
+		stringLen := C.int32_t(0)
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_LINE_NO, C.YapiPointer(lineNo), 4, &stringLen))
 		if err != nil {
 			return err
 		}
 		*data = uint32(*lineNo)
-
-	case DBG_RUNNING_ATTR_CLASS_NAME_LEN:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		nameLen := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_CLASS_NAME_LEN, C.YapiPointer(nameLen), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*nameLen)
 
 	case DBG_RUNNING_ATTR_CLASS_NAME:
 		data, ok := value.(*string)
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *string")
 		}
-		var nameLen uint32
-		if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_CLASS_NAME_LEN, &nameLen); err != nil {
-			return err
-		}
-		bufLen := nameLen * stmt.Conn.charsetRatio
+		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		className := (*C.char)(mallocBytes(bufLen))
+		stringLen := C.int32_t(0)
 		defer C.free(unsafe.Pointer(className))
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_CLASS_NAME, C.YapiPointer(className), C.int32_t(bufLen)))
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_CLASS_NAME, C.YapiPointer(className), C.int32_t(bufLen), &stringLen))
 		if err != nil {
 			return err
 		}
 		*data = C.GoString(className)
-
-	case DBG_RUNNING_ATTR_METHOD_NAME_LEN:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		nameLen := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_METHOD_NAME_LEN, C.YapiPointer(nameLen), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*nameLen)
 
 	case DBG_RUNNING_ATTR_METHOD_NAME:
 		data, ok := value.(*string)
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *string")
 		}
-		var nameLen uint32
-		if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_METHOD_NAME_LEN, &nameLen); err != nil {
-			return err
-		}
-		bufLen := nameLen * stmt.Conn.charsetRatio
+		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		methodName := (*C.char)(mallocBytes(bufLen))
+		stringLen := C.int32_t(0)
 		defer C.free(unsafe.Pointer(methodName))
-		err := checkYasError(C.yapiPdbgGetRunningData(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_METHOD_NAME, C.YapiPointer(methodName), C.int32_t(bufLen)))
+		err := checkYasError(C.yapiPdbgGetRunningAttrs(stmt.Stmt, C.YAPI_DBG_RUNNING_ATTR_METHOD_NAME, C.YapiPointer(methodName), C.int32_t(bufLen), &stringLen))
 		if err != nil {
 			return err
 		}
@@ -409,7 +377,7 @@ func PdbgGetRunningData(stmt *YasStmt, attr DebugRunningAttr, value interface{})
 	return nil
 }
 
-func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value interface{}) error {
+func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value interface{}) error {
 	switch attr {
 	case DBG_FRAME_ATTR_OBJ_ID:
 		data, ok := value.(*uint64)
@@ -417,8 +385,9 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 			return fmt.Errorf("the value parameter type must be *uint64")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint64_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_OBJ_ID, C.YapiPointer(outValue), 8))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_OBJ_ID, C.YapiPointer(outValue), 8, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -429,9 +398,9 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *uint16")
 		}
-
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint16_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_SUB_ID, C.YapiPointer(outValue), 2))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_SUB_ID, C.YapiPointer(outValue), 2, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -442,9 +411,9 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *uint32")
 		}
-
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_LINE_NO, C.YapiPointer(outValue), 4))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_LINE_NO, C.YapiPointer(outValue), 4, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -456,71 +425,41 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 			return fmt.Errorf("the value parameter type must be *uint32")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_STACK_NO, C.YapiPointer(outValue), 4))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_STACK_NO, C.YapiPointer(outValue), 4, &stringLen))
 		if err != nil {
 			return err
 		}
 		*data = uint32(*outValue)
-
-	case DBG_FRAME_ATTR_CLASS_NAME_LEN:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		nameLen := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_CLASS_NAME_LEN, C.YapiPointer(nameLen), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*nameLen)
 
 	case DBG_FRAME_ATTR_CLASS_NAME:
 		data, ok := value.(*string)
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *string")
 		}
-		var nameLen uint32
-		if err := PdbgGetFrameData(stmt, id, DBG_FRAME_ATTR_CLASS_NAME_LEN, &nameLen); err != nil {
-			return err
-		}
-
-		bufLen := nameLen * stmt.Conn.charsetRatio
+		stringLen := C.int32_t(0)
+		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
 
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_CLASS_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_CLASS_NAME, C.YapiPointer(outValue), C.int32_t(bufLen), &stringLen))
 		if err != nil {
 			return err
 		}
 		*data = C.GoString(outValue)
-	case DBG_FRAME_ATTR_METHOD_NAME_LEN:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		nameLen := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_METHOD_NAME_LEN, C.YapiPointer(nameLen), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*nameLen)
 
 	case DBG_FRAME_ATTR_METHOD_NAME:
 		data, ok := value.(*string)
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *string")
 		}
-		var nameLen uint32
-		if err := PdbgGetFrameData(stmt, id, DBG_FRAME_ATTR_METHOD_NAME_LEN, &nameLen); err != nil {
-			return err
-		}
-		bufLen := nameLen * stmt.Conn.charsetRatio
+
+		stringLen := C.int32_t(0)
+		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
-		err := checkYasError(C.yapiPdbgGetFrameData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_METHOD_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
+		err := checkYasError(C.yapiPdbgGetFrameAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_FRAME_ATTR_METHOD_NAME, C.YapiPointer(outValue), C.int32_t(bufLen), &stringLen))
 		if err != nil {
 			return err
 		}
@@ -532,7 +471,7 @@ func PdbgGetFrameData(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inter
 	return nil
 }
 
-func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface{}) error {
+func PdbgGetVarAttrs(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface{}) error {
 	switch attr {
 	case DBG_VAR_ATTR_BLOCK_NO:
 		data, ok := value.(*uint32)
@@ -540,8 +479,9 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 			return fmt.Errorf("the value parameter type must be *uint32")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_BLOCK_NO, C.YapiPointer(outValue), 4))
+		err := checkYasError(C.yapiPdbgGetVarAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_BLOCK_NO, C.YapiPointer(outValue), 4, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -553,8 +493,9 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 			return fmt.Errorf("the value parameter type must be *uint8")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint8_t)
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_TYPE, C.YapiPointer(outValue), 1))
+		err := checkYasError(C.yapiPdbgGetVarAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_TYPE, C.YapiPointer(outValue), 1, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -566,24 +507,13 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 			return fmt.Errorf("the value parameter type must be *bool")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.bool)
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_IS_GLOBAL, C.YapiPointer(outValue), 1))
+		err := checkYasError(C.yapiPdbgGetVarAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_IS_GLOBAL, C.YapiPointer(outValue), 1, &stringLen))
 		if err != nil {
 			return err
 		}
 		*data = bool(*outValue)
-	case DBG_VAR_ATTR_NAME_LEN:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		nameLen := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_NAME_LEN, C.YapiPointer(nameLen), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*nameLen)
 
 	case DBG_VAR_ATTR_NAME:
 		data, ok := value.(*string)
@@ -591,15 +521,12 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 			return fmt.Errorf("the value parameter type must be *string")
 		}
 
-		var nameLen uint32
-		if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_NAME_LEN, &nameLen); err != nil {
-			return err
-		}
-		bufLen := nameLen * stmt.Conn.charsetRatio
-
+		stringLen := C.int32_t(0)
+		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		outValue := (*C.char)(mallocBytes(bufLen))
 		defer C.free(unsafe.Pointer(outValue))
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_NAME, C.YapiPointer(outValue), C.int32_t(bufLen)))
+
+		err := checkYasError(C.yapiPdbgGetVarAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_NAME, C.YapiPointer(outValue), C.int32_t(bufLen), &stringLen))
 		if err != nil {
 			return err
 		}
@@ -610,8 +537,9 @@ func PdbgGetVarData(stmt *YasStmt, id uint32, attr DebugVarAttr, value interface
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *uint32")
 		}
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetVarData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_VALUE_SIZE, C.YapiPointer(outValue), 4))
+		err := checkYasError(C.yapiPdbgGetVarAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_VAR_ATTR_VALUE_SIZE, C.YapiPointer(outValue), 4, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -634,7 +562,7 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 		err        error
 		dataType   uint8
 	)
-	if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
+	if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
 		return "", err
 	}
 
@@ -643,7 +571,7 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 	switch actualType {
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		var valueSize uint32
-		if err := PdbgGetVarData(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
+		if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
 			return "", err
 		}
 		bufLen = int32(stmt.Conn.charsetRatio*valueSize) + 1
@@ -692,7 +620,7 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 	return C.GoString((*C.char)(value)), nil
 }
 
-func PdbgGetBreakpointData(stmt *YasStmt, id uint32, attr DebugBpAttr, value interface{}) error {
+func PdbgGetBreakpointAttrs(stmt *YasStmt, id uint32, attr DebugBpAttr, value interface{}) error {
 	switch attr {
 	case DBG_BP_ATTR_OBJ_ID:
 		data, ok := value.(*uint64)
@@ -700,8 +628,9 @@ func PdbgGetBreakpointData(stmt *YasStmt, id uint32, attr DebugBpAttr, value int
 			return fmt.Errorf("the value parameter type must be *uint64")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint64_t)
-		err := checkYasError(C.yapiPdbgGetBreakpointData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_OBJ_ID, C.YapiPointer(outValue), 8))
+		err := checkYasError(C.yapiPdbgGetBreakpointAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_OBJ_ID, C.YapiPointer(outValue), 8, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -713,8 +642,9 @@ func PdbgGetBreakpointData(stmt *YasStmt, id uint32, attr DebugBpAttr, value int
 			return fmt.Errorf("the value parameter type must be *uint16")
 		}
 
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint16_t)
-		err := checkYasError(C.yapiPdbgGetBreakpointData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_SUB_ID, C.YapiPointer(outValue), 2))
+		err := checkYasError(C.yapiPdbgGetBreakpointAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_SUB_ID, C.YapiPointer(outValue), 2, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -725,22 +655,9 @@ func PdbgGetBreakpointData(stmt *YasStmt, id uint32, attr DebugBpAttr, value int
 		if !ok {
 			return fmt.Errorf("the value parameter type must be *uint32")
 		}
-
+		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetBreakpointData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_LINE_NO, C.YapiPointer(outValue), 4))
-		if err != nil {
-			return err
-		}
-		*data = uint32(*outValue)
-
-	case DBG_BP_ATTR_BP_ID:
-		data, ok := value.(*uint32)
-		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
-		}
-
-		outValue := new(C.uint32_t)
-		err := checkYasError(C.yapiPdbgGetBreakpointData(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_BP_ID, C.YapiPointer(outValue), 4))
+		err := checkYasError(C.yapiPdbgGetBreakpointAttrs(stmt.Stmt, C.uint32_t(id), C.YAPI_DBG_BP_ATTR_LINE_NO, C.YapiPointer(outValue), 4, &stringLen))
 		if err != nil {
 			return err
 		}
@@ -753,7 +670,7 @@ func PdbgGetBreakpointData(stmt *YasStmt, id uint32, attr DebugBpAttr, value int
 	return nil
 }
 
-type PdbgRunningData struct {
+type PdbgRunningAttr struct {
 	Status     DebuggerStatus
 	ObjId      uint64
 	SubId      uint16
@@ -762,65 +679,60 @@ type PdbgRunningData struct {
 	MethodName string
 }
 
-func PdbgGetAllRunningData(stmt *YasStmt) (*PdbgRunningData, error) {
-	data := PdbgRunningData{}
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_STATUS, &data.Status); err != nil {
+func PdbgGetAllRunningAttrs(stmt *YasStmt) (*PdbgRunningAttr, error) {
+	data := PdbgRunningAttr{}
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_STATUS, &data.Status); err != nil {
 		return nil, err
 	}
 
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_OBJ_ID, &data.ObjId); err != nil {
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_OBJ_ID, &data.ObjId); err != nil {
 		return nil, err
 	}
 
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_SUB_ID, &data.SubId); err != nil {
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_SUB_ID, &data.SubId); err != nil {
 		return nil, err
 	}
 
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_CLASS_NAME, &data.ClassName); err != nil {
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_CLASS_NAME, &data.ClassName); err != nil {
 		return nil, err
 	}
 
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_METHOD_NAME, &data.MethodName); err != nil {
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_METHOD_NAME, &data.MethodName); err != nil {
 		return nil, err
 	}
 
-	if err := PdbgGetRunningData(stmt, DBG_RUNNING_ATTR_LINE_NO, &data.LineNo); err != nil {
+	if err := PdbgGetRunningAttrs(stmt, DBG_RUNNING_ATTR_LINE_NO, &data.LineNo); err != nil {
 		return nil, err
 	}
 
 	return &data, nil
 }
 
-type PdbgBreakpointData struct {
+type PdbgBreakpointAttr struct {
 	Id     uint32
 	ObjId  uint64
 	SubId  uint16
 	LineNo uint32
-	BpId   uint32
 }
 
-func PdbgGetAllBreakpointData(stmt *YasStmt) ([]*PdbgBreakpointData, error) {
+func PdbgGetAllBreakpointAttrs(stmt *YasStmt) ([]*PdbgBreakpointAttr, error) {
 	bpCount, err := PdbgGetBreakpointsCount(stmt)
 	if err != nil {
 		return nil, err
 	}
 
-	bpDatas := make([]*PdbgBreakpointData, 0, bpCount)
+	bpDatas := make([]*PdbgBreakpointAttr, 0, bpCount)
 	for i := uint32(0); i < bpCount; i++ {
-		data := PdbgBreakpointData{Id: i}
-		if err := PdbgGetBreakpointData(stmt, i, DBG_BP_ATTR_OBJ_ID, &data.ObjId); err != nil {
+		data := PdbgBreakpointAttr{Id: i}
+		if err := PdbgGetBreakpointAttrs(stmt, i, DBG_BP_ATTR_OBJ_ID, &data.ObjId); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetBreakpointData(stmt, i, DBG_BP_ATTR_SUB_ID, &data.SubId); err != nil {
+		if err := PdbgGetBreakpointAttrs(stmt, i, DBG_BP_ATTR_SUB_ID, &data.SubId); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetBreakpointData(stmt, i, DBG_BP_ATTR_LINE_NO, &data.LineNo); err != nil {
-			return nil, err
-		}
-
-		if err := PdbgGetBreakpointData(stmt, i, DBG_BP_ATTR_BP_ID, &data.BpId); err != nil {
+		if err := PdbgGetBreakpointAttrs(stmt, i, DBG_BP_ATTR_LINE_NO, &data.LineNo); err != nil {
 			return nil, err
 		}
 		bpDatas = append(bpDatas, &data)
@@ -829,7 +741,7 @@ func PdbgGetAllBreakpointData(stmt *YasStmt) ([]*PdbgBreakpointData, error) {
 	return bpDatas, nil
 }
 
-type PdbgVarData struct {
+type PdbgVarAttr struct {
 	Id           uint32
 	BlockNo      uint32
 	DataType     uint8
@@ -840,33 +752,33 @@ type PdbgVarData struct {
 	Value        string
 }
 
-func PdbgGetAllVarData(stmt *YasStmt) ([]*PdbgVarData, error) {
+func PdbgGetAllVarAttrs(stmt *YasStmt) ([]*PdbgVarAttr, error) {
 	varCount, err := PdbgGetAllVars(stmt)
 	if err != nil {
 		return nil, err
 	}
-	varDatas := make([]*PdbgVarData, 0, varCount)
+	varDatas := make([]*PdbgVarAttr, 0, varCount)
 	for i := uint32(0); i < varCount; i++ {
-		data := PdbgVarData{Id: i}
-		if err := PdbgGetVarData(stmt, i, DBG_VAR_ATTR_BLOCK_NO, &data.BlockNo); err != nil {
+		data := PdbgVarAttr{Id: i}
+		if err := PdbgGetVarAttrs(stmt, i, DBG_VAR_ATTR_BLOCK_NO, &data.BlockNo); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetVarData(stmt, i, DBG_VAR_ATTR_TYPE, &data.DataType); err != nil {
+		if err := PdbgGetVarAttrs(stmt, i, DBG_VAR_ATTR_TYPE, &data.DataType); err != nil {
 			return nil, err
 		}
 
 		data.DataTypeName = GetDatabaseTypeName(uint32(data.DataType))
 
-		if err := PdbgGetVarData(stmt, i, DBG_VAR_ATTR_IS_GLOBAL, &data.IsGlobal); err != nil {
+		if err := PdbgGetVarAttrs(stmt, i, DBG_VAR_ATTR_IS_GLOBAL, &data.IsGlobal); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetVarData(stmt, i, DBG_VAR_ATTR_NAME, &data.Name); err != nil {
+		if err := PdbgGetVarAttrs(stmt, i, DBG_VAR_ATTR_NAME, &data.Name); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetVarData(stmt, i, DBG_VAR_ATTR_VALUE_SIZE, &data.Size); err != nil {
+		if err := PdbgGetVarAttrs(stmt, i, DBG_VAR_ATTR_VALUE_SIZE, &data.Size); err != nil {
 			return nil, err
 		}
 
@@ -890,7 +802,7 @@ type PdbgFrameData struct {
 	MethodName string
 }
 
-func PdbgGetAllFrameData(stmt *YasStmt) ([]*PdbgFrameData, error) {
+func PdbgGetAllFrameAttrs(stmt *YasStmt) ([]*PdbgFrameData, error) {
 	frameCount, err := PdbgGetAllFrames(stmt)
 	if err != nil {
 		return nil, err
@@ -898,27 +810,27 @@ func PdbgGetAllFrameData(stmt *YasStmt) ([]*PdbgFrameData, error) {
 	frameDatas := make([]*PdbgFrameData, 0, frameCount)
 	for i := uint32(0); i < frameCount; i++ {
 		data := PdbgFrameData{Id: i}
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_OBJ_ID, &data.ObjId); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_OBJ_ID, &data.ObjId); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_SUB_ID, &data.SubId); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_SUB_ID, &data.SubId); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_LINE_NO, &data.LineNo); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_LINE_NO, &data.LineNo); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_STACK_NO, &data.StackNo); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_STACK_NO, &data.StackNo); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_CLASS_NAME, &data.ClassName); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_CLASS_NAME, &data.ClassName); err != nil {
 			return nil, err
 		}
 
-		if err := PdbgGetFrameData(stmt, i, DBG_FRAME_ATTR_METHOD_NAME, &data.MethodName); err != nil {
+		if err := PdbgGetFrameAttrs(stmt, i, DBG_FRAME_ATTR_METHOD_NAME, &data.MethodName); err != nil {
 			return nil, err
 		}
 
