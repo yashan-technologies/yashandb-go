@@ -237,3 +237,117 @@ func testEmojiCharacters(t *sqlTest) {
 	si.queryResult = [][]interface{}{{"😼"}}
 	t.runQueryTest()
 }
+
+func TestNchar(t *testing.T) {
+	runSqlTest(t, testnChar)
+}
+
+func testnChar(t *sqlTest) {
+	si := sqlGenInfo{}
+	t.sqlGenInfo = &si
+
+	// test case1:
+	t1c1 := "01234567899876543210"
+	t1c2 := "中国深圳龙华"
+	t1c3 := "😂😂😼😶😶"
+	si = sqlGenInfo{
+		tableName: "nchar_test1",
+		columnNameType: [][2]string{
+			{"id", "int"},
+			{"c1", "nchar(20)"},
+			{"c2", "nchar(6)"},
+			{"c3", "nchar(10)"},
+		},
+		execArgs: [][]interface{}{
+			{1, t1c1, t1c2, t1c3},
+		},
+		queryResult: [][]interface{}{
+			{int32(1), t1c1, t1c2, t1c3},
+		},
+	}
+	t.genTableTest()
+	t.runInsertTest()
+	t.runSelectTest()
+
+	// test case2:
+	t2c1_1 := strings.Repeat("0123456789", 4000/10)
+	t2c1_2 := strings.Repeat("崖山数据库", 4000/5)
+	t2c1_3 := ""
+	si = sqlGenInfo{
+		tableName: "nchar_test2",
+		columnNameType: [][2]string{
+			{"id", "int"},
+			{"c1", "nchar(4000)"},
+		},
+		execArgs: [][]interface{}{
+			{1, t2c1_1},
+			{2, t2c1_2},
+			{3, t2c1_3},
+		},
+		queryResult: [][]interface{}{
+			{int32(1), t2c1_1},
+			{int32(2), t2c1_2},
+			{int32(3), nil},
+		},
+	}
+	t.genTableTest()
+	t.runInsertTest()
+	t.runSelectTest()
+}
+
+func TestNvarchar(t *testing.T) {
+	runSqlTest(t, testnvarChar)
+}
+
+func testnvarChar(t *sqlTest) {
+	si := sqlGenInfo{}
+	t.sqlGenInfo = &si
+
+	// test case1:
+	t1c1 := "01234567899876543210"
+	t1c2 := "中国深圳龙华"
+	t1c3 := "😂😂😼😶😶"
+	si = sqlGenInfo{
+		tableName: "nvarchar_test1",
+		columnNameType: [][2]string{
+			{"id", "int"},
+			{"c1", "nvarchar(20)"},
+			{"c2", "nvarchar(6)"},
+			{"c3", "nvarchar(10)"},
+		},
+		execArgs: [][]interface{}{
+			{1, t1c1, t1c2, t1c3},
+		},
+		queryResult: [][]interface{}{
+			{int32(1), t1c1, t1c2, t1c3},
+		},
+	}
+	t.genTableTest()
+	t.runInsertTest()
+	t.runSelectTest()
+
+	// test case2:
+	t2c1_1 := strings.Repeat("0123456789", 4000/10)
+	t2c1_2 := strings.Repeat("崖山数据库", 4000/5)
+	t2c1_3 := ""
+	si = sqlGenInfo{
+		tableName: "nvarchar_test2",
+		columnNameType: [][2]string{
+			{"id", "int"},
+			{"c1", "nvarchar(4000)"},
+		},
+		execArgs: [][]interface{}{
+			{1, t2c1_1},
+			{2, t2c1_2},
+			{3, t2c1_3},
+		},
+		queryResult: [][]interface{}{
+			{int32(1), t2c1_1},
+			{int32(2), t2c1_2},
+			{int32(3), nil},
+		},
+	}
+	t.genTableTest()
+	t.runInsertTest()
+	t.runSelectTest()
+}

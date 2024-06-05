@@ -28,7 +28,7 @@ var (
 	callPlSql_2 = `call LX_PROC(?,?)`
 
 	procName_3 = `FUNC_OUTPARAM`
-	plsql_3    = `CREATE OR REPLACE function func_outparam(c1 out int,c2 out float,c3 out double,c4 out varchar,c5 out char,c6 out date,c7 out boolean,c8 out clob,c9 out rowid,c10 out json) return varchar is
+	plsql_3    = `CREATE OR REPLACE function func_outparam(c1 out int,c2 out float,c3 out double,c4 out varchar,c5 out char,c6 out date,c7 out boolean,c8 out clob,c9 out rowid,c10 out json,c11 out nchar,c12 out nvarchar) return varchar is
 	res varchar(8000);
 	v1 int := 943093745;
 	v2 float := 1506141.9;
@@ -40,6 +40,8 @@ var (
 	v8 clob := 'It gives me great pleasure to introduce our company.';
 	v9 rowid := '1350:5:0:148:0';
 	v10 json := '{"name":"Jack", "city":"Beijing","school":"TsingHua University"}';
+	v11 nchar(10) := '😂😂😼😶😶';
+	v12 nvarchar(13) := '中国深圳市龙华区崖山数据库';
 	begin
 	c1 := v1;
 	c2 := v2;
@@ -51,7 +53,9 @@ var (
 	c8 := v8;
 	c9 := v9;
 	c10 := v10;
-	res := c1||':'||c4||':'||c5||':'||c6||':'||c7||':'||c8||':'||c9 || ':' || c10;
+	c11 := v11;
+	c12 := v12;
+	res := c1||':'||c4||':'||c5||':'||c6||':'||c7||':'||c8||':'||c9 || ':' || c10 || ':' || c11 || ':' || c12;
 	return res;
 	end;`
 
@@ -67,8 +71,10 @@ var (
   C8 CLOB;
   C9 ROWID;
   C10 JSON;
+  c11 nchar(10);
+  c12 nvarchar(13);
   BEGIN
-	v_result := FUNC_OUTPARAM(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10);
+	v_result := FUNC_OUTPARAM(C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, c11, c12);
   END;`
 )
 
