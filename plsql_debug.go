@@ -569,7 +569,14 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 	bindType = C.YAPI_TYPE_VARCHAR
 	actualType = C.YapiType(dataType)
 	switch actualType {
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
+	case C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR:
+		var valueSize uint32
+		if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
+			return "", err
+		}
+		bufLen = int32(stmt.Conn.ncharsetRatio*valueSize) + 1
+		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		var valueSize uint32
 		if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
 			return "", err

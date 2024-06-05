@@ -81,7 +81,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		return nil, err
 	}
 
-	if err := yasConn.getCharsetRatio(); err != nil {
+	if err := yasConn.getConnAttr(); err != nil {
 		_ = yasConn.Close()
 		return nil, err
 	}
