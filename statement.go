@@ -220,11 +220,11 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	switch yacType {
 	case C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR:
 		yacType = C.YAPI_TYPE_VARCHAR
-		bufLen = int32(sizeToAlign4(size)) + 1
+		bufLen = int32(sizeToAlign4(size)*stmt.Conn.ncharsetRatio) + 1
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
-		bufLen = int32(sizeToAlign4(size)) + 1
+		bufLen = int32(sizeToAlign4(size)*stmt.Conn.charsetRatio) + 1
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
@@ -255,7 +255,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	default:
 		yacType = C.YAPI_TYPE_VARCHAR
 		bufLen = _DefaultSize
-		row.Data = mallocBytes(uint32(bufLen))
+		row.Data = mallocBytes(uint32(bufLen) * stmt.Conn.charsetRatio)
 		freeType = normalFree
 	}
 	row.Indicator = indicator

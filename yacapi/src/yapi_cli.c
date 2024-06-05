@@ -574,7 +574,7 @@ YapiResult yapiCiPdbgStart(YacHandle hStmt, uint64_t objId, uint16_t subId, Yapi
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgStart", yapiSymbols.fnPdbgStart)
+    YAPI_LOAD_SYMBOL("yacPdbgStart", yapiSymbols.fnPdbgStart)
     ret = (*yapiSymbols.fnPdbgStart)(hStmt, objId, subId);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -584,7 +584,7 @@ YapiResult yapiCiPdbgCheckVersion(YacHandle hStmt, uint64_t objId, uint16_t subI
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgCheckVersion", yapiSymbols.fnPdbgCheckVersion)
+    YAPI_LOAD_SYMBOL("yacPdbgCheckVersion", yapiSymbols.fnPdbgCheckVersion)
     ret = (*yapiSymbols.fnPdbgCheckVersion)(hStmt, objId, subId, version);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -593,7 +593,7 @@ YapiResult yapiCiPdbgAbort(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgAbort", yapiSymbols.fnPdbgAbort)
+    YAPI_LOAD_SYMBOL("yacPdbgAbort", yapiSymbols.fnPdbgAbort)
     ret = (*yapiSymbols.fnPdbgAbort)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -602,7 +602,7 @@ YapiResult yapiCiPdbgContinue(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgContinue", yapiSymbols.fnPdbgContinue)
+    YAPI_LOAD_SYMBOL("yacPdbgContinue", yapiSymbols.fnPdbgContinue)
     ret = (*yapiSymbols.fnPdbgContinue)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -611,7 +611,7 @@ YapiResult yapiCiPdbgStepInto(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgStepInto", yapiSymbols.fnPdbgStepInto)
+    YAPI_LOAD_SYMBOL("yacPdbgStepInto", yapiSymbols.fnPdbgStepInto)
     ret = (*yapiSymbols.fnPdbgStepInto)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -620,7 +620,7 @@ YapiResult yapiCiPdbgStepOut(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgStepOut", yapiSymbols.fnPdbgStepOut)
+    YAPI_LOAD_SYMBOL("yacPdbgStepOut", yapiSymbols.fnPdbgStepOut)
     ret = (*yapiSymbols.fnPdbgStepOut)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -629,7 +629,7 @@ YapiResult yapiCiPdbgStepNext(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgStepNext", yapiSymbols.fnPdbgStepNext)
+    YAPI_LOAD_SYMBOL("yacPdbgStepNext", yapiSymbols.fnPdbgStepNext)
     ret = (*yapiSymbols.fnPdbgStepNext)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -638,7 +638,7 @@ YapiResult yapiCiPdbgDeleteAllBreakpoints(YacHandle hStmt, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgDeleteAllBreakpoints", yapiSymbols.fnPdbgDeleteAllBreakpoints)
+    YAPI_LOAD_SYMBOL("yacPdbgDeleteAllBreakpoints", yapiSymbols.fnPdbgDeleteAllBreakpoints)
     ret = (*yapiSymbols.fnPdbgDeleteAllBreakpoints)(hStmt);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -648,7 +648,7 @@ YapiResult yapiCiPdbgAddBreakpoint(YacHandle hStmt, uint64_t objId, uint16_t sub
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgAddBreakpoint", yapiSymbols.fnPdbgAddBreakpoint)
+    YAPI_LOAD_SYMBOL("yacPdbgAddBreakpoint", yapiSymbols.fnPdbgAddBreakpoint)
     ret = (*yapiSymbols.fnPdbgAddBreakpoint)(hStmt, objId, subId, lineNo, bpId);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -657,7 +657,7 @@ YapiResult yapiCiPdbgGetBreakpointsCount(YacHandle hStmt, uint32_t* bpCount, Yap
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetBreakpointsCount", yapiSymbols.fnPdbgGetBreakpointsCount)
+    YAPI_LOAD_SYMBOL("yacPdbgGetBreakpointsCount", yapiSymbols.fnPdbgGetBreakpointsCount)
     ret = (*yapiSymbols.fnPdbgGetBreakpointsCount)(hStmt, bpCount);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -667,7 +667,7 @@ YapiResult yapiCiPdbgDeleteBreakpoint(YacHandle hStmt, uint64_t objId, uint16_t 
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgDeleteBreakpoint", yapiSymbols.fnPdbgDeleteBreakpoint)
+    YAPI_LOAD_SYMBOL("yacPdbgDeleteBreakpoint", yapiSymbols.fnPdbgDeleteBreakpoint)
     ret = (*yapiSymbols.fnPdbgDeleteBreakpoint)(hStmt, objId, subId, lineNo);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -676,7 +676,7 @@ YapiResult yapiCiPdbgGetAllVars(YacHandle hStmt, uint32_t* varCount, YapiErrorMs
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetAllVars", yapiSymbols.fnPdbgPdbgGetAllVars)
+    YAPI_LOAD_SYMBOL("yacPdbgGetAllVars", yapiSymbols.fnPdbgPdbgGetAllVars)
     ret = (*yapiSymbols.fnPdbgPdbgGetAllVars)(hStmt, varCount);
     YAPI_CHECK_CLI_RETURN();
 }
@@ -685,38 +685,38 @@ YapiResult yapiCiPdbgGetAllFrames(YacHandle hStmt, uint32_t* frameCount, YapiErr
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetAllFrames", yapiSymbols.fnPdbgGetAllFrames)
+    YAPI_LOAD_SYMBOL("yacPdbgGetAllFrames", yapiSymbols.fnPdbgGetAllFrames)
     ret = (*yapiSymbols.fnPdbgGetAllFrames)(hStmt, frameCount);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgGetRunningData(YacHandle hStmt, YapiDebugRunningAttr attr, void* value, int32_t bufLen,
-                                    YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetRunningAttrs(YacHandle hStmt, YapiDebugRunningAttr attr, void* value, int32_t bufLen,
+                                     int32_t* stringLength, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetRunningData", yapiSymbols.fnPdbgGetRunningData)
-    ret = (*yapiSymbols.fnPdbgGetRunningData)(hStmt, attr, value, bufLen);
+    YAPI_LOAD_SYMBOL("yacPdbgGetRunningAttrs", yapiSymbols.fnPdbgGetRunningAttrs)
+    ret = (*yapiSymbols.fnPdbgGetRunningAttrs)(hStmt, attr, value, bufLen, stringLength);
     YAPI_CHECK_CLI_RETURN();
 }
-YapiResult yapiCiPdbgGetFrameData(YacHandle hStmt, uint32_t id, YapiDebugFrameAttr attr, void* value, int32_t bufLen,
-                                  YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetFrameAttrs(YacHandle hStmt, uint32_t id, YapiDebugFrameAttr attr, void* value, int32_t bufLen,
+                                   int32_t* stringLength, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetFrameData", yapiSymbols.fnPdbgGetFrameData)
-    ret = (*yapiSymbols.fnPdbgGetFrameData)(hStmt, id, attr, value, bufLen);
+    YAPI_LOAD_SYMBOL("yacPdbgGetFrameAttrs", yapiSymbols.fnPdbgGetFrameAttrs)
+    ret = (*yapiSymbols.fnPdbgGetFrameAttrs)(hStmt, id, attr, value, bufLen, stringLength);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgGetVarData(YacHandle hStmt, uint32_t id, YapiDebugVarAttr attr, void* value, int32_t bufLen,
-                                YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetVarAttrs(YacHandle hStmt, uint32_t id, YapiDebugVarAttr attr, void* value, int32_t bufLen,
+                                 int32_t* stringLength, YapiErrorMsg* error)
 
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetVarData", yapiSymbols.fnPdbgGetVarData)
-    ret = (*yapiSymbols.fnPdbgGetVarData)(hStmt, id, attr, value, bufLen);
+    YAPI_LOAD_SYMBOL("yacPdbgGetVarAttrs", yapiSymbols.fnPdbgGetVarAttrs)
+    ret = (*yapiSymbols.fnPdbgGetVarAttrs)(hStmt, id, attr, value, bufLen, stringLength);
     YAPI_CHECK_CLI_RETURN();
 }
 
@@ -725,17 +725,17 @@ YapiResult yapiCiPdbgGetVarValue(YacHandle hStmt, uint32_t id, uint32_t valueTyp
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetVarValue", yapiSymbols.fnPdbgGetVarValue)
+    YAPI_LOAD_SYMBOL("yacPdbgGetVarValue", yapiSymbols.fnPdbgGetVarValue)
     ret = (*yapiSymbols.fnPdbgGetVarValue)(hStmt, id, valueType, value, bufLen, indicator);
     YAPI_CHECK_CLI_RETURN();
 }
 
-YapiResult yapiCiPdbgGetBreakpointData(YacHandle hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen,
-                                       YapiErrorMsg* error)
+YapiResult yapiCiPdbgGetBreakpointAttrs(YacHandle hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen,
+                                        int32_t* stringLength, YapiErrorMsg* error)
 {
     YapiResult ret;
 
-    YAPI_LOAD_SYMBOL("pdbgGetBreakpointData", yapiSymbols.fnPdbgGetBreakpointData)
-    ret = (*yapiSymbols.fnPdbgGetBreakpointData)(hStmt, id, attr, value, bufLen);
+    YAPI_LOAD_SYMBOL("yacPdbgGetBreakpointAttrs", yapiSymbols.fnPdbgGetBreakpointAttrs)
+    ret = (*yapiSymbols.fnPdbgGetBreakpointAttrs)(hStmt, id, attr, value, bufLen, stringLength);
     YAPI_CHECK_CLI_RETURN();
 }
