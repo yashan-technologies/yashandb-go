@@ -561,28 +561,33 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 		isLob      bool
 		err        error
 		dataType   uint8
+		valueSize  uint32
 	)
 	if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_TYPE, &dataType); err != nil {
 		return "", err
 	}
 
+	if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
+		return "", err
+	}
+
 	bindType = C.YAPI_TYPE_VARCHAR
 	actualType = C.YapiType(dataType)
+
 	switch actualType {
 	case C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR:
-		var valueSize uint32
-		if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
-			return "", err
-		}
 		bufLen = int32(stmt.Conn.ncharsetRatio*valueSize) + 1
 		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
-		var valueSize uint32
-		if err := PdbgGetVarAttrs(stmt, id, DBG_VAR_ATTR_VALUE_SIZE, &valueSize); err != nil {
-			return "", err
-		}
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
 		bufLen = int32(stmt.Conn.charsetRatio*valueSize) + 1
 		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+	case C.YAPI_TYPE_BIT:
+		bufLen = int32(valueSize*8) + 1
+		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+	case C.YAPI_TYPE_BINARY:
+		bufLen = int32(sizeToAlign4(valueSize*2)) + 1
+		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
+
 	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
 		desc, err := stmt.Conn.lobWrite(actualType, nil)
 		if err != nil {

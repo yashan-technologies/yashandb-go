@@ -227,9 +227,19 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		bufLen = int32(sizeToAlign4(size)*stmt.Conn.charsetRatio) + 1
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
-	case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
+	case C.YAPI_TYPE_NUMBER: // number to string
 		yacType = C.YAPI_TYPE_VARCHAR
 		bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
+	case C.YAPI_TYPE_YM_INTERVAL:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 15
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
+	case C.YAPI_TYPE_DS_INTERVAL:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 32
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
