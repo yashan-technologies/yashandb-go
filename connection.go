@@ -26,56 +26,20 @@ import (
 )
 
 type YasConn struct {
-	Env        *C.YapiEnv
-	Conn       *C.YapiConnect
-	autoCommit bool
-	closed     bool
+	Env           *C.YapiEnv
+	Conn          *C.YapiConnect
+	autoCommit    bool
+	closed        bool
+	charsetRatio  uint32 // 最大CHARSET膨胀比率
+	ncharsetRatio uint32 // 最大NCHARSET膨胀比率
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
-	return conn.PrepareContext(context.Background(), query)
+	return PrepareContext(conn, context.Background(), query)
 }
 
 func (conn *YasConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
-	var stmt *C.YapiStmt
-	nQuery := tryRmSqlSemicolon(query)
-	queryP := C.CString(nQuery)
-	defer C.free(unsafe.Pointer(queryP))
-	sqlLength := C.int32_t(len(nQuery))
-	if err := checkYasError(
-		C.yapiPrepare(
-			conn.Conn,
-			queryP,
-			sqlLength,
-			&stmt,
-		)); err != nil {
-		return nil, err
-	}
-
-	var sqltype C.uint32_t
-	sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
-	if err := checkYasError(
-		C.yapiGetStmtAttr(
-			stmt,
-			C.YAPI_ATTR_SQLTYPE,
-			unsafe.Pointer(&sqltype),
-			sqlSize,
-			&sqlLength,
-		)); err != nil {
-		return nil, err
-	}
-
-	yasStmt := &YasStmt{
-		Conn:    conn,
-		Stmt:    stmt,
-		SqlType: (uint32)(sqltype),
-	}
-
-	return yasStmt, nil
+	return PrepareContext(conn, ctx, query)
 }
 
 func (conn *YasConn) Begin() (driver.Tx, error) {
@@ -117,6 +81,34 @@ func (conn *YasConn) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (conn *YasConn) getConnAttr() error {
+	if err := conn.getCharsetRatio(); err != nil {
+		return err
+	}
+
+	return conn.getNcharsetRatio()
+}
+
+func (conn *YasConn) getCharsetRatio() error {
+	var ratio C.uint32_t
+	size := C.int32_t(unsafe.Sizeof(ratio))
+	if err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_CHARSET_RATIO, unsafe.Pointer(&ratio), size); err != nil {
+		return err
+	}
+	conn.charsetRatio = uint32(ratio)
+	return nil
+}
+
+func (conn *YasConn) getNcharsetRatio() error {
+	var ratio C.uint32_t
+	size := C.int32_t(unsafe.Sizeof(ratio))
+	if err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_NCHARSET_RATIO, unsafe.Pointer(&ratio), size); err != nil {
+		return err
+	}
+	conn.ncharsetRatio = uint32(ratio)
+	return nil
+}
+
 func (conn *YasConn) setAutoCommit(auto bool) error {
 	var a C.int32_t = 0
 	if auto {
@@ -137,6 +129,21 @@ func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, 
 			attr,
 			value,
 			bufLength,
+		)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (conn *YasConn) yapiGetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
+	var stringLen C.int32_t
+	if err := checkYasError(
+		C.yapiGetConnAttr(
+			conn.Conn,
+			attr,
+			value,
+			bufLength,
+			&stringLen,
 		)); err != nil {
 		return err
 	}
@@ -315,4 +322,46 @@ func (conn *YasConn) handleRestSessionErr(err error) error {
 		return driver.ErrBadConn
 	}
 	return nil
+}
+
+func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	var stmt *C.YapiStmt
+	nQuery := tryRmSemicolon(query)
+	queryP := C.CString(nQuery)
+	defer C.free(unsafe.Pointer(queryP))
+	sqlLength := C.int32_t(len(nQuery))
+	if err := checkYasError(
+		C.yapiPrepare(
+			conn.Conn,
+			queryP,
+			sqlLength,
+			&stmt,
+		)); err != nil {
+		return nil, err
+	}
+
+	var sqltype C.uint32_t
+	sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
+	if err := checkYasError(
+		C.yapiGetStmtAttr(
+			stmt,
+			C.YAPI_ATTR_SQLTYPE,
+			unsafe.Pointer(&sqltype),
+			sqlSize,
+			&sqlLength,
+		)); err != nil {
+		return nil, err
+	}
+
+	yasStmt := &YasStmt{
+		Conn:    conn,
+		Stmt:    stmt,
+		SqlType: (uint32)(sqltype),
+	}
+
+	return yasStmt, nil
 }

@@ -5,3 +5,4 @@
 #include "yacapi/src/yapi_stmt.c"
 #include "yacapi/src/yapi_var.c"
 #include "yacapi/src/yapi_infr.c"
+#include "yacapi/src/yapi_pldebug.c"

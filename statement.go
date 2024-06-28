@@ -212,19 +212,34 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		return nil, err
 	}
 	yacType := C.YapiType(item._type)
-	size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(32))
+	size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(4))
 	row := NewYasRow(size, yacType)
 	bufLen := int32(size)
 	freeType := notFree
 
 	switch yacType {
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
-		bufLen = int32(sizeToAlign4(size)) + 1
+	case C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = int32(sizeToAlign4(size)*stmt.Conn.ncharsetRatio) + 1
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
-	case C.YAPI_TYPE_NUMBER, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL: // number to string
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
+		bufLen = int32(sizeToAlign4(size)*stmt.Conn.charsetRatio) + 1
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
+	case C.YAPI_TYPE_NUMBER: // number to string
 		yacType = C.YAPI_TYPE_VARCHAR
 		bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
+	case C.YAPI_TYPE_YM_INTERVAL:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 15
+		row.Data = mallocBytes(uint32(bufLen))
+		freeType = normalFree
+	case C.YAPI_TYPE_DS_INTERVAL:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 32
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
@@ -239,13 +254,18 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		bufLen = -1
 		row.Data = unsafe.Pointer(desc)
 		freeType = lobFree
-	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BINARY:
+	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		row.Data = mallocBytes(size)
+		freeType = normalFree
+	case C.YAPI_TYPE_ROWID:
+		yacType = C.YAPI_TYPE_VARCHAR
+		bufLen = 44
+		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	default:
 		yacType = C.YAPI_TYPE_VARCHAR
-		bufLen = int32(sizeToAlign4(size)) + 1
-		row.Data = mallocBytes(uint32(bufLen))
+		bufLen = _DefaultSize
+		row.Data = mallocBytes(uint32(bufLen) * stmt.Conn.charsetRatio)
 		freeType = normalFree
 	}
 	row.Indicator = indicator
@@ -679,18 +699,24 @@ func (stmt *YasStmt) getBindValueDest() error {
 
 func (stmt *YasStmt) freeBindValues() {
 	for _, bind := range stmt.binds {
-		if bind.value != nil {
-			switch bind.freeType {
-			case lobFree:
-				lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
-				stmt.Conn.lobFree(bind.yacType, *lobLocator)
-			case normalFree:
-				C.free(unsafe.Pointer(bind.value))
-			}
-			bind.value = nil
-		}
+		stmt.freeBIndValue(bind)
 	}
 	stmt.binds = []*bindStruct{}
+}
+
+func (stmt *YasStmt) freeBIndValue(bind *bindStruct) {
+	if bind.value == nil {
+		return
+	}
+	switch bind.freeType {
+	case lobFree:
+		lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(bind.value))
+		stmt.Conn.lobFree(bind.yacType, *lobLocator)
+	case normalFree:
+		C.free(unsafe.Pointer(bind.value))
+	}
+	bind.value = nil
+
 }
 
 type outputBindInfo struct {
