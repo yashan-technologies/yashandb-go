@@ -157,7 +157,7 @@ YapiResult yapiCliFreeHandle(YapiHandleType type, YacHandle handle, YapiErrorMsg
 
 YapiResult yapiCliGetVersion(char** version, YapiErrorMsg* error)
 {
-    YAPI_LOAD_SYMBOL("yacGetGetVersion", yapiSymbols.fnGetVersion)
+    YAPI_LOAD_SYMBOL("yacGetVersion", yapiSymbols.fnGetVersion)
     *version = (*yapiSymbols.fnGetVersion)();
     return YAPI_SUCCESS;
 }
