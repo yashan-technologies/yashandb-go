@@ -26,18 +26,15 @@ type YasdbDriver struct{}
 
 // Open returns a new connection to the database.
 func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
+	return GenYasconn(dsnStr)
+}
+
+func GenYasconn(dsnStr string) (*YasConn, error) {
 	dsn, err := ParseDSN(dsnStr)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := yasDriver.getYasConn(dsn)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
 
-func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, error) {
 	var env *C.YapiEnv
 	if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
 		return nil, err
@@ -52,6 +49,13 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
 			return nil, err
 		}
 	}
+
+	charset := C.YAPI_CHARSET_UTF8
+	if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4)); err != nil {
+		_ = releaseEnv(env)
+		return nil, err
+	}
+
 	var conn *C.YapiConnect
 
 	url := stringToYasChar(dsn.Url)
@@ -73,10 +77,15 @@ func (yasDriver *YasdbDriver) getYasConn(dsn *DataSourceName) (driver.Conn, erro
 		autoCommit: dsn.IsAutoCommit,
 	}
 	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
-		_ = releaseConn(conn)
-		_ = releaseEnv(env)
+		_ = yasConn.Close()
 		return nil, err
 	}
+
+	if err := yasConn.getConnAttr(); err != nil {
+		_ = yasConn.Close()
+		return nil, err
+	}
+
 	return yasConn, nil
 }
 

@@ -132,9 +132,9 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
 		return reflect.TypeOf(float64(0))
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP:
 		return reflect.TypeOf(time.Time{})
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB:
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_NCLOB, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_JSON:
 		return reflect.TypeOf("")
-	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY:
+	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		return reflect.TypeOf([]byte(nil))
 	default:
 		return reflect.TypeOf(nil)
@@ -146,44 +146,7 @@ func (r *YasRows) ColumnTypeDatabaseTypeName(index int) string {
 	if len(r.fetchRows) < index+1 {
 		return ""
 	}
-	switch r.fetchRows[index].yacType {
-	case C.YAPI_TYPE_BOOL:
-		return "BOOLEAN"
-	case C.YAPI_TYPE_TINYINT:
-		return "TINYINT"
-	case C.YAPI_TYPE_SMALLINT:
-		return "SMALLINT"
-	case C.YAPI_TYPE_INTEGER:
-		return "INTEGER"
-	case C.YAPI_TYPE_BIGINT:
-		return "BIGINT"
-	case C.YAPI_TYPE_FLOAT:
-		return "FLOAT"
-	case C.YAPI_TYPE_DOUBLE:
-		return "DOUBLE"
-	case C.YAPI_TYPE_NUMBER:
-		return "NUMBER"
-	case C.YAPI_TYPE_DATE:
-		return "DATE"
-	case C.YAPI_TYPE_TIMESTAMP:
-		return "TIMESTAMP"
-	case C.YAPI_TYPE_CHAR:
-		return "CHAR"
-	case C.YAPI_TYPE_NCHAR:
-		return "NCHAR"
-	case C.YAPI_TYPE_VARCHAR:
-		return "VARCHAR"
-	case C.YAPI_TYPE_NVARCHAR:
-		return "NVARCHAR"
-	case C.YAPI_TYPE_CLOB:
-		return "CLOB"
-	case C.YAPI_TYPE_BLOB:
-		return "BLOB"
-	case C.YAPI_TYPE_BINARY:
-		return "RAW"
-	default:
-		return ""
-	}
+	return GetDatabaseTypeName(uint32(r.fetchRows[index].yacType))
 }
 
 // RowsColumnTypeLength return the length of the column type if the column is a variable length type.
@@ -237,8 +200,17 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 			value = (*(*float32)(row.Data))
 		case C.YAPI_TYPE_DOUBLE:
 			value = (*(*float64)(row.Data))
-		case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME:
-			value = time.Unix(0, (*(*int64)(row.Data))*1e3)
+		case C.YAPI_TYPE_DATE:
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), 0, time.UTC)
+		case C.YAPI_TYPE_TIMESTAMP:
+			value = time.UnixMicro(*(*int64)(row.Data)).UTC()
+		case C.YAPI_TYPE_SHORTDATE:
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), 0, 0, 0, 0, time.UTC)
+		case C.YAPI_TYPE_SHORTTIME:
+			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
+			value = time.Date(0, 0, 0, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)
 		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
 			value = (C.GoString((*C.char)(row.Data)))
 		case C.YAPI_TYPE_NUMBER:
@@ -258,7 +230,10 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 				value = data
 			}
 		case C.YAPI_TYPE_BINARY:
-			data := (*[8000]byte)(row.Data)[0:row.Size]
+			data := (*[8000]byte)(row.Data)[0:*row.Indicator]
+			value = data
+		case C.YAPI_TYPE_BIT:
+			data := (*[64]byte)(row.Data)[0:*row.Indicator]
 			value = data
 		default:
 			value = (C.GoString((*C.char)(row.Data)))

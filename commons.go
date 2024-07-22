@@ -22,6 +22,8 @@ import "C"
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"regexp"
 	"strings"
 	"sync"
 	"unsafe"
@@ -30,6 +32,7 @@ import (
 const (
 	_LobBufLen      = 8192
 	_OutputBindSize = 8192
+	_DefaultSize    = 32*1024 + 1
 )
 
 type valueFreeType int8
@@ -65,6 +68,9 @@ var (
 	notFree    valueFreeType = 0
 	normalFree valueFreeType = 1
 	lobFree    valueFreeType = 2
+
+	commentRegStr_1 = `\/\*([^*]|\*+[^*/])*\*+\/`
+	commentRegStr_2 = `^--.*`
 )
 
 type bindStruct struct {
@@ -100,6 +106,10 @@ func intToYacInt32(n int) C.int32_t {
 
 func intToYacUint32(n int) C.uint32_t {
 	return C.uint32_t(n)
+}
+
+func intToYacInt(n int) C.int {
+	return C.int(n)
 }
 
 func yacPointerToInt64(p C.YapiPointer) int64 {
@@ -188,7 +198,7 @@ func checkYasError(ret C.YapiResult) error {
 	return err
 }
 
-func tryRmSqlSemicolon(query string) string {
+func tryRmSemicolon(query string) string {
 	if isKeySql(query) {
 		return query
 	}
@@ -196,6 +206,7 @@ func tryRmSqlSemicolon(query string) string {
 }
 
 func isKeySql(query string) bool {
+	query = rmComment(query)
 	strs := strings.Fields(strings.TrimSpace(query))
 	sqlStr := strings.ToLower(strings.Join(strs, " "))
 	for _, v := range keySqls {
@@ -204,6 +215,27 @@ func isKeySql(query string) bool {
 		}
 	}
 	return false
+}
+
+func rmComment(query string) string {
+	reg1, _ := regexp.Compile(commentRegStr_1)
+	if reg1.MatchString(query) {
+		query = reg1.ReplaceAllString(query, "")
+	}
+
+	nQuery := ""
+	reg2, _ := regexp.Compile(commentRegStr_2)
+	for _, line := range strings.Split(query, "\n") {
+		nline := strings.TrimSpace(line)
+		if nline == "" {
+			continue
+		}
+		if reg2.MatchString(nline) {
+			continue
+		}
+		nQuery += nline + "\n"
+	}
+	return nQuery
 }
 
 func isDisconnetionErr(err error) bool {
@@ -237,4 +269,104 @@ func releaseEnv(env *C.YapiEnv) error {
 	}
 	env = nil
 	return nil
+}
+
+func ConvertToNameValue(args ...any) ([]driver.NamedValue, error) {
+	nargs := make([]driver.NamedValue, len(args))
+	for i, arg := range args {
+		var (
+			nargValue driver.Value
+			err       error
+		)
+		outValue, isOut := arg.(sql.Out)
+		if isOut {
+			nargValue = outValue
+		} else {
+			nargValue, err = driver.DefaultParameterConverter.ConvertValue(arg)
+			if err != nil {
+				return nil, err
+			}
+		}
+		nargs[i].Ordinal = i + 1
+		nargs[i].Value = nargValue
+	}
+	return nargs, nil
+}
+
+func GetDatabaseTypeName(yapiType uint32) string {
+	switch C.YapiType(yapiType) {
+	case C.YAPI_TYPE_BOOL:
+		return "BOOLEAN"
+	case C.YAPI_TYPE_TINYINT:
+		return "TINYINT"
+	case C.YAPI_TYPE_SMALLINT:
+		return "SMALLINT"
+	case C.YAPI_TYPE_INTEGER:
+		return "INTEGER"
+	case C.YAPI_TYPE_BIGINT:
+		return "BIGINT"
+	case C.YAPI_TYPE_FLOAT:
+		return "FLOAT"
+	case C.YAPI_TYPE_DOUBLE:
+		return "DOUBLE"
+	case C.YAPI_TYPE_NUMBER:
+		return "NUMBER"
+	case C.YAPI_TYPE_DATE:
+		return "DATE"
+	case C.YAPI_TYPE_SHORTTIME:
+		return "TIME"
+	case C.YAPI_TYPE_TIMESTAMP:
+		return "TIMESTAMP"
+	case C.YAPI_TYPE_CHAR:
+		return "CHAR"
+	case C.YAPI_TYPE_NCHAR:
+		return "NCHAR"
+	case C.YAPI_TYPE_VARCHAR:
+		return "VARCHAR"
+	case C.YAPI_TYPE_NVARCHAR:
+		return "NVARCHAR"
+	case C.YAPI_TYPE_CLOB:
+		return "CLOB"
+	case C.YAPI_TYPE_BLOB:
+		return "BLOB"
+	case C.YAPI_TYPE_BINARY:
+		return "RAW"
+	case C.YAPI_TYPE_ROWID:
+		return "ROWID"
+	case C.YAPI_TYPE_BIT:
+		return "BIT"
+	case C.YAPI_TYPE_NCLOB:
+		return "NCLOB"
+	case C.YAPI_TYPE_JSON:
+		return "JSON"
+	case C.YAPI_TYPE_YM_INTERVAL:
+		return "INTERVAL YEAR TO MONTH"
+	case C.YAPI_TYPE_DS_INTERVAL:
+		return "INTERVAL DAY TO SECOND"
+	default:
+		return ""
+	}
+}
+
+func GetDatabaseTypeSize(yType C.YapiType) int32 {
+	switch yType {
+	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_UTINYINT:
+		return 1
+	case C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_USMALLINT:
+		return 2
+	case C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_UINTEGER, C.YAPI_TYPE_FLOAT:
+		return 4
+	case C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_UBIGINT:
+		return 8
+	case C.YAPI_TYPE_NUMBER:
+		return 22
+	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_TIMESTAMP_TZ, C.YAPI_TYPE_TIMESTAMP_LTZ, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
+		return 12
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BIT:
+		return -1
+	case C.YAPI_TYPE_ROWID:
+		return 44
+	default:
+		return _DefaultSize
+	}
 }
