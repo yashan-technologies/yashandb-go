@@ -28,6 +28,12 @@
     }                           \
     return ret;
 
+#define YAPI_CHECK_CLI_RETURN_WITH_INFO() \
+    if (ret == YAPI_ERROR) {   \
+        yapiGetCliError(error); \
+    }                           \
+    return ret;
+
 static YapiSymbols yapiSymbols = {NULL};
 static void*       yapiLibHandle = NULL;
 
@@ -307,7 +313,7 @@ YapiResult yapiCliFetch(YacHandle hStmt, uint32_t* rows, YapiErrorMsg* error)
 
     YAPI_LOAD_SYMBOL("yacFetch", yapiSymbols.fnFetch)
     ret = (*yapiSymbols.fnFetch)(hStmt, rows);
-    YAPI_CHECK_CLI_RETURN();
+    YAPI_CHECK_CLI_RETURN_WITH_INFO();
 }
 
 YapiResult yapiCliDescribeCol2(YacHandle hStmt, uint16_t id, YapiColumnDesc* desc, YapiErrorMsg* error)
