@@ -56,6 +56,7 @@ var (
 		"create or replace function",
 		"create function",
 		"create or replace package",
+		"create or replace editionable package",
 		"create package",
 		"create or replace package body",
 		"create package body",
