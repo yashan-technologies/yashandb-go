@@ -210,7 +210,7 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 			value = time.Date(tmpDate.Year(), tmpDate.Month(), tmpDate.Day(), 0, 0, 0, 0, time.UTC)
 		case C.YAPI_TYPE_SHORTTIME:
 			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
-			value = time.Date(0, 0, 0, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)
+			value = time.Date(0, 1, 1, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)
 		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
 			value = (C.GoString((*C.char)(row.Data)))
 		case C.YAPI_TYPE_NUMBER:

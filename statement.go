@@ -423,7 +423,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
 		freeType = lobFree
 	case time.Time:
 		yacType = C.YAPI_TYPE_TIMESTAMP
-		t := v.UnixNano() / 1e3
+		t := v.UnixMicro()
 		value = C.YapiPointer(unsafe.Pointer(&t))
 	case nil:
 		yacType = C.YAPI_TYPE_CHAR
