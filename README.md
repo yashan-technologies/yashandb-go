@@ -18,3 +18,8 @@ yasdb-go驱动包可以通过以下两种方式进行安装和配置：
 
 ### DSN的填写说明
 参考教程: [DSN format](./DSNFormat.md)
+
+
+### yacapi更新
+
+git subtree pull --prefix=yacapi  git@git.yasdb.com:cod-x/yacapi.git  master --squash
