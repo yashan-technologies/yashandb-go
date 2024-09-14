@@ -195,6 +195,7 @@ typedef enum EnYapiEnvAttr {
     YAPI_ATTR_CHARSET = 61,
     YAPI_ATTR_CHARSET_CODE = 62,
     YAPI_ATTR_DATA_PATH = 63,
+    YAPI_ATTR_CLIENT_DRIVER = 66,
     __YAPI_ENV_ATTR_END__
 } YapiEnvAttr;
 
