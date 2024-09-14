@@ -11,6 +11,11 @@ package yasdb
 import (
 	"fmt"
 	"reflect"
+	"strings"
+)
+
+const (
+	_UnknownAttributeIdCode = "YAS-08028"
 )
 
 type YasBaseError struct {
@@ -84,4 +89,8 @@ func ErrUnknowType(v interface{}) *YasBaseError {
 
 func ErrOutputBindValue() *YasBaseError {
 	return &YasBaseError{}
+}
+
+func isUnknownAttributeIdErr(err error) bool {
+	return strings.Contains(err.Error(), _UnknownAttributeIdCode)
 }
