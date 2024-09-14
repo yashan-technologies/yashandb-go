@@ -25,6 +25,10 @@ import (
 	"unsafe"
 )
 
+const (
+	_DefaultNcharsetRatio = 4
+)
+
 type YasConn struct {
 	Env           *C.YapiEnv
 	Conn          *C.YapiConnect
@@ -102,10 +106,15 @@ func (conn *YasConn) getCharsetRatio() error {
 func (conn *YasConn) getNcharsetRatio() error {
 	var ratio C.uint32_t
 	size := C.int32_t(unsafe.Sizeof(ratio))
-	if err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_NCHARSET_RATIO, unsafe.Pointer(&ratio), size); err != nil {
-		return err
+	err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_NCHARSET_RATIO, unsafe.Pointer(&ratio), size)
+	if err != nil {
+		if !isUnknownAttributeIdErr(err) {
+			return err
+		}
+		conn.ncharsetRatio = _DefaultNcharsetRatio
+	} else {
+		conn.ncharsetRatio = uint32(ratio)
 	}
-	conn.ncharsetRatio = uint32(ratio)
 	return nil
 }
 
