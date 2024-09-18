@@ -22,9 +22,14 @@ import (
 	"unsafe"
 )
 
-const (
-	_ClientDriverName = "YashanDB GO Driver"
-)
+var _ClientDriverName = "YashanDB GO Driver"
+
+func SetClientDriverName(name string) {
+	if name == "" {
+		return
+	}
+	_ClientDriverName = name
+}
 
 type YasdbDriver struct{}
 
