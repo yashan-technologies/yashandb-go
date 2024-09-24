@@ -22,6 +22,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"sync"
 	"unsafe"
 )
 
@@ -36,6 +37,7 @@ type YasConn struct {
 	closed        bool
 	charsetRatio  uint32 // 最大CHARSET膨胀比率
 	ncharsetRatio uint32 // 最大NCHARSET膨胀比率
+	mu            sync.Mutex
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
@@ -58,11 +60,13 @@ func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 }
 
 func (conn *YasConn) Close() error {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
 	if conn.closed {
 		return nil
 	}
-	conn.closed = true
 
+	conn.closed = true
 	connErr := releaseConn(conn.Conn)
 	envErr := releaseEnv(conn.Env)
 	if envErr != nil && connErr != nil {
@@ -308,6 +312,11 @@ func (conn *YasConn) handleYacCancel(ctx context.Context, done <-chan struct{}) 
 }
 
 func (conn *YasConn) yacCancel() error {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
+	if conn.closed {
+		return nil
+	}
 	return checkYasError(C.yapiCancel(conn.Conn))
 }
 
