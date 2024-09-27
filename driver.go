@@ -22,6 +22,15 @@ import (
 	"unsafe"
 )
 
+var _ClientDriverName = "YashanDB GO Driver"
+
+func SetClientDriverName(name string) {
+	if name == "" {
+		return
+	}
+	_ClientDriverName = name
+}
+
 type YasdbDriver struct{}
 
 // Open returns a new connection to the database.
@@ -52,6 +61,15 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 
 	charset := C.YAPI_CHARSET_UTF8
 	if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4)); err != nil {
+		_ = releaseEnv(env)
+		return nil, err
+	}
+
+	driverName := stringToYasChar(_ClientDriverName)
+	driverNameLen := intToYacInt32(len(_ClientDriverName))
+	defer C.free(unsafe.Pointer(driverName))
+	err = checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CLIENT_DRIVER, unsafe.Pointer(driverName), driverNameLen))
+	if err != nil && !isUnknownAttributeIdErr(err) {
 		_ = releaseEnv(env)
 		return nil, err
 	}
