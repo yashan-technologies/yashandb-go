@@ -62,6 +62,7 @@ var (
 		"create package body",
 		"create or replace type body",
 		"create type body",
+		"create or replace library",
 		"begin",
 		"declare",
 	}
