@@ -25,6 +25,9 @@ const (
 	_UkeyName   = `ukey_name`
 	_UkeyPin    = `ukey_pin`
 	_Autocommit = "autocommit"
+
+	_LoadBalance = "LOADBALANCE:"
+	_Primary     = "PRIMARY:"
 )
 
 var (
@@ -180,11 +183,14 @@ func checkUrl(url string) error {
 	ipv4UrlReg, _ := regexp.Compile(ipv4UrlRegExpr)
 	ipv6UrlReg, _ := regexp.Compile(ipv6UrlRegExpr)
 	mappedUrlReg, _ := regexp.Compile(mappedUrlRegExpr)
-	primaryStr := "primary:"
-	strs := strings.Split(strings.ToLower(url), ",")
+	strs := strings.Split(strings.ToUpper(url), ",")
 	for i, str := range strs {
-		if i == 0 && strings.HasPrefix(str, primaryStr) {
-			str = strings.TrimPrefix(str, primaryStr)
+		if i == 0 {
+			if strings.HasPrefix(str, _Primary) {
+				str = strings.TrimPrefix(str, _Primary)
+			} else if strings.HasPrefix(str, _LoadBalance) {
+				str = strings.TrimPrefix(str, _LoadBalance)
+			}
 		}
 		if !ipv4UrlReg.MatchString(str) && !ipv6UrlReg.MatchString(str) && !mappedUrlReg.MatchString(str) {
 			return ErrDsnNoStandard(str)
