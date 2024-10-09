@@ -128,11 +128,15 @@ func (stmt *YasStmt) query() (driver.Rows, error) {
 	if stmt.ctx.Err() != nil {
 		return nil, stmt.ctx.Err()
 	}
-
-	done := make(chan struct{})
-	go stmt.Conn.handleYacCancel(stmt.ctx, done)
-	err := stmt.yacExecute()
-	close(done)
+	var err error
+	if stmt.ctx == context.Background() {
+		err = stmt.yacExecute()
+	} else {
+		done := make(chan struct{})
+		go stmt.Conn.handleYacCancel(stmt.ctx, done)
+		err = stmt.yacExecute()
+		close(done)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +157,15 @@ func (stmt *YasStmt) exec() (driver.Result, error) {
 		return nil, stmt.ctx.Err()
 	}
 
-	done := make(chan struct{})
-	go stmt.Conn.handleYacCancel(stmt.ctx, done)
-	err := stmt.yacExecute()
-	close(done)
+	var err error
+	if stmt.ctx == context.Background() {
+		err = stmt.yacExecute()
+	} else {
+		done := make(chan struct{})
+		go stmt.Conn.handleYacCancel(stmt.ctx, done)
+		err = stmt.yacExecute()
+		close(done)
+	}
 	if err != nil {
 		return nil, err
 	}
