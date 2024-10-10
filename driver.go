@@ -68,11 +68,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	driverName := stringToYasChar(_ClientDriverName)
 	driverNameLen := intToYacInt32(len(_ClientDriverName))
 	defer C.free(unsafe.Pointer(driverName))
-	err = checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CLIENT_DRIVER, unsafe.Pointer(driverName), driverNameLen))
-	if err != nil && !isUnknownAttributeIdErr(err) {
-		_ = releaseEnv(env)
-		return nil, err
-	}
+	C.yapiSetEnvAttr(env, C.YAPI_ATTR_CLIENT_DRIVER, unsafe.Pointer(driverName), driverNameLen)
 
 	var conn *C.YapiConnect
 

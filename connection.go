@@ -108,13 +108,12 @@ func (conn *YasConn) getCharsetRatio() error {
 }
 
 func (conn *YasConn) getNcharsetRatio() error {
-	var ratio C.uint32_t
+	var (
+		ratio     C.uint32_t
+		stringLen C.int32_t
+	)
 	size := C.int32_t(unsafe.Sizeof(ratio))
-	err := conn.yapiGetConnAttr(C.YAPI_ATTR_MAX_NCHARSET_RATIO, unsafe.Pointer(&ratio), size)
-	if err != nil {
-		if !isUnknownAttributeIdErr(err) {
-			return err
-		}
+	if existYasError(C.yapiGetConnAttr(conn.Conn, C.YAPI_ATTR_MAX_NCHARSET_RATIO, unsafe.Pointer(&ratio), size, &stringLen)) {
 		conn.ncharsetRatio = _DefaultNcharsetRatio
 	} else {
 		conn.ncharsetRatio = uint32(ratio)
