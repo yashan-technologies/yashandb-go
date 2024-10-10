@@ -18,6 +18,7 @@ package yasdb
 import "C"
 
 import (
+	"context"
 	"database/sql/driver"
 	"io"
 	"math"
@@ -92,9 +93,11 @@ func (r *YasRows) Next(dest []driver.Value) error {
 	r.stmt.Lock()
 	defer r.stmt.Unlock()
 
-	done := make(chan struct{})
-	defer close(done)
-	go r.stmt.Conn.handleYacCancel(r.stmt.ctx, done)
+	if r.stmt.ctx != context.Background() {
+		done := make(chan struct{})
+		defer close(done)
+		go r.stmt.Conn.handleYacCancel(r.stmt.ctx, done)
+	}
 
 	results, err := r.getValues()
 	if err != nil {
