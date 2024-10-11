@@ -200,6 +200,10 @@ func checkYasError(ret C.YapiResult) error {
 	return err
 }
 
+func existYasError(ret C.YapiResult) bool {
+	return int(ret) != 0
+}
+
 func tryRmSemicolon(query string) string {
 	if isKeySql(query) {
 		return query
