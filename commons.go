@@ -23,6 +23,7 @@ import "C"
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"regexp"
 	"strings"
 	"sync"
@@ -196,6 +197,9 @@ func checkYasError(ret C.YapiResult) error {
 		SqlState: C.GoString(yapiErr.sqlState),
 		Line:     int(yapiErr.pos.line),
 		Column:   int(yapiErr.pos.column),
+	}
+	if _Mode == _DebugMode && yapiErr.errCode == 0 {
+		panic(errors.New("yasdb return code is zero"))
 	}
 	return err
 }

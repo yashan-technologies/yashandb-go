@@ -31,6 +31,17 @@ func SetClientDriverName(name string) {
 	_ClientDriverName = name
 }
 
+const (
+	_DebugMode   = "debug"
+	_ReleaseMode = "release"
+)
+
+var _Mode = _ReleaseMode
+
+func SetDebugMode() {
+	_Mode = _DebugMode
+}
+
 type YasdbDriver struct{}
 
 // Open returns a new connection to the database.
