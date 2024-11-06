@@ -135,7 +135,7 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
 		return reflect.TypeOf(float64(0))
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP:
 		return reflect.TypeOf(time.Time{})
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_NCLOB, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_JSON:
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_NCLOB, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_JSON, C.YAPI_TYPE_XML:
 		return reflect.TypeOf("")
 	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
 		return reflect.TypeOf([]byte(nil))
@@ -162,7 +162,7 @@ func (r *YasRows) ColumnTypeLength(index int) (length int64, ok bool) {
 	switch r.fetchRows[index].yacType {
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR:
 		return int64(r.fetchRows[index].Size), true
-	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_CLOB:
+	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_XML:
 		return math.MaxInt64, true
 	default:
 		return 0, false

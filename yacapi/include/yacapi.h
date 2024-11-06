@@ -93,6 +93,7 @@ typedef enum EnYapiType {
     YAPI_TYPE_NCLOB = 33,
     YAPI_TYPE_CURSOR = 34,
     YAPI_TYPE_JSON = 35,
+    YAPI_TYPE_XML = 39,
     YAPI_TYPE_NUMBER_FLOAT = 40,
     __YAPI_TYPES_COUNT__
 } YapiType;
