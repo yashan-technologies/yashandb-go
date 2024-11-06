@@ -18,7 +18,7 @@ YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const c
     }
     if (*url == '\0') {
         uint8_t credType = CRED_EXT;
-        if (yapiSetConnAttr(conn, YAPI_ATTR_CREDT, &credType, sizeof(uint8_t))) {
+        if (yapiSetConnAttr(conn, YAPI_ATTR_CREDT, &credType, sizeof(uint8_t)) != YAPI_SUCCESS) {
             yapiCliFreeHandle(YAPI_HANDLE_DBC, conn->connHandler, &error);
             yapiFreeMem(conn);
             return YAPI_ERROR;
