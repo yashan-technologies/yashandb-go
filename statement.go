@@ -725,7 +725,6 @@ func (stmt *YasStmt) freeBIndValue(bind *bindStruct) {
 		C.free(unsafe.Pointer(bind.value))
 	}
 	bind.value = nil
-
 }
 
 type outputBindInfo struct {
