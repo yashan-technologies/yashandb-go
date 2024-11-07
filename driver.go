@@ -56,7 +56,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	}
 
 	var env *C.YapiEnv
-	if err := checkYasError(C.yapiAllocEnv(&env)); err != nil {
+	if err := yapiAllocEnv(&env); err != nil {
 		return nil, err
 	}
 	if dsn.DataPath != "" {
@@ -64,14 +64,14 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		defer C.free(unsafe.Pointer(dataPath))
 
 		dpLen := intToYacInt32(len(dsn.DataPath))
-		if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen)); err != nil {
+		if err := yapiSetEnvAttr(env, C.YAPI_ATTR_DATA_PATH, unsafe.Pointer(dataPath), dpLen); err != nil {
 			_ = releaseEnv(env)
 			return nil, err
 		}
 	}
 
 	charset := C.YAPI_CHARSET_UTF8
-	if err := checkYasError(C.yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4)); err != nil {
+    if err := yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4); err != nil {
 		_ = releaseEnv(env)
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	urlLen := intToYacInt16(len(dsn.Url))
 	userLen := intToYacInt16(len(dsn.User))
 	pwLen := intToYacInt16(len(dsn.Password))
-	if err := checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn)); err != nil {
+	if err := yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn); err != nil {
 		_ = releaseEnv(env)
 		return nil, err
 	}

@@ -135,39 +135,19 @@ func (conn *YasConn) setAutoCommit(auto bool) error {
 }
 
 func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
-	if err := checkYasError(
-		C.yapiSetConnAttr(
-			conn.Conn,
-			attr,
-			value,
-			bufLength,
-		)); err != nil {
-		return err
-	}
-	return nil
+	return yapiSetConnAttr(conn.Conn, attr, value, bufLength)
 }
 
 func (conn *YasConn) yapiGetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
-	var stringLen C.int32_t
-	if err := checkYasError(
-		C.yapiGetConnAttr(
-			conn.Conn,
-			attr,
-			value,
-			bufLength,
-			&stringLen,
-		)); err != nil {
-		return err
-	}
-	return nil
+	return yapiGetConnAttr(conn.Conn, attr, value, bufLength)
 }
 
 func (conn *YasConn) yacCommit() error {
-	return checkYasError(C.yapiCommit(conn.Conn))
+	return yapiCommit(conn.Conn)
 }
 
 func (conn *YasConn) yacRollback() error {
-	return checkYasError(C.yapiRollback(conn.Conn))
+	return yapiRollback(conn.Conn)
 }
 
 func (conn *YasConn) lobRead(lobLocator *C.YapiLobLocator) ([]byte, error) {
@@ -191,14 +171,7 @@ func (conn *YasConn) yacLobRead(lobLocator *C.YapiLobLocator, lobLen uint64) ([]
 	for {
 		readBuffer := byteBufferPool.Get().([]byte)
 		buf := (*C.uint8_t)((unsafe.Pointer)(&readBuffer[0]))
-		if err := checkYasError(
-			C.yapiLobRead(
-				conn.Conn,
-				lobLocator,
-				&bytes,
-				buf,
-				_LobBufLen,
-			)); err != nil {
+		if err := yapiLobRead(conn.Conn, lobLocator, &bytes, buf); err != nil {
 			return nil, err
 		}
 		data = append(data, readBuffer[:uint64(bytes)]...)
@@ -211,7 +184,7 @@ func (conn *YasConn) yacLobRead(lobLocator *C.YapiLobLocator, lobLen uint64) ([]
 
 func (conn *YasConn) yacLobGetLength(lobLocator *C.YapiLobLocator) (uint64, error) {
 	var lobLen C.uint64_t
-	if err := checkYasError(C.yapiLobGetLength(conn.Conn, lobLocator, &lobLen)); err != nil {
+	if err := yapiLobGetLength(conn.Conn, lobLocator, &lobLen); err != nil {
 		return 0, err
 	}
 	return uint64(lobLen), nil
@@ -237,14 +210,14 @@ func (conn *YasConn) lobWrite(yacType C.YapiType, data []byte) (*unsafe.Pointer,
 
 func (conn *YasConn) yacLobDescAlloc(yacType C.YapiType) (*unsafe.Pointer, error) {
 	desc := new(unsafe.Pointer)
-	if err := checkYasError(C.yapiLobDescAlloc(conn.Conn, yacType, desc)); err != nil {
+	if err := yapiLobDescAlloc(conn.Conn, yacType, desc); err != nil {
 		return nil, err
 	}
 	return desc, nil
 }
 
 func (conn *YasConn) yacLobCreateTemporary(lobLocator *C.YapiLobLocator) error {
-	if err := checkYasError(C.yapiLobCreateTemporary(conn.Conn, lobLocator)); err != nil {
+	if err := yapiLobCreateTemporary(conn.Conn, lobLocator); err != nil {
 		return err
 	}
 	return nil
@@ -266,14 +239,7 @@ func (conn *YasConn) yacLobWrite(lobLocator *C.YapiLobLocator, data []byte) erro
 	buf := (*C.uint8_t)((unsafe.Pointer)(&writeBuffer[0]))
 	count := uint64(0)
 	for {
-		if err := checkYasError(
-			C.yapiLobWrite(
-				conn.Conn,
-				lobLocator,
-				nil,
-				buf,
-				C.uint64_t(bufLen),
-			)); err != nil {
+		if err := yapiLobWrite(conn.Conn, lobLocator, buf, C.uint64_t(bufLen)); err != nil {
 			return nil
 		}
 		count += bufLen
@@ -316,7 +282,7 @@ func (conn *YasConn) yacCancel() error {
 	if conn.closed {
 		return nil
 	}
-	return checkYasError(C.yapiCancel(conn.Conn))
+	return yapiCancel(conn.Conn)
 }
 
 func (conn *YasConn) ResetSession(ctx context.Context) error {
@@ -351,33 +317,25 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	queryP := C.CString(nQuery)
 	defer C.free(unsafe.Pointer(queryP))
 	sqlLength := C.int32_t(len(nQuery))
-	if err := checkYasError(
-		C.yapiPrepare(
-			conn.Conn,
-			queryP,
-			sqlLength,
-			&stmt,
-		)); err != nil {
+	if err := yapiPrepare(conn.Conn, queryP, sqlLength, &stmt); err != nil {
 		return nil, err
 	}
 
-	var sqltype C.uint32_t
-	sqlSize := C.int32_t(unsafe.Sizeof(sqltype))
-	if err := checkYasError(
-		C.yapiGetStmtAttr(
-			stmt,
-			C.YAPI_ATTR_SQLTYPE,
-			unsafe.Pointer(&sqltype),
-			sqlSize,
-			&sqlLength,
-		)); err != nil {
+	var sqlType C.uint32_t
+	sqlSize := C.int32_t(unsafe.Sizeof(sqlType))
+	if err := yapiGetStmtAttr(
+        stmt,
+        C.YAPI_ATTR_SQLTYPE,
+        unsafe.Pointer(&sqlType), 
+        sqlSize, 
+        sqlLength); err != nil {
 		return nil, err
 	}
 
 	yasStmt := &YasStmt{
 		Conn:    conn,
 		Stmt:    stmt,
-		SqlType: (uint32)(sqltype),
+		SqlType: (uint32)(sqlType),
 	}
 
 	return yasStmt, nil

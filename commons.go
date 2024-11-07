@@ -263,7 +263,7 @@ func releaseConn(conn *C.YapiConnect) error {
 	if conn == nil {
 		return nil
 	}
-	if err := checkYasError(C.yapiReleaseConn(conn)); err != nil {
+	if err := yapiReleaseConn(conn); err != nil {
 		return err
 	}
 	conn = nil
@@ -274,7 +274,7 @@ func releaseEnv(env *C.YapiEnv) error {
 	if env == nil {
 		return nil
 	}
-	if err := checkYasError(C.yapiReleaseEnv(env)); err != nil {
+	if err := yapiReleaseEnv(env); err != nil {
 		return err
 	}
 	env = nil

@@ -173,7 +173,7 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 	var err error
 	unsafeRows := (unsafe.Pointer)(new(uint32))
 	rows := (*C.uint32_t)(unsafeRows)
-	if err = checkYasError(C.yapiFetch(r.stmt.Stmt, rows)); err != nil {
+	if err = yapiFetch(r.stmt.Stmt, rows); err != nil {
 		return nil, err
 	}
 	if *rows == 0 {
