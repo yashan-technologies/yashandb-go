@@ -183,14 +183,14 @@ func (stmt *YasStmt) exec() (driver.Result, error) {
 }
 
 func (stmt *YasStmt) yacExecute() error {
-	return checkYasError(C.yapiExecute(stmt.Stmt))
+	return yapiExecute(stmt.Stmt)
 }
 
 func (stmt *YasStmt) yapiReleaseStmt() error {
 	if stmt.Stmt == nil {
 		return nil
 	}
-	if err := checkYasError(C.yapiReleaseStmt(stmt.Stmt)); err != nil {
+	if err := yapiReleaseStmt(stmt.Stmt); err != nil {
 		return err
 	}
 	stmt.Stmt = nil
@@ -199,7 +199,7 @@ func (stmt *YasStmt) yapiReleaseStmt() error {
 
 func (stmt *YasStmt) getFetchRows() ([]*yasRow, error) {
 	columns := C.int16_t(0)
-	if err := checkYasError(C.yapiNumResultCols(stmt.Stmt, &columns)); err != nil {
+	if err := yapiNumResultCols(stmt.Stmt, &columns); err != nil {
 		return nil, err
 	}
 	columnCount := int(columns)
@@ -217,7 +217,7 @@ func (stmt *YasStmt) getFetchRows() ([]*yasRow, error) {
 
 func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	item := C.YapiColumnDesc{}
-	if err := checkYasError(C.yapiDescribeCol2(stmt.Stmt, C.uint16_t(pos), &item)); err != nil {
+	if err := yapiDescribeCol2(stmt.Stmt, C.uint16_t(pos), &item); err != nil {
 		return nil, err
 	}
 	yacType := C.YapiType(item._type)
@@ -257,7 +257,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		freeType = normalFree
 	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
 		desc := new(unsafe.Pointer)
-		if err := checkYasError(C.yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc)); err != nil {
+		if err := yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc); err != nil {
 			return nil, err
 		}
 		bufLen = -1
@@ -279,15 +279,13 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	}
 	row.Indicator = indicator
 	row.freeType = freeType
-	if err := checkYasError(
-		C.yapiBindColumn(
-			stmt.Stmt,
-			C.uint16_t(pos),
-			yacType,
-			C.YapiPointer(row.Data),
-			C.int32_t(bufLen),
-			indicator,
-		),
+	if err := yapiBindColumn(
+		stmt.Stmt,
+		C.uint16_t(pos),
+		yacType,
+		C.YapiPointer(row.Data),
+		C.int32_t(bufLen),
+		indicator,
 	); err != nil {
 		freeFetchRow(row)
 		return nil, err
@@ -300,14 +298,12 @@ func (stmt *YasStmt) getRowsAffected() (int64, error) {
 	var rowsCount C.uint32_t
 	size := C.int32_t(unsafe.Sizeof(rowsCount))
 	s_length := C.int32_t(0)
-	err := checkYasError(
-		C.yapiGetStmtAttr(
-			stmt.Stmt,
-			C.YAPI_ATTR_ROWS_AFFECTED,
-			unsafe.Pointer(&rowsCount),
-			size,
-			&s_length,
-		),
+	err := yapiGetStmtAttr(
+		stmt.Stmt,
+		C.YAPI_ATTR_ROWS_AFFECTED,
+		unsafe.Pointer(&rowsCount),
+		size,
+		s_length,
 	)
 	return int64(rowsCount), err
 }
@@ -348,18 +344,7 @@ func (stmt *YasStmt) bindValues(args []driver.NamedValue) error {
 }
 
 func (stmt *YasStmt) yacBindParameter(b *bindStruct, pos C.uint16_t) error {
-	if err := checkYasError(
-		C.yapiBindParameter(
-			stmt.Stmt,
-			pos,
-			b.direction,
-			b.yacType,
-			b.value,
-			b.bindSize,
-			C.int32_t(0),
-			b.indicator,
-		),
-	); err != nil {
+	if err := yapiBindParameter(stmt.Stmt, b, pos); err != nil {
 		return err
 	}
 	return nil
@@ -368,18 +353,7 @@ func (stmt *YasStmt) yacBindParameter(b *bindStruct, pos C.uint16_t) error {
 func (stmt *YasStmt) yacBindParameterByName(b *bindStruct, name string) error {
 	charName := stringToYasChar(name)
 	defer C.free(unsafe.Pointer(charName))
-	if err := checkYasError(
-		C.yapiBindParameterByName(
-			stmt.Stmt,
-			charName,
-			b.direction,
-			b.yacType,
-			b.value,
-			b.bindSize,
-			C.int32_t(0),
-			b.indicator,
-		),
-	); err != nil {
+	if err := yapiBindParameterByName(stmt.Stmt, charName, b); err != nil {
 		return err
 	}
 	return nil
