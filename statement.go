@@ -222,7 +222,8 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	}
 	yacType := C.YapiType(item._type)
 	size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(4))
-	row := NewYasRow(size, yacType)
+	precision, scale, nullable := uint8(item.precision), int8(item.scale), uint8(item.nullable)
+	row := NewYasRow(size, yacType, precision, scale, nullable)
 	bufLen := int32(size)
 	freeType := notFree
 

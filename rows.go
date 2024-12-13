@@ -38,13 +38,19 @@ type yasRow struct {
 	yacType    C.YapiType
 	name       string
 	freeType   valueFreeType
+	precision  uint8
+	scale      int8
+	nullable   uint8
 }
 
-func NewYasRow(size uint32, yacType C.YapiType) *yasRow {
+func NewYasRow(size uint32, yacType C.YapiType, precision uint8, scale int8, nullable uint8) *yasRow {
 	row := &yasRow{
-		Elements: 1,
-		yacType:  yacType,
-		Size:     size,
+		Elements:  1,
+		yacType:   yacType,
+		Size:      size,
+		precision: precision,
+		scale:     scale,
+		nullable:  nullable,
 	}
 	return row
 }
@@ -167,6 +173,22 @@ func (r *YasRows) ColumnTypeLength(index int) (length int64, ok bool) {
 	default:
 		return 0, false
 	}
+}
+
+func (r *YasRows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
+	if len(r.fetchRows) < index+1 {
+		return 0, 0, false
+	}
+	switch r.fetchRows[index].yacType {
+	case C.YAPI_TYPE_NUMBER:
+		return int64(r.fetchRows[index].precision), int64(r.fetchRows[index].scale), true
+	default:
+		return 0, 0, false
+	}
+}
+
+func (r *YasRows) ColumnTypeNullable(index int) (nullable, ok bool) {
+	return r.fetchRows[index].nullable > 0, true
 }
 
 func (r *YasRows) getValues() (*[]driver.Value, error) {
