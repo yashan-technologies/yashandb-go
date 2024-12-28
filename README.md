@@ -23,3 +23,7 @@ yasdb-go驱动包可以通过以下两种方式进行安装和配置：
 ### yacapi更新
 
 git subtree pull --prefix=yacapi  git@git.yasdb.com:cod-x/yacapi.git  master --squash
+
+
+### 使用示例
+yasdb-go驱动包中提供了一些使用示例。其中通过标准库`database/sql`连接操作yashandb示例请参考[examples](./_examples)；通过第三方库`github.com/jmoiron/sqlx`连接操作yashandb示例请参考[sqlx示例](./sqlx示例.md) 。

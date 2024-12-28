@@ -1,3 +1,10 @@
+
+
+
+
+第三方库`github.com/jmoiron/sqlx`基于结构体封装了查询等方法，较好的提升了易用性，yasdb-go驱动支持通过该依赖库连接并操作yashandb，使用示例如下：
+
+```go
 package main
 
 import (
@@ -75,3 +82,5 @@ func main() {
 	db.MustBegin().Commit()
 	QueryMultiRow()
 }
+```
+
