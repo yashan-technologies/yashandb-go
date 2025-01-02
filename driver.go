@@ -71,7 +71,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	}
 
 	charset := C.YAPI_CHARSET_UTF8
-    if err := yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4); err != nil {
+	if err := yapiSetEnvAttr(env, C.YAPI_ATTR_CHARSET_CODE, unsafe.Pointer(&charset), 4); err != nil {
 		_ = releaseEnv(env)
 		return nil, err
 	}
@@ -92,15 +92,27 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	urlLen := intToYacInt16(len(dsn.Url))
 	userLen := intToYacInt16(len(dsn.User))
 	pwLen := intToYacInt16(len(dsn.Password))
-	if err := yapiConnect(env, url, urlLen, user, userLen, password, pwLen, &conn); err != nil {
+
+	if err := yapiAllocConnect(env, &conn); err != nil {
 		_ = releaseEnv(env)
 		return nil, err
 	}
+
 	yasConn := &YasConn{
-		Env:        env,
-		Conn:       conn,
-		autoCommit: dsn.IsAutoCommit,
+		Env:  env,
+		Conn: conn,
 	}
+
+	if err := yasConn.setHeartbeatEnable(dsn.heartbeatEnable); err != nil {
+		_ = yasConn.Close()
+		return nil, err
+	}
+
+	if err := yapiConnect2(conn, url, urlLen, user, userLen, password, pwLen); err != nil {
+		_ = releaseEnv(env)
+		return nil, err
+	}
+
 	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
 		_ = yasConn.Close()
 		return nil, err

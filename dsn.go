@@ -22,9 +22,10 @@ const (
 	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
 	udsRegExpr       = `^(.*?)(\?(.*?))?$`
 
-	_UkeyName   = `ukey_name`
-	_UkeyPin    = `ukey_pin`
-	_Autocommit = "autocommit"
+	_UkeyName        = `ukey_name`
+	_UkeyPin         = `ukey_pin`
+	_Autocommit      = "autocommit"
+	_HeartbeatEnable = "heartbeat_enable"
 
 	_LoadBalance = "LOADBALANCE:"
 	_Primary     = "PRIMARY:"
@@ -40,13 +41,14 @@ var (
 )
 
 type DataSourceName struct {
-	User         string
-	Password     string
-	Url          string
-	DataPath     string
-	IsAutoCommit bool
-	ukeyName     string
-	ukeyPin      string
+	User            string
+	Password        string
+	Url             string
+	DataPath        string
+	IsAutoCommit    bool
+	ukeyName        string
+	ukeyPin         string
+	heartbeatEnable bool
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -142,6 +144,11 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 			dsn.ukeyName = strs[1]
 		case _UkeyPin:
 			dsn.ukeyPin = strs[1]
+		case _HeartbeatEnable:
+			value := strings.ToLower(strs[1])
+			if value == "1" || value == "true" {
+				dsn.heartbeatEnable = true
+			}
 		default:
 			return fmt.Errorf("unknown param %s", strs[0])
 		}
