@@ -2,8 +2,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const char* user, int16_t userLength,
-                       const char* password, int16_t passwordLength, YapiConnect** hConn)
+YapiResult yapiAllocConnect(YapiEnv* env, YapiConnect** hConn)
 {
     YapiErrorMsg error;
     yapiInitError(&error);
@@ -16,22 +15,42 @@ YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const c
         yapiFreeMem(conn);
         return YAPI_ERROR;
     }
+
+    *hConn = conn;
+    return YAPI_SUCCESS;
+}
+
+YapiResult yapiConnect2(YapiConnect* hConn, const char* url, int16_t urlLength, const char* user, int16_t userLength,
+                       const char* password, int16_t passwordLength)
+{
+    YapiErrorMsg error;
+    yapiInitError(&error);
+
     if (*url == '\0') {
         uint8_t credType = CRED_EXT;
-        if (yapiSetConnAttr(conn, YAPI_ATTR_CREDT, &credType, sizeof(uint8_t)) != YAPI_SUCCESS) {
-            yapiCliFreeHandle(YAPI_HANDLE_DBC, conn->connHandler, &error);
-            yapiFreeMem(conn);
+        if (yapiSetConnAttr(hConn, YAPI_ATTR_CREDT, &credType, sizeof(uint8_t)) != YAPI_SUCCESS) {
+            yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler, &error);
+            yapiFreeMem(hConn);
             return YAPI_ERROR;
         }
     }
-    if (yapiCliConnect(conn->connHandler, url, urlLength, user, userLength, password, passwordLength, &error) !=
+    if (yapiCliConnect(hConn->connHandler, url, urlLength, user, userLength, password, passwordLength, &error) !=
         YAPI_SUCCESS) {
-        yapiCliFreeHandle(YAPI_HANDLE_DBC, conn->connHandler, &error);
-        yapiFreeMem(conn);
+        yapiCliFreeHandle(YAPI_HANDLE_DBC, hConn->connHandler, &error);
+        yapiFreeMem(hConn);
         return YAPI_ERROR;
     }
-    *hConn = conn;
     return YAPI_SUCCESS;
+}
+
+YapiResult yapiConnect(YapiEnv* env, const char* url, int16_t urlLength, const char* user, int16_t userLength,
+                       const char* password, int16_t passwordLength, YapiConnect** hConn)
+{
+    if (yapiAllocConnect(env, hConn) != YAPI_SUCCESS) {
+        return YAPI_ERROR;
+    }
+
+    return yapiConnect2(*hConn, url, urlLength, user, userLength, password, passwordLength);
 }
 
 YapiResult yapiDisconnect(YapiConnect* hConn)

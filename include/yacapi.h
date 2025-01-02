@@ -401,6 +401,9 @@ YapiResult yapiRollback(YapiConnect* hConn);
 YapiResult yapiSetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, int32_t length);
 YapiResult yapiGetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, int32_t bufLength,
                            int32_t* stringLength);
+YapiResult yapiAllocConnect(YapiEnv* env, YapiConnect** hConn);
+YapiResult yapiConnect2(YapiConnect* hConn, const char* url, int16_t urlLength, const char* user, int16_t userLength,
+                       const char* password, int16_t passwordLengt);
 
 //-----------------------------------------------------------------------------
 // Statment Function
