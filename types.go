@@ -131,8 +131,6 @@ func yapiPrepare(conn *C.YapiConnect, queryP *C.char, sqlLength C.int32_t, stmt 
 		))
 }
 
-
-
 func yapiGetStmtAttr(stmt *C.YapiStmt, stmtAttr C.YapiStmtAttr, point unsafe.Pointer, sqlSize, sqlLength C.int32_t) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -229,6 +227,18 @@ func yapiConnect(env *C.YapiEnv, url *C.char, urlLen C.int16_t, user *C.char, us
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, conn))
+}
+
+func yapiAllocConnect(env *C.YapiEnv, conn **C.YapiConnect) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiAllocConnect(env, conn))
+}
+
+func yapiConnect2(conn *C.YapiConnect, url *C.char, urlLen C.int16_t, user *C.char, userLen C.int16_t, password *C.char, pwLen C.int16_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiConnect2(conn, url, urlLen, user, userLen, password, pwLen))
 }
 
 func yapiPdbgStart(stmt *C.YapiStmt, objId C.uint64_t, subId C.uint16_t) error {

@@ -33,7 +33,6 @@ const (
 type YasConn struct {
 	Env           *C.YapiEnv
 	Conn          *C.YapiConnect
-	autoCommit    bool
 	closed        bool
 	charsetRatio  uint32 // 最大CHARSET膨胀比率
 	ncharsetRatio uint32 // 最大NCHARSET膨胀比率
@@ -130,7 +129,20 @@ func (conn *YasConn) setAutoCommit(auto bool) error {
 	if err := conn.yapiSetConnAttr(C.YAPI_ATTR_AUTOCOMMIT, unsafe.Pointer(&a), size); err != nil {
 		return err
 	}
-	conn.autoCommit = auto
+	return nil
+}
+
+func (conn *YasConn) setHeartbeatEnable(enable bool) error {
+	if !enable {
+		return nil
+	}
+	var a C.bool = true
+	size := C.int32_t(unsafe.Sizeof(a))
+	if err := conn.yapiSetConnAttr(C.YAPI_ATTR_HEARTBEAT_ENABLED, unsafe.Pointer(&a), size); err != nil {
+		if !isUnknownAttributeIdErr(err) {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -324,11 +336,11 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	var sqlType C.uint32_t
 	sqlSize := C.int32_t(unsafe.Sizeof(sqlType))
 	if err := yapiGetStmtAttr(
-        stmt,
-        C.YAPI_ATTR_SQLTYPE,
-        unsafe.Pointer(&sqlType), 
-        sqlSize, 
-        sqlLength); err != nil {
+		stmt,
+		C.YAPI_ATTR_SQLTYPE,
+		unsafe.Pointer(&sqlType),
+		sqlSize,
+		sqlLength); err != nil {
 		return nil, err
 	}
 
