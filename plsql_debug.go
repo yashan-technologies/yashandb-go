@@ -18,6 +18,7 @@ import "C"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"unsafe"
 )
@@ -57,6 +58,13 @@ const (
 	DBG_STATUS_ON  DebuggerStatus = 1
 
 	DEFAULT_ATTRS_BUFFER = 68*2 + 1
+)
+
+var (
+	ValueTypeUint64Err = errors.New("the value parameter type must be *uint64")
+	ValueTypeUint16Err = errors.New("the value parameter type must be *uint16")
+	ValueTypeUint32Err = errors.New("the value parameter type must be *uint32")
+	ValueTypeStringErr = errors.New("the value parameter type must be *string")
 )
 
 type PlsqlDebug struct {
@@ -302,7 +310,7 @@ func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}
 	case DBG_RUNNING_ATTR_OBJ_ID:
 		data, ok := value.(*uint64)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint64")
+			return ValueTypeUint64Err
 		}
 
 		objId := new(C.uint64_t)
@@ -316,7 +324,7 @@ func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}
 	case DBG_RUNNING_ATTR_SUB_ID:
 		data, ok := value.(*uint16)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint16")
+			return ValueTypeUint16Err
 		}
 
 		subId := new(C.uint16_t)
@@ -330,7 +338,7 @@ func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}
 	case DBG_RUNNING_ATTR_LINE_NO:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 
 		lineNo := new(C.uint32_t)
@@ -344,7 +352,7 @@ func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}
 	case DBG_RUNNING_ATTR_CLASS_NAME:
 		data, ok := value.(*string)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *string")
+			return ValueTypeStringErr
 		}
 		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		className := (*C.char)(mallocBytes(bufLen))
@@ -359,7 +367,7 @@ func PdbgGetRunningAttrs(stmt *YasStmt, attr DebugRunningAttr, value interface{}
 	case DBG_RUNNING_ATTR_METHOD_NAME:
 		data, ok := value.(*string)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *string")
+			return ValueTypeStringErr
 		}
 		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
 		methodName := (*C.char)(mallocBytes(bufLen))
@@ -382,7 +390,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_OBJ_ID:
 		data, ok := value.(*uint64)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint64")
+			return ValueTypeUint64Err
 		}
 
 		stringLen := C.int32_t(0)
@@ -396,7 +404,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_SUB_ID:
 		data, ok := value.(*uint16)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint16")
+			return ValueTypeUint16Err
 		}
 		stringLen := C.int32_t(0)
 		outValue := new(C.uint16_t)
@@ -409,7 +417,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_LINE_NO:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
@@ -422,7 +430,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_STACK_NO:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 
 		stringLen := C.int32_t(0)
@@ -436,7 +444,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_CLASS_NAME:
 		data, ok := value.(*string)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *string")
+			return ValueTypeStringErr
 		}
 		stringLen := C.int32_t(0)
 		bufLen := DEFAULT_ATTRS_BUFFER * stmt.Conn.charsetRatio
@@ -452,7 +460,7 @@ func PdbgGetFrameAttrs(stmt *YasStmt, id uint32, attr DebugFrameAttr, value inte
 	case DBG_FRAME_ATTR_METHOD_NAME:
 		data, ok := value.(*string)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *string")
+			return ValueTypeStringErr
 		}
 
 		stringLen := C.int32_t(0)
@@ -476,7 +484,7 @@ func PdbgGetVarAttrs(stmt *YasStmt, id uint32, attr DebugVarAttr, value interfac
 	case DBG_VAR_ATTR_BLOCK_NO:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 
 		stringLen := C.int32_t(0)
@@ -518,7 +526,7 @@ func PdbgGetVarAttrs(stmt *YasStmt, id uint32, attr DebugVarAttr, value interfac
 	case DBG_VAR_ATTR_NAME:
 		data, ok := value.(*string)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *string")
+			return ValueTypeStringErr
 		}
 
 		stringLen := C.int32_t(0)
@@ -535,7 +543,7 @@ func PdbgGetVarAttrs(stmt *YasStmt, id uint32, attr DebugVarAttr, value interfac
 	case DBG_VAR_ATTR_VALUE_SIZE:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
@@ -637,7 +645,7 @@ func PdbgGetBreakpointAttrs(stmt *YasStmt, id uint32, attr DebugBpAttr, value in
 	case DBG_BP_ATTR_OBJ_ID:
 		data, ok := value.(*uint64)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint64")
+			return ValueTypeUint64Err
 		}
 
 		stringLen := C.int32_t(0)
@@ -651,7 +659,7 @@ func PdbgGetBreakpointAttrs(stmt *YasStmt, id uint32, attr DebugBpAttr, value in
 	case DBG_BP_ATTR_SUB_ID:
 		data, ok := value.(*uint16)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint16")
+			return ValueTypeUint16Err
 		}
 
 		stringLen := C.int32_t(0)
@@ -665,7 +673,7 @@ func PdbgGetBreakpointAttrs(stmt *YasStmt, id uint32, attr DebugBpAttr, value in
 	case DBG_BP_ATTR_LINE_NO:
 		data, ok := value.(*uint32)
 		if !ok {
-			return fmt.Errorf("the value parameter type must be *uint32")
+			return ValueTypeUint32Err
 		}
 		stringLen := C.int32_t(0)
 		outValue := new(C.uint32_t)
