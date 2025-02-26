@@ -298,13 +298,13 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 func (stmt *YasStmt) getRowsAffected() (int64, error) {
 	var rowsCount C.uint32_t
 	size := C.int32_t(unsafe.Sizeof(rowsCount))
-	s_length := C.int32_t(0)
+	sLength := C.int32_t(0)
 	err := yapiGetStmtAttr(
 		stmt.Stmt,
 		C.YAPI_ATTR_ROWS_AFFECTED,
 		unsafe.Pointer(&rowsCount),
 		size,
-		s_length,
+		sLength,
 	)
 	return int64(rowsCount), err
 }
@@ -575,15 +575,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct,
 		indicator = nil
 		value = C.YapiPointer(desc)
 		freeType = lobFree
-	case C.YAPI_TYPE_CHAR:
-		v, err := obi.getCharBindDest()
-		if err != nil {
-			return bind, err
-		}
-		bufLength = C.int32_t(bindSize - 1)
-		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
-		freeType = normalFree
-	case C.YAPI_TYPE_VARCHAR:
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
 		v, err := obi.getCharBindDest()
 		if err != nil {
 			return bind, err
@@ -667,10 +659,7 @@ func (stmt *YasStmt) getBindValueDest() error {
 					return err
 				}
 				*bindDest = string(byteDest)
-			case C.YAPI_TYPE_VARCHAR:
-				bindDest, _ := dest.getVarcharBindDest()
-				*bindDest = C.GoString((*C.char)(bind.value))
-			case C.YAPI_TYPE_CHAR:
+			case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR:
 				bindDest, _ := dest.getVarcharBindDest()
 				*bindDest = C.GoString((*C.char)(bind.value))
 			}
@@ -779,15 +768,9 @@ func (obi *outputBindInfo) getBlobBindDest() (*[]byte, error) {
 }
 
 func (obi *outputBindInfo) getCharBindDest() (*string, error) {
-	if value, ok := obi.dest.(*string); ok {
-		return value, nil
-	}
-	return nil, fmt.Errorf("the dest parameter type must be *string")
+	return obi.getClobBindDest()
 }
 
 func (obi *outputBindInfo) getVarcharBindDest() (*string, error) {
-	if value, ok := obi.dest.(*string); ok {
-		return value, nil
-	}
-	return nil, fmt.Errorf("the dest parameter type must be *string")
+	return obi.getClobBindDest()
 }
