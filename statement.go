@@ -264,8 +264,18 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		bufLen = -1
 		row.Data = unsafe.Pointer(desc)
 		freeType = lobFree
-	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BINARY, C.YAPI_TYPE_BIT:
+	case C.YAPI_TYPE_BOOL, C.YAPI_TYPE_TINYINT, C.YAPI_TYPE_SMALLINT, C.YAPI_TYPE_INTEGER, C.YAPI_TYPE_BIGINT, C.YAPI_TYPE_FLOAT, C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_BIT:
 		row.Data = mallocBytes(size)
+		freeType = normalFree
+	case C.YAPI_TYPE_BINARY:
+		bufLen = int32(size*2 + 1)
+		if bufLen < _DefaultSize {
+			// 视图V$COLUMN_STATISTICS_CACHE的LOWVAL,HIGHVAL字段类型是RAW(8)，实际大小远大于8，因此使用默认最大的buffer来绑定数据
+			//
+			// select LOWVAL,HIGHVAL from V$COLUMN_STATISTICS_CACHE LIMIT 101 OFFSET 0
+			bufLen = _DefaultSize
+		}
+		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_ROWID:
 		yacType = C.YAPI_TYPE_VARCHAR

@@ -255,7 +255,7 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 				value = data
 			}
 		case C.YAPI_TYPE_BINARY:
-			data := (*[8000]byte)(row.Data)[0:*row.Indicator]
+			data := (*[65535]byte)(row.Data)[0:*row.Indicator]
 			value = data
 		case C.YAPI_TYPE_BIT:
 			data := (*[64]byte)(row.Data)[0:*row.Indicator]
