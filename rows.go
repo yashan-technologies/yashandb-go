@@ -137,7 +137,12 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
 		return reflect.TypeOf(int64(0))
 	case C.YAPI_TYPE_FLOAT:
 		return reflect.TypeOf(float32(0))
-	case C.YAPI_TYPE_DOUBLE, C.YAPI_TYPE_NUMBER:
+	case C.YAPI_TYPE_DOUBLE:
+		return reflect.TypeOf(float64(0))
+	case C.YAPI_TYPE_NUMBER:
+		if r.stmt.Conn.numberAsString {
+			return reflect.TypeOf("")
+		}
 		return reflect.TypeOf(float64(0))
 	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP:
 		return reflect.TypeOf(time.Time{})
@@ -239,9 +244,14 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
 			value = (C.GoString((*C.char)(row.Data)))
 		case C.YAPI_TYPE_NUMBER:
-			value, err = strconv.ParseFloat(C.GoString((*C.char)(row.Data)), 64)
-			if err != nil {
-				return nil, err
+			str := C.GoString((*C.char)(row.Data))
+			if r.stmt.Conn.numberAsString {
+				value = str
+			} else {
+				value, err = strconv.ParseFloat(str, 64)
+				if err != nil {
+					return nil, err
+				}
 			}
 		case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
 			lobLocator := (**C.YapiLobLocator)(row.Data)

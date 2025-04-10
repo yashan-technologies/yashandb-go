@@ -31,12 +31,13 @@ const (
 )
 
 type YasConn struct {
-	Env           *C.YapiEnv
-	Conn          *C.YapiConnect
-	closed        bool
-	charsetRatio  uint32 // 最大CHARSET膨胀比率
-	ncharsetRatio uint32 // 最大NCHARSET膨胀比率
-	mu            sync.Mutex
+	Env            *C.YapiEnv
+	Conn           *C.YapiConnect
+	closed         bool
+	charsetRatio   uint32 // 最大CHARSET膨胀比率
+	ncharsetRatio  uint32 // 最大NCHARSET膨胀比率
+	numberAsString bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
+	mu             sync.Mutex
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
