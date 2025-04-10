@@ -99,8 +99,9 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	}
 
 	yasConn := &YasConn{
-		Env:  env,
-		Conn: conn,
+		Env:            env,
+		Conn:           conn,
+		numberAsString: dsn.numberAsString,
 	}
 
 	if err := yasConn.setHeartbeatEnable(dsn.heartbeatEnable); err != nil {

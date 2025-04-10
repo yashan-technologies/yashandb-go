@@ -26,6 +26,7 @@ const (
 	_UkeyPin         = `ukey_pin`
 	_Autocommit      = "autocommit"
 	_HeartbeatEnable = "heartbeat_enable"
+	_NumberAsString  = "number_as_string"
 
 	_LoadBalance = "LOADBALANCE:"
 	_Primary     = "PRIMARY:"
@@ -49,6 +50,7 @@ type DataSourceName struct {
 	ukeyName        string
 	ukeyPin         string
 	heartbeatEnable bool
+	numberAsString  bool
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -148,6 +150,11 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 			value := strings.ToLower(strs[1])
 			if value == "1" || value == "true" {
 				dsn.heartbeatEnable = true
+			}
+		case _NumberAsString:
+			value := strings.ToLower(strs[1])
+			if value == "1" || value == "true" {
+				dsn.numberAsString = true
 			}
 		default:
 			return fmt.Errorf("unknown param %s", strs[0])
