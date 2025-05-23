@@ -147,6 +147,20 @@ func (conn *YasConn) setHeartbeatEnable(enable bool) error {
 	return nil
 }
 
+func (conn *YasConn) setCompatVector(compatVector string) error {
+	if compatVector == "" || compatVector == "null" {
+		return nil
+	}
+
+	stmt, err := PrepareContext(conn, context.Background(), (fmt.Sprintf("alter session set compat_vector=%s", compatVector)))
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	return stmt.yacExecute()
+}
+
 func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
 	return yapiSetConnAttr(conn.Conn, attr, value, bufLength)
 }
@@ -314,7 +328,7 @@ func (conn *YasConn) handleRestSessionErr(err error) error {
 	if err == nil {
 		return nil
 	}
-	if isDisconnetionErr(err) {
+	if isResetSessionErr(err) {
 		return driver.ErrBadConn
 	}
 	return nil

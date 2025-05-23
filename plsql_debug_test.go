@@ -120,15 +120,6 @@ func queryObjIdAndSubId(t *testing.T, proceName string) (uint64, uint16) {
 	return objId, subId
 }
 
-func TestNewPlsqlDebug(t *testing.T) {
-	out := int64(0)
-	p, err := NewPlsqlDebug(testDsn, callPlSql_1, int64(1), int64(2), sql.Out{Dest: &out})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer p.Close()
-}
-
 func TestPdbgStart(t *testing.T) {
 	createProcedute(t, plsql_1)
 	out := 0

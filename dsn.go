@@ -27,6 +27,7 @@ const (
 	_Autocommit      = "autocommit"
 	_HeartbeatEnable = "heartbeat_enable"
 	_NumberAsString  = "number_as_string"
+	_CompatVector    = "compat_vector"
 
 	_LoadBalance = "LOADBALANCE:"
 	_Primary     = "PRIMARY:"
@@ -51,6 +52,7 @@ type DataSourceName struct {
 	ukeyPin         string
 	heartbeatEnable bool
 	numberAsString  bool
+	compatVector    string
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -155,6 +157,14 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 			value := strings.ToLower(strs[1])
 			if value == "1" || value == "true" {
 				dsn.numberAsString = true
+			}
+		case _CompatVector:
+			value := strings.ToLower(strs[1])
+			switch value {
+			case "mysql", "yashan", "null":
+				dsn.compatVector = value
+			default:
+				return fmt.Errorf("unknow compat_vector %s", value)
 			}
 		default:
 			return fmt.Errorf("unknown param %s", strs[0])

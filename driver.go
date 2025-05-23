@@ -114,6 +114,11 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		return nil, err
 	}
 
+	if err := yasConn.setCompatVector(dsn.compatVector); err != nil {
+		_ = yasConn.Close()
+		return nil, err
+	}
+
 	if err := yasConn.setAutoCommit(dsn.IsAutoCommit); err != nil {
 		_ = yasConn.Close()
 		return nil, err

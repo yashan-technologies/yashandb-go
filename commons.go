@@ -34,6 +34,8 @@ const (
 	_LobBufLen      = 8192
 	_OutputBindSize = 8192
 	_DefaultSize    = 32*1024 + 1
+
+	_TimeZoneLayout = "2006-01-02 15:04:05.999999 -07:00"
 )
 
 type valueFreeType int8
@@ -73,7 +75,16 @@ var (
 	lobFree    valueFreeType = 2
 
 	commentRegStr_1 = `\/\*([^*]|\*+[^*/])*\*+\/`
+	commentReg1, _  = regexp.Compile(commentRegStr_1)
 	commentRegStr_2 = `^--.*`
+	commentReg2, _  = regexp.Compile(commentRegStr_2)
+
+	_ResetSessionErrCodes = []string{
+		"YAS-08012", // connection has been disconnected
+		"YAS-00406", // connection is closed
+		"YAS-06010", // the database is not in readwrite mode
+		"YAS-08010", // invalid connection
+	}
 )
 
 type bindStruct struct {
@@ -228,19 +239,17 @@ func isKeySql(query string) bool {
 }
 
 func rmComment(query string) string {
-	reg1, _ := regexp.Compile(commentRegStr_1)
-	if reg1.MatchString(query) {
-		query = reg1.ReplaceAllString(query, "")
+	if commentReg1.MatchString(query) {
+		query = commentReg1.ReplaceAllString(query, "")
 	}
 
 	nQuery := ""
-	reg2, _ := regexp.Compile(commentRegStr_2)
 	for _, line := range strings.Split(query, "\n") {
 		nline := strings.TrimSpace(line)
 		if nline == "" {
 			continue
 		}
-		if reg2.MatchString(nline) {
+		if commentReg2.MatchString(nline) {
 			continue
 		}
 		nQuery += nline + "\n"
@@ -248,13 +257,15 @@ func rmComment(query string) string {
 	return nQuery
 }
 
-func isDisconnetionErr(err error) bool {
+func isResetSessionErr(err error) bool {
 	if err == nil {
 		return false
 	}
 	errStr := err.Error()
-	if strings.Contains(errStr, "YAS-08012") || strings.Contains(errStr, "YAS-00406") {
-		return true
+	for _, errCode := range _ResetSessionErrCodes {
+		if strings.Contains(errStr, errCode) {
+			return true
+		}
 	}
 	return false
 }
@@ -355,6 +366,10 @@ func GetDatabaseTypeName(yapiType uint32) string {
 		return "INTERVAL DAY TO SECOND"
 	case C.YAPI_TYPE_XML:
 		return "XMLTYPE"
+	case C.YAPI_TYPE_TIMESTAMP_LTZ:
+		return "TIMESTAMP WITH LOCAL TIME ZONE"
+	case C.YAPI_TYPE_TIMESTAMP_TZ:
+		return "TIMESTAMP WITH TIME ZONE"
 	default:
 		return ""
 	}

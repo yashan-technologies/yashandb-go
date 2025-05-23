@@ -38,7 +38,12 @@ func TestParseDsn(t *testing.T) {
 		{`sys/yasdb_123@127.0.0.1:1688?ukey_pin=123`, &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688?ukey_pin=123", IsAutoCommit: false, DataPath: "", ukeyPin: "123"}},
 		{"sys/Cod-2022@LOADBALANCE:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304", &DataSourceName{User: "sys", Password: "Cod-2022", Url: "LOADBALANCE:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304"}},
 		{"sys/Cod-2022@loadbalance:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304", &DataSourceName{User: "sys", Password: "Cod-2022", Url: "loadbalance:192.168.6.177:2300,192.168.6.177:2302,192.168.6.177:2304"}},
-		{"sys/yasdb_123@127.0.0.1:1688?number_as_string=true", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, numberAsString: true}},
+		{"sys/yasdb_123@127.0.0.1:1688?heartbeat_enable=true", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, heartbeatEnable: true}},
+		{"sys/yasdb_123@127.0.0.1:1688?compat_vector=yashan", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, compatVector: "yashan"}},
+		{"sys/yasdb_123@127.0.0.1:1688?compat_vector=yashan", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, compatVector: "yashan"}},
+		{"sys/yasdb_123@127.0.0.1:1688?compat_vector=mysql", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, compatVector: "mysql"}},
+		{"sys/yasdb_123@127.0.0.1:1688?compat_vector=null", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, compatVector: "null"}},
+		{"sys/yasdb_123@127.0.0.1:1688?compat_vector=yashan&autocommit=true&number_as_string=true", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: true, numberAsString: true, compatVector: "yashan"}},
 	}
 
 	for index, dt := range dsnTests {
