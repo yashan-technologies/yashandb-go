@@ -102,6 +102,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		Env:            env,
 		Conn:           conn,
 		numberAsString: dsn.numberAsString,
+		directInsert:   dsn.directInsert,
 	}
 
 	if err := yasConn.setHeartbeatEnable(dsn.heartbeatEnable); err != nil {
@@ -111,6 +112,11 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 
 	if err := yapiConnect2(conn, url, urlLen, user, userLen, password, pwLen); err != nil {
 		_ = releaseEnv(env)
+		return nil, err
+	}
+
+	if err := yasConn.setCompatVector(dsn.compatVector); err != nil {
+		_ = yasConn.Close()
 		return nil, err
 	}
 

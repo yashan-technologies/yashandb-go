@@ -37,6 +37,7 @@ type YasConn struct {
 	charsetRatio   uint32 // 最大CHARSET膨胀比率
 	ncharsetRatio  uint32 // 最大NCHARSET膨胀比率
 	numberAsString bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
+	directInsert   bool
 	mu             sync.Mutex
 }
 
@@ -145,6 +146,20 @@ func (conn *YasConn) setHeartbeatEnable(enable bool) error {
 		}
 	}
 	return nil
+}
+
+func (conn *YasConn) setCompatVector(compatVector string) error {
+	if compatVector == "" || compatVector == "null" {
+		return nil
+	}
+
+	stmt, err := PrepareContext(conn, context.Background(), (fmt.Sprintf("alter session set compat_vector=%s", compatVector)))
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	return stmt.yacExecute()
 }
 
 func (conn *YasConn) yapiSetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
@@ -302,19 +317,19 @@ func (conn *YasConn) ResetSession(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	stmt, err := conn.PrepareContext(ctx, "select 1 from dual")
-	if err != nil {
-		return conn.handleRestSessionErr(err)
-	}
-	defer stmt.Close()
-	return nil
+	// stmt, err := conn.PrepareContext(ctx, "select 1 from dual")
+	// if err != nil {
+	// 	return conn.handleRestSessionErr(err)
+	// }
+	// defer stmt.Close()
+	return conn.Ping(ctx)
 }
 
 func (conn *YasConn) handleRestSessionErr(err error) error {
 	if err == nil {
 		return nil
 	}
-	if isDisconnetionErr(err) {
+	if isResetSessionErr(err) {
 		return driver.ErrBadConn
 	}
 	return nil
@@ -326,7 +341,20 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	}
 
 	var stmt *C.YapiStmt
-	nQuery := tryRmSemicolon(query)
+	nQuery, cst := tryRmSemicolon(query)
+	if cst == CST_INSERT && conn.directInsert {
+		if err := yapiStmtCreate(conn.Conn, &stmt); err != nil {
+			return nil, err
+		}
+		// insert 直接走 DirectExecute
+		return &YasStmt{
+			Conn:     conn,
+			Stmt:     stmt,
+			SqlType:  (uint32)(cst),
+			Sqlstr:   nQuery,
+			prepared: false,
+		}, nil
+	}
 	queryP := C.CString(nQuery)
 	defer C.free(unsafe.Pointer(queryP))
 	sqlLength := C.int32_t(len(nQuery))
@@ -346,9 +374,10 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	}
 
 	yasStmt := &YasStmt{
-		Conn:    conn,
-		Stmt:    stmt,
-		SqlType: (uint32)(sqlType),
+		Conn:     conn,
+		Stmt:     stmt,
+		SqlType:  (uint32)(sqlType),
+		prepared: true,
 	}
 
 	return yasStmt, nil

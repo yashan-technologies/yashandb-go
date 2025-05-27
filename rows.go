@@ -20,6 +20,7 @@ import "C"
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"io"
 	"math"
 	"reflect"
@@ -144,7 +145,7 @@ func (r *YasRows) ColumnTypeScanType(index int) reflect.Type {
 			return reflect.TypeOf("")
 		}
 		return reflect.TypeOf(float64(0))
-	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP:
+	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_SHORTDATE, C.YAPI_TYPE_SHORTTIME, C.YAPI_TYPE_TIMESTAMP_TZ, C.YAPI_TYPE_TIMESTAMP_LTZ:
 		return reflect.TypeOf(time.Time{})
 	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_CLOB, C.YAPI_TYPE_NCLOB, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_JSON, C.YAPI_TYPE_XML:
 		return reflect.TypeOf("")
@@ -241,6 +242,15 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 		case C.YAPI_TYPE_SHORTTIME:
 			tmpDate := time.UnixMicro(*(*int64)(row.Data)).UTC()
 			value = time.Date(0, 1, 1, tmpDate.Hour(), tmpDate.Minute(), tmpDate.Second(), tmpDate.Nanosecond(), time.UTC)
+		case C.YAPI_TYPE_TIMESTAMP_LTZ:
+			value = time.UnixMicro(*(*int64)(row.Data)).Local()
+		case C.YAPI_TYPE_TIMESTAMP_TZ:
+			valueStr := (C.GoString((*C.char)(row.Data)))
+			t, err := time.Parse(_TimeZoneLayout, valueStr)
+			if err != nil {
+				return nil, fmt.Errorf("convert %q to time.Time failed, %v", valueStr, err)
+			}
+			value = t
 		case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_YM_INTERVAL, C.YAPI_TYPE_DS_INTERVAL:
 			value = (C.GoString((*C.char)(row.Data)))
 		case C.YAPI_TYPE_NUMBER:
