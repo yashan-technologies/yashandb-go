@@ -150,6 +150,21 @@ func yapiExecute(stmt *C.YapiStmt) error {
 	return checkYasError(C.yapiExecute(stmt))
 }
 
+func yapiDirectExecute(stmt *C.YapiStmt, sqlstr string) error {
+	queryP := C.CString(sqlstr)
+	defer C.free(unsafe.Pointer(queryP))
+	sqlLength := C.int32_t(len(sqlstr))
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiDirectExecute(stmt, queryP, sqlLength))
+}
+
+func yapiStmtCreate(conn *C.YapiConnect, stmt **C.YapiStmt) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiStmtCreate(conn, stmt))
+}
+
 func yapiReleaseStmt(stmt *C.YapiStmt) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()

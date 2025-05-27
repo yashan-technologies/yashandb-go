@@ -39,7 +39,13 @@ const (
 )
 
 type valueFreeType int8
+type cliSqlType int8
 
+var (
+	CST_UNKNOW cliSqlType = 0
+	CST_INSERT cliSqlType = 2
+	CST_PLSQL  cliSqlType = 126
+)
 var (
 	mutex = &sync.Mutex{}
 
@@ -219,23 +225,27 @@ func existYasError(ret C.YapiResult) bool {
 	return int(ret) != 0
 }
 
-func tryRmSemicolon(query string) string {
-	if isKeySql(query) {
-		return query
+func tryRmSemicolon(query string) (string, cliSqlType) {
+	cst := whichKeySql(query)
+	if cst == CST_PLSQL {
+		return query, cst
 	}
-	return strings.TrimSuffix(strings.TrimSpace(query), ";")
+	return strings.TrimSuffix(strings.TrimSpace(query), ";"), cst
 }
 
-func isKeySql(query string) bool {
+func whichKeySql(query string) cliSqlType {
 	query = rmComment(query)
 	strs := strings.Fields(strings.TrimSpace(query))
 	sqlStr := strings.ToLower(strings.Join(strs, " "))
+	if strings.HasPrefix(sqlStr, "insert into") {
+		return CST_INSERT
+	}
 	for _, v := range keySqls {
 		if strings.HasPrefix(sqlStr, v) {
-			return true
+			return CST_PLSQL
 		}
 	}
-	return false
+	return CST_UNKNOW
 }
 
 func rmComment(query string) string {

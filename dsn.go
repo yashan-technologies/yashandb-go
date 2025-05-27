@@ -28,6 +28,7 @@ const (
 	_HeartbeatEnable = "heartbeat_enable"
 	_NumberAsString  = "number_as_string"
 	_CompatVector    = "compat_vector"
+	_DirectInsert    = "directinsert"
 
 	_LoadBalance = "LOADBALANCE:"
 	_Primary     = "PRIMARY:"
@@ -53,6 +54,7 @@ type DataSourceName struct {
 	heartbeatEnable bool
 	numberAsString  bool
 	compatVector    string
+	directInsert    bool
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -84,10 +86,11 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 	}
 	matchStrs := dsnReg.FindStringSubmatch(dsnStr)
 	dsn := &DataSourceName{
-		User:     recoverySpecialChars(matchStrs[1]),
-		Password: recoverySpecialChars(matchStrs[2]),
-		Url:      matchStrs[3],
-		DataPath: "",
+		User:         recoverySpecialChars(matchStrs[1]),
+		Password:     recoverySpecialChars(matchStrs[2]),
+		Url:          matchStrs[3],
+		DataPath:     "",
+		directInsert: true,
 	}
 
 	if err := checkUrl(dsn.Url); err != nil {
@@ -109,10 +112,11 @@ func parseUDS(dsnStr string) (*DataSourceName, error) {
 	}
 	matchStrs := udsReg.FindStringSubmatch(dsnStr)
 	dsn := &DataSourceName{
-		User:     "sys",
-		Password: "",
-		Url:      "",
-		DataPath: matchStrs[1],
+		User:         "sys",
+		Password:     "",
+		Url:          "",
+		DataPath:     matchStrs[1],
+		directInsert: true,
 	}
 	_, err := os.Stat(dsn.DataPath)
 	if err != nil && !os.IsExist(err) {
@@ -165,6 +169,11 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 				dsn.compatVector = value
 			default:
 				return fmt.Errorf("unknow compat_vector %s", value)
+			}
+		case _DirectInsert:
+			value := strings.ToLower(strs[1])
+			if value == "0" || value == "false" {
+				dsn.directInsert = false
 			}
 		default:
 			return fmt.Errorf("unknown param %s", strs[0])

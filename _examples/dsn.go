@@ -15,7 +15,7 @@ type dsnReadStruct struct {
 func GetDsn() string {
 	defaultDsn := getDefaultDsn()
 	if defaultDsn == "" {
-		defaultDsn = "sys/sys@127.0.0.1:1688"
+		defaultDsn = "regress/regress@127.0.0.1:1688"
 	}
 	dsn := flag.String("dsn", defaultDsn, "input you dsn(DataSourceName, format:username/password@host:port[?param1=value1&...&paramN=valueN]) to connect yashandb.")
 	flag.Parse()
