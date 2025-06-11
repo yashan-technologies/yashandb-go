@@ -93,9 +93,9 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 		directInsert: true,
 	}
 
-	if err := checkUrl(dsn.Url); err != nil {
-		return nil, err
-	}
+	// if err := checkUrl(dsn.Url); err != nil {
+	// 	return nil, err
+	// }
 
 	if err := parseParams(dsn, matchStrs[4]); err != nil {
 		return nil, err
