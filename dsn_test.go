@@ -21,7 +21,7 @@ func TestParseDsn(t *testing.T) {
 		{`sys\//yasdb\@_123@127.0.0.1:1688?autocommit=true`, &DataSourceName{User: "sys/", Password: "yasdb@_123", Url: "127.0.0.1:1688", IsAutoCommit: true, DataPath: "", directInsert: true}},
 		{"sys/yasdb_123@127.0.0.1:1688", &DataSourceName{User: "sys", Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: false, DataPath: "", directInsert: true}},
 		{`sys\/\\/yasdb_123@127.0.0.1:1688?autocommit=true`, &DataSourceName{User: `sys/\`, Password: "yasdb_123", Url: "127.0.0.1:1688", IsAutoCommit: true, DataPath: "", directInsert: true}},
-		{"sys/yasdb_123@1X7.0.0.1:1688", nil},
+		{`sys\/\\/yasdb_123@localhost:1688?autocommit=true`, &DataSourceName{User: `sys/\`, Password: "yasdb_123", Url: "localhost:1688", IsAutoCommit: true, DataPath: "", directInsert: true}},
 		{"sysyasdb_123@127.0.0.1:1688", nil},
 		{"sys/yasdb_123127.0.0.1:1688", nil},
 		{`./test?autocommit=true`, &DataSourceName{User: "sys", Password: "", Url: "", IsAutoCommit: true, DataPath: "./test", directInsert: true}},
