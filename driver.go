@@ -124,6 +124,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		_ = yasConn.Close()
 		return nil, err
 	}
+	yasConn.autocommit = dsn.IsAutoCommit
 
 	if err := yasConn.getConnAttr(); err != nil {
 		_ = yasConn.Close()

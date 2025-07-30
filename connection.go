@@ -38,6 +38,7 @@ type YasConn struct {
 	ncharsetRatio  uint32 // 最大NCHARSET膨胀比率
 	numberAsString bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
 	directInsert   bool
+	autocommit     bool
 	mu             sync.Mutex
 }
 
@@ -57,6 +58,7 @@ func (conn *YasConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
+	_ = conn.setAutoCommit(false)
 	return &YasTx{Conn: conn}, nil
 }
 
@@ -171,10 +173,12 @@ func (conn *YasConn) yapiGetConnAttr(attr C.YapiConnAttr, value unsafe.Pointer, 
 }
 
 func (conn *YasConn) yacCommit() error {
+	defer conn.setAutoCommit(conn.autocommit)
 	return yapiCommit(conn.Conn)
 }
 
 func (conn *YasConn) yacRollback() error {
+	defer conn.setAutoCommit(conn.autocommit)
 	return yapiRollback(conn.Conn)
 }
 
