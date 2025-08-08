@@ -52,7 +52,7 @@ func (e *YasDBError) Error() string {
 }
 
 func ErrDsnNoStandard(dsn string) *YasBaseError {
-	return &YasBaseError{Code: 1001, Msg: "dsn is nonstandard"}
+	return &YasBaseError{Code: 1001, Msg: fmt.Sprintf("dsn %s is nonstandard!!!", dsn)}
 }
 
 func ErrDsnNoSet() *YasBaseError {

@@ -17,6 +17,7 @@ import (
 
 const (
 	dsnRegExpr       = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
+	dsnPdbRegExpr    = `^(.*?)/(.*?)@(.*?)/(.*?)?(\?(.*?))?$`
 	ipv4UrlRegExpr   = `^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$`
 	ipv6UrlRegExpr   = `^\[[:|\d|A-Z|a-z|%]+\]:\d+$`
 	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
@@ -71,10 +72,36 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
 	if dsnStr == "" {
 		return nil, ErrDsnNoSet()
 	}
-	if isDsn(dsnStr) {
+	if isPdbDsn(dsnStr) {
+		return parsePdbDSN(dsnStr)
+	} else if isDsn(dsnStr) {
 		return parseDSN(dsnStr)
 	}
 	return parseUDS(dsnStr)
+}
+
+func parsePdbDSN(dsnStr string) (*DataSourceName, error) {
+	dsnStr = replaceSpecialChars(dsnStr)
+	dsnReg, _ := regexp.Compile(dsnRegExpr)
+
+	if !dsnReg.MatchString(dsnStr) {
+		return nil, ErrDsnNoStandard(dsnStr)
+	}
+	matchStrs := dsnReg.FindStringSubmatch(dsnStr)
+	dsn := &DataSourceName{
+		User:         recoverySpecialChars(matchStrs[1]),
+		Password:     recoverySpecialChars(matchStrs[2]),
+		Url:          matchStrs[3],
+		DataPath:     "",
+		directInsert: true,
+	}
+
+	if err := parseParams(dsn, matchStrs[4]); err != nil {
+		return nil, err
+	}
+	genUkeyUrl(dsn)
+
+	return dsn, nil
 }
 
 func parseDSN(dsnStr string) (*DataSourceName, error) {
@@ -195,6 +222,11 @@ func genUkeyUrl(dsn *DataSourceName) {
 
 func isDsn(dsnStr string) bool {
 	dsnReg, _ := regexp.Compile(dsnRegExpr)
+	return dsnReg.MatchString(dsnStr)
+}
+
+func isPdbDsn(dsnStr string) bool {
+	dsnReg, _ := regexp.Compile(dsnPdbRegExpr)
 	return dsnReg.MatchString(dsnStr)
 }
 
