@@ -655,6 +655,7 @@ func TestPdbgGetVarValue(t *testing.T) {
 	out := 0
 	v1 := 102
 	v2 := 100
+	expected := 202
 	p, err := NewPlsqlDebug(testDsn, callPlSql_1, v1, v2, sql.Out{Dest: &out})
 	if err != nil {
 		t.Fatal(err)
@@ -679,6 +680,127 @@ func TestPdbgGetVarValue(t *testing.T) {
 		fmt.Printf("var %d value is %v\n", i, value)
 
 	}
+
+	if err := p.Continue(); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.GetBindOutValue(); err != nil {
+		t.Fatal(err)
+	}
+	if out != expected {
+		t.Fatalf("out: %d expected: %d", out, expected)
+	}
+
+}
+
+func TestPdbgNameBinding(t *testing.T) {
+
+	add := `create or replace procedure procAdd(p1 in int, p2 in out int, p3 out int) 
+	           is 
+	           begin
+               p3 := 100; 
+			   p3 := p1 + p2;
+			   p2 := 1;
+               end;`
+	call := `
+	begin
+		procAdd(
+			p1 =>:p1,
+			p2 =>:p2,
+			p3 =>:p3
+		);
+	end;
+	`
+
+	createProcedute(t, add)
+	p1 := 102
+	p2 := 100
+	p3 := 0
+	p3Expected := 202
+	p2Expected := 1
+
+	p, err := NewPlsqlDebug(testDsn, call,
+		sql.NamedArg{Name: "p3", Value: sql.Out{Dest: &p3}},
+		sql.NamedArg{Name: "p1", Value: p1},
+		sql.NamedArg{Name: "p2", Value: sql.Out{Dest: &p2, In: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
+		t.Fatal(err)
+	}
+	if err = p.Continue(); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.GetBindOutValue(); err != nil {
+		t.Fatal(err)
+	}
+
+	if p3 != p3Expected {
+		t.Fatalf("p3: %d p3Expected: %d", p3, p3Expected)
+	}
+	if p2 != p2Expected {
+		t.Fatalf("p2: %d p3Expected: %d", p2, p2Expected)
+	}
+
+}
+
+func TestPdbgNameReturnBinding(t *testing.T) {
+
+	add := `
+	CREATE OR REPLACE FUNCTION calculate_sum (
+		a IN NUMBER,
+		b IN NUMBER
+	) RETURN NUMBER
+	IS
+		result NUMBER;
+	BEGIN
+		result := a + b;
+		RETURN result;
+	END;
+	`
+	call := `
+	begin
+		:result := calculate_sum(
+			a =>:a,
+			b =>:b
+		);
+	end;
+	`
+
+	createProcedute(t, add)
+	a := float64(1)
+	b := float64(1)
+	result := float64(0)
+	expected := float64(2)
+
+	p, err := NewPlsqlDebug(testDsn, call,
+		sql.NamedArg{Name: "result", Value: sql.Out{Dest: &result}},
+		sql.NamedArg{Name: "a", Value: a},
+		sql.NamedArg{Name: "b", Value: b})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	objId, subId := queryObjIdAndSubId(t, procName_1)
+	if err := p.Start(objId, subId); err != nil {
+		t.Fatal(err)
+	}
+	if err = p.Continue(); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.GetBindOutValue(); err != nil {
+		t.Fatal(err)
+	}
+
+	if result != expected {
+		t.Fatalf("result: %f expected: %f", result, expected)
+	}
+
 }
 
 func TestPdbgGetAllData(t *testing.T) {

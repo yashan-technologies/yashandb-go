@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -40,6 +42,7 @@ type sqlGenInfo struct {
 	queryResult    [][]interface{}
 	execResult     [][]interface{}
 	query          string
+	DBVersion      string
 }
 
 func newSqlTest(t *testing.T) *sqlTest {
@@ -56,6 +59,45 @@ func newSqlAutoCommitTest(t *testing.T) *sqlTest {
 		t.Fatalf("error connecting: %v", err)
 	}
 	return &sqlTest{T: t, DB: db}
+}
+
+func (st *sqlTest) getDBVersion() {
+	r, err := st.DB.Query("select version_number from v$version")
+	if err != nil {
+		st.T.Fatalf("get db version failed %s", err)
+	}
+	if r.Next() {
+		version := ""
+		if err := r.Scan(&version); err != nil {
+			st.T.Fatalf("scan db version failed %s", err)
+		}
+		st.DBVersion = version
+	}
+}
+
+func (st *sqlTest) isUdtXmltype(columnType string) bool {
+	if st.DBVersion == "" {
+		st.getDBVersion()
+	}
+	if strings.ToLower(columnType) != "xmltype" {
+		return false
+	}
+	c, err := CompareVersion(st.DBVersion, "23.4.2.100")
+	if err != nil {
+		return false
+	}
+	return c >= 0
+}
+
+func (st *sqlTest) isToTimestampTzSupport() bool {
+	if st.DBVersion == "" {
+		st.getDBVersion()
+	}
+	c, err := CompareVersion(st.DBVersion, "23.4.2.100")
+	if err != nil {
+		return false
+	}
+	return c >= 0
 }
 
 func (st *sqlTest) dropTable() {
@@ -104,12 +146,19 @@ func (st *sqlTest) runInsertTest() {
 	bindValue := ""
 	flag := false
 	for _, column := range st.columnNameType {
+
+		v := "?"
+		if st.isUdtXmltype(column[1]) {
+			v = "xmltype(?)"
+		}
+
 		if flag {
 			columnName += ", " + column[0]
-			bindValue += ", ?"
+			bindValue += fmt.Sprintf(", %s", v)
+
 		} else {
 			columnName += column[0]
-			bindValue += "?"
+			bindValue += v
 		}
 		flag = true
 	}
@@ -127,10 +176,14 @@ func (st *sqlTest) runSelectTest() {
 	columnName := ""
 	flag := false
 	for _, column := range st.columnNameType {
+		colName := column[0]
+		if st.isUdtXmltype(column[1]) {
+			colName = fmt.Sprintf("%s.%s.getClobVal()", st.tableName, column[0])
+		}
 		if flag {
-			columnName += ", " + column[0]
+			columnName += ", " + colName
 		} else {
-			columnName += column[0]
+			columnName += colName
 		}
 		flag = true
 	}
@@ -280,4 +333,47 @@ func newYasDB(t *testing.T) *sql.DB {
 	}
 	t.Parallel()
 	return db
+}
+
+var (
+	VERSION_LEN = 4
+)
+
+func CompareVersionWithoutSuf(v1, v2 string) (int, error) {
+	shortV1 := strings.Split(v1, "-")[0]
+	shortV2 := strings.Split(v2, "-")[0]
+	return CompareVersion(shortV1, shortV2)
+}
+
+// CompareVersion 比较版本
+// if v1 > v2, return 1
+// if v1 = v2, return 0
+// if v1 < v2, return -1
+func CompareVersion(v1, v2 string) (int, error) {
+	v1List := strings.Split(v1, ".")
+	v2List := strings.Split(v2, ".")
+
+	// 版本是xx.xx.xx.xx
+	if len(v1List) != VERSION_LEN || len(v2List) != VERSION_LEN {
+		return 0, fmt.Errorf("version format error")
+	}
+
+	// 逐位比较
+	for i := 0; i < VERSION_LEN; i++ {
+		first, err := strconv.Atoi(v1List[i])
+		if err != nil {
+			return 0, err
+		}
+		second, err := strconv.Atoi(v2List[i])
+		if err != nil {
+			return 0, err
+		}
+		if first > second {
+			return 1, nil
+		} else if first < second {
+			return -1, nil
+		}
+	}
+	// 四位均相等
+	return 0, nil
 }

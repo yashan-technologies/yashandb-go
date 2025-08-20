@@ -35,6 +35,9 @@ type YasDBError struct {
 
 func (e *YasDBError) Error() string {
 	if e.Code == 0 {
+		if len(e.Msg) != 0 {
+			return e.Msg
+		}
 		return "yasdb return code is zero"
 	}
 
@@ -52,7 +55,7 @@ func (e *YasDBError) Error() string {
 }
 
 func ErrDsnNoStandard(dsn string) *YasBaseError {
-	return &YasBaseError{Code: 1001, Msg: fmt.Sprintf("dsn %s is nonstandard!!!", dsn)}
+	return &YasBaseError{Code: 1001, Msg: "dsn is nonstandard"}
 }
 
 func ErrDsnNoSet() *YasBaseError {

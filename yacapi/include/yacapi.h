@@ -408,7 +408,7 @@ YapiResult yapiGetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, i
                            int32_t* stringLength);
 YapiResult yapiAllocConnect(YapiEnv* env, YapiConnect** hConn);
 YapiResult yapiConnect2(YapiConnect* hConn, const char* url, int16_t urlLength, const char* user, int16_t userLength,
-                       const char* password, int16_t passwordLengt);
+                        const char* password, int16_t passwordLengt);
 
 //-----------------------------------------------------------------------------
 // Statment Function
@@ -452,12 +452,28 @@ YapiResult yapiShortTimeSetShortTime(YapiShortTime* time, uint8_t hour, uint8_t 
                                      uint32_t fraction);
 YapiResult yapiTimestampSetTimestamp(YapiTimestamp* timestamp, int16_t year, uint8_t month, uint8_t day, uint8_t hour,
                                      uint8_t minute, uint8_t second, uint32_t fraction);
+
+YapiResult yapiDateTimeGetTimeZoneOffset(YapiEnv* env, YapiTimestamp timestamp, int8_t* hr, int8_t* mm);
+
 YapiResult yapiYMIntervalSetYearMonth(YapiYMInterval* ymInterval, int32_t year, int32_t month);
 YapiResult yapiDSIntervalSetDaySecond(YapiDSInterval* dsInterval, int32_t day, int32_t hour, int32_t minute,
                                       int32_t second, int32_t fraction);
 
+YapiResult yapiDSIntervalFromText(YapiEnv* hEnv, YapiDSInterval* dsInterval, const char* str, uint32_t strLen);
+
+YapiResult yapiYMIntervalFromText(YapiEnv* hEnv, YapiYMInterval* ymInterval, const char* str, uint32_t strLen);
+
 YapiResult yapiNumberRound(YapiNumber* n, int32_t precision, int32_t scale);
 
+YapiResult yapiNumberToText(const YapiNumber* number, const char* fmt, uint32_t fmtLength, const char* nlsParam,
+                            uint32_t nlsParamLength, char* str, int32_t bufLength, int32_t* length);
+
+YapiResult yapiNumberFromText(const char* str, uint32_t strLength, const char* fmt, uint32_t fmtLength,
+                              const char* nlsParam, uint32_t nlsParamLength, YapiNumber* number);
+
+YapiResult yapiNumberFromReal(const YapiPointer rnum, uint32_t length, YapiNumber* number);
+
+YapiResult yapiNumberToReal(const YapiNumber* number, uint32_t length, YapiPointer rsl);
 //-----------------------------------------------------------------------------
 // Lob Function
 //-----------------------------------------------------------------------------

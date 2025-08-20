@@ -17,7 +17,6 @@ import (
 
 const (
 	dsnRegExpr       = `^(.*?)/(.*?)@(.*?)(\?(.*?))?$`
-	dsnPdbRegExpr    = `^(.*?)/(.*?)@(.*?)/(.*?)?(\?(.*?))?$`
 	ipv4UrlRegExpr   = `^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$`
 	ipv6UrlRegExpr   = `^\[[:|\d|A-Z|a-z|%]+\]:\d+$`
 	mappedUrlRegExpr = `^\[[:|\d|A-Z|a-z|\.]+\]:\d+$`
@@ -30,6 +29,13 @@ const (
 	_NumberAsString  = "number_as_string"
 	_CompatVector    = "compat_vector"
 	_DirectInsert    = "directinsert"
+
+	_DbTimestampFormat   = "timestamp_format"
+	_DbDateFormat        = "date_format"
+	_DbTimeFormat        = "time_format"
+	_DbTimestampTzFormat = "timestamp_tz_format"
+	_DbDsIntervalFormat  = "ds_interval_format"
+	_DbYmIntervalFormat  = "ym_interval_format"
 
 	_LoadBalance = "LOADBALANCE:"
 	_Primary     = "PRIMARY:"
@@ -45,17 +51,23 @@ var (
 )
 
 type DataSourceName struct {
-	User            string
-	Password        string
-	Url             string
-	DataPath        string
-	IsAutoCommit    bool
-	ukeyName        string
-	ukeyPin         string
-	heartbeatEnable bool
-	numberAsString  bool
-	compatVector    string
-	directInsert    bool
+	User              string
+	Password          string
+	Url               string
+	DataPath          string
+	IsAutoCommit      bool
+	ukeyName          string
+	ukeyPin           string
+	heartbeatEnable   bool
+	numberAsString    bool
+	compatVector      string
+	directInsert      bool
+	timestampFormat   string
+	timestampTzFormat string
+	dateFormat        string
+	timeFormat        string
+	dsIntervalFormat  string
+	ymIntervalFormat  string
 }
 
 // ParseDSN parses a DataSourceName used to connect to YashanDB
@@ -72,36 +84,10 @@ func ParseDSN(dsnStr string) (*DataSourceName, error) {
 	if dsnStr == "" {
 		return nil, ErrDsnNoSet()
 	}
-	if isPdbDsn(dsnStr) {
-		return parsePdbDSN(dsnStr)
-	} else if isDsn(dsnStr) {
+	if isDsn(dsnStr) {
 		return parseDSN(dsnStr)
 	}
 	return parseUDS(dsnStr)
-}
-
-func parsePdbDSN(dsnStr string) (*DataSourceName, error) {
-	dsnStr = replaceSpecialChars(dsnStr)
-	dsnReg, _ := regexp.Compile(dsnRegExpr)
-
-	if !dsnReg.MatchString(dsnStr) {
-		return nil, ErrDsnNoStandard(dsnStr)
-	}
-	matchStrs := dsnReg.FindStringSubmatch(dsnStr)
-	dsn := &DataSourceName{
-		User:         recoverySpecialChars(matchStrs[1]),
-		Password:     recoverySpecialChars(matchStrs[2]),
-		Url:          matchStrs[3],
-		DataPath:     "",
-		directInsert: true,
-	}
-
-	if err := parseParams(dsn, matchStrs[4]); err != nil {
-		return nil, err
-	}
-	genUkeyUrl(dsn)
-
-	return dsn, nil
 }
 
 func parseDSN(dsnStr string) (*DataSourceName, error) {
@@ -128,7 +114,7 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 		return nil, err
 	}
 	genUkeyUrl(dsn)
-
+	fillFormat(dsn)
 	return dsn, nil
 }
 
@@ -152,7 +138,17 @@ func parseUDS(dsnStr string) (*DataSourceName, error) {
 	if err := parseParams(dsn, matchStrs[2]); err != nil {
 		return nil, err
 	}
+	fillFormat(dsn)
 	return dsn, nil
+}
+
+func fillFormat(dsn *DataSourceName) {
+	dsn.dsIntervalFormat = getOrDefault(dsn.dsIntervalFormat, _DefaultDbDsIntervalFormat)
+	dsn.ymIntervalFormat = getOrDefault(dsn.ymIntervalFormat, _DefaultDbYmIntervalFormat)
+	dsn.dateFormat = getOrDefault(dsn.dateFormat, _DefaultDbDateFormat)
+	dsn.timeFormat = getOrDefault(dsn.timeFormat, _DefaultDbTimeFormat)
+	dsn.timestampFormat = getOrDefault(dsn.timestampFormat, _DefaultDbTimestampFormat)
+	dsn.timestampTzFormat = getOrDefault(dsn.timestampTzFormat, _DefaultDbTimestampTzFormat)
 }
 
 func parseParams(dsn *DataSourceName, argStr string) error {
@@ -202,12 +198,31 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 			if value == "0" || value == "false" {
 				dsn.directInsert = false
 			}
+		case _DbDateFormat:
+			dsn.dateFormat = strs[1]
+		case _DbTimeFormat:
+			dsn.timeFormat = strs[1]
+		case _DbTimestampFormat:
+			dsn.timestampFormat = strs[1]
+		case _DbTimestampTzFormat:
+			dsn.timestampTzFormat = strs[1]
+		case _DbDsIntervalFormat:
+			dsn.dsIntervalFormat = strs[1]
+		case _DbYmIntervalFormat:
+			dsn.ymIntervalFormat = strs[1]
 		default:
 			return fmt.Errorf("unknown param %s", strs[0])
 		}
 	}
 
 	return nil
+}
+
+func getOrDefault(value, defaultValue string) string {
+	if len(value) != 0 {
+		return value
+	}
+	return defaultValue
 }
 
 func genUkeyUrl(dsn *DataSourceName) {
@@ -222,11 +237,6 @@ func genUkeyUrl(dsn *DataSourceName) {
 
 func isDsn(dsnStr string) bool {
 	dsnReg, _ := regexp.Compile(dsnRegExpr)
-	return dsnReg.MatchString(dsnStr)
-}
-
-func isPdbDsn(dsnStr string) bool {
-	dsnReg, _ := regexp.Compile(dsnPdbRegExpr)
 	return dsnReg.MatchString(dsnStr)
 }
 

@@ -267,7 +267,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		bufLen = 34
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
-	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB, C.YAPI_TYPE_XML, C.YAPI_TYPE_NCLOB:
 		desc := new(unsafe.Pointer)
 		if err := yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc); err != nil {
 			return nil, err
@@ -451,13 +451,13 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
 
 func (stmt *YasStmt) getOutputBindValue(sqlOut sql.Out) (*bindStruct, error) {
 	if obi, ok := sqlOut.Dest.(*outputBindInfo); ok {
-		return stmt.getOutputBindValueByInfo(obi)
+		return stmt.getOutputBindValueByInfo(obi, sqlOut.In)
 	} else {
-		return stmt.getOutputBindValueByDest(sqlOut.Dest)
+		return stmt.getOutputBindValueByDest(sqlOut.Dest, sqlOut.In)
 	}
 }
 
-func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (*bindStruct, error) {
+func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}, inout bool) (*bindStruct, error) {
 	bind := &bindStruct{}
 	var (
 		yacType   C.YapiType
@@ -510,7 +510,7 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (*bindStruct, er
 		yacType = C.YAPI_TYPE_VARCHAR
 		bindSize = _OutputBindSize
 		bufLength = C.int32_t(bindSize - 1)
-		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
+		value = C.YapiPointer(unsafe.Pointer(stringToYasCharBySize(C.size_t(bindSize))))
 		freeType = normalFree
 	case []byte:
 		desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
@@ -541,12 +541,15 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}) (*bindStruct, er
 	bind.bindSize = bindSize
 	bind.bufLength = bufLength
 	bind.indicator = indicator
-	bind.direction = C.YAPI_PARAM_OUTPUT
 	bind.freeType = freeType
+	bind.direction = C.YAPI_PARAM_OUTPUT
+	if inout {
+		bind.direction = C.YAPI_PARAM_INOUT
+	}
 	return bind, nil
 }
 
-func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct, error) {
+func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo, inout bool) (*bindStruct, error) {
 	bind := &bindStruct{}
 	var (
 		yacType   C.YapiType = obi.yacType
@@ -561,7 +564,7 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct,
 	if obi.bindSize == 0 {
 		bindSize = _OutputBindSize
 	} else {
-		bindSize = obi.bindSize
+		bindSize = obi.bindSize + 1
 	}
 	bufLength = C.int32_t(bindSize)
 	indicator = new(C.int32_t)
@@ -596,13 +599,157 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct,
 		indicator = nil
 		value = C.YapiPointer(desc)
 		freeType = lobFree
-	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
-		v, err := obi.getCharBindDest()
+	case C.YAPI_TYPE_BIT:
+		v, err := obi.getBitBindDest()
 		if err != nil {
 			return bind, err
 		}
-		bufLength = C.int32_t(bindSize - 1)
-		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(*v)))
+		bindSize, bufLength, value, *indicator = bitOutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_BOOL:
+		v, err := obi.getBoolBindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = boolOutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_TINYINT:
+		v, err := obi.getInt8BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = int8OutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_SMALLINT:
+		v, err := obi.getInt16BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = int16OutBindParam(v, inout)
+	case C.YAPI_TYPE_INTEGER:
+		v, err := obi.getInt32BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = int32OutBindParam(v, inout)
+	case C.YAPI_TYPE_BIGINT:
+		v, err := obi.getInt64BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = int64OutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_DATE:
+		v, err := obi.getTimeBindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = dateOutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_TIMESTAMP_LTZ, C.YAPI_TYPE_TIMESTAMP_TZ:
+		v, err := obi.getTimeBindDest()
+		if err != nil {
+			return bind, err
+		}
+		zone := false
+		if yacType == C.YAPI_TYPE_TIMESTAMP_TZ {
+			zone = true
+		}
+		bindSize, bufLength, value, *indicator, err = timestampOutBindParam(v, zone, inout)
+		if err != nil {
+			return bind, err
+		}
+		freeType = normalFree
+	case C.YAPI_TYPE_BINARY:
+		v, err := obi.getBlobBindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = rawOutBindParam(v, int(bindSize), inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_DOUBLE:
+		v, err := obi.getFloat64BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = float64OutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_FLOAT:
+		v, err := obi.getFloat32BindDest()
+		if err != nil {
+			return bind, err
+		}
+		bindSize, bufLength, value, *indicator = float32OutBindParam(v, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_DS_INTERVAL:
+		v, err := obi.getIntervalBindDest()
+		if err != nil {
+			return bind, err
+		}
+		dsInterval, err := stmt.Conn.stringToYapiDSInterval(v)
+		if err != nil {
+			return bind, err
+		}
+		bindSize = C.int32_t(unsafe.Sizeof(*dsInterval))
+		bufLength = bindSize
+		*indicator = C.int32_t(bufLength)
+		value = C.YapiPointer(dsInterval)
+		freeType = normalFree
+	case C.YAPI_TYPE_YM_INTERVAL:
+		v, err := obi.getIntervalBindDest()
+		if err != nil {
+			return bind, err
+		}
+		ymInterval, err := stmt.Conn.stringToYapiYMInterval(v)
+		if err != nil {
+			return bind, err
+		}
+		bindSize = C.int32_t(unsafe.Sizeof(*ymInterval))
+		bufLength = bindSize
+		*indicator = C.int32_t(bufLength)
+		value = C.YapiPointer(ymInterval)
+		freeType = normalFree
+	case C.YAPI_TYPE_CHAR, C.YAPI_TYPE_VARCHAR:
+		yacType = C.YAPI_TYPE_VARCHAR
+		v, err := obi.getVarcharBindDest()
+		if err != nil {
+			return bind, err
+		}
+		size := int(sizeToAlign4(uint32(bindSize))*stmt.Conn.charsetRatio) + 1
+		bindSize, bufLength, value, *indicator = stringOutBindParam(v, size, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR:
+		yacType = C.YAPI_TYPE_VARCHAR
+		v, err := obi.getVarcharBindDest()
+		if err != nil {
+			return bind, err
+		}
+		size := int(sizeToAlign4(uint32(bindSize))*stmt.Conn.ncharsetRatio) + 1
+		bindSize, bufLength, value, *indicator = stringOutBindParam(v, size, inout)
+		freeType = normalFree
+	case C.YAPI_TYPE_NUMBER:
+		v, err := obi.getNumberDest()
+		if err != nil {
+			return bind, err
+		}
+		number, err := stmt.Conn.float64ToYapiNumber(v)
+		if err != nil {
+			return bind, err
+		}
+		bindSize = C.int32_t(unsafe.Sizeof(*number))
+		bufLength = bindSize
+		*indicator = C.int32_t(bufLength)
+		value = C.YapiPointer(number)
+		freeType = normalFree
+
+	case C.YAPI_TYPE_ROWID:
+		yacType = C.YAPI_TYPE_VARCHAR
+		v, err := obi.getVarcharBindDest()
+		if err != nil {
+			return bind, err
+		}
+		size := int(16)
+		bindSize, bufLength, value, *indicator = stringOutBindParam(v, size, inout)
 		freeType = normalFree
 	default:
 		return bind, ErrUnknowType(yacType)
@@ -610,11 +757,15 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo) (*bindStruct,
 
 	bind.yacType = yacType
 	bind.value = value
+
 	bind.bindSize = bindSize
 	bind.bufLength = bufLength
 	bind.indicator = indicator
-	bind.direction = C.YAPI_PARAM_OUTPUT
 	bind.freeType = freeType
+	bind.direction = C.YAPI_PARAM_OUTPUT
+	if inout {
+		bind.direction = C.YAPI_PARAM_INOUT
+	}
 	return bind, nil
 }
 
@@ -680,7 +831,78 @@ func (stmt *YasStmt) getBindValueDest() error {
 					return err
 				}
 				*bindDest = string(byteDest)
-			case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR:
+			case C.YAPI_TYPE_BIT:
+				bindDest, _ := dest.getBitBindDest()
+				if *bind.indicator != C.YAPI_NULL_DATA {
+					*bindDest = C.GoBytes(unsafe.Pointer(bind.value), C.int(*bind.indicator))
+				}
+			case C.YAPI_TYPE_BOOL:
+				bindDest, _ := dest.getBoolBindDest()
+				*bindDest = yacPointerToBool(bind.value)
+			case C.YAPI_TYPE_TINYINT:
+				bindDest, _ := dest.getInt8BindDest()
+				*bindDest = yacPointerToInt8(bind.value)
+			case C.YAPI_TYPE_SMALLINT:
+				bindDest, _ := dest.getInt16BindDest()
+				*bindDest = yacPointerToInt16(bind.value)
+			case C.YAPI_TYPE_INTEGER:
+				bindDest, _ := dest.getInt32BindDest()
+				*bindDest = yacPointerToInt32(bind.value)
+			case C.YAPI_TYPE_BIGINT:
+				bindDest, _ := dest.getInt64BindDest()
+				*bindDest = yacPointerToInt64(bind.value)
+			case C.YAPI_TYPE_DATE:
+				bindDest, _ := dest.getTimeBindDest()
+				date := yacPointerToInt64(bind.value)
+				*bindDest = time.Unix(0, date*1e3).UTC()
+			case C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_TIMESTAMP_TZ, C.YAPI_TYPE_TIMESTAMP_LTZ:
+				zone := false
+				if dest.yacType != C.YAPI_TYPE_TIMESTAMP {
+					zone = true
+				}
+				bindDest, _ := dest.getTimeBindDest()
+				timestamp := (*C.YapiTimestamp)(bind.value)
+				t, err := stmt.Conn.yapiTimestampToTime(timestamp, zone)
+				if err != nil {
+					return err
+				}
+				*bindDest = *t
+			case C.YAPI_TYPE_DOUBLE:
+				bindDest, _ := dest.getFloat64BindDest()
+				*bindDest = yacPointerToFloat64(bind.value)
+			case C.YAPI_TYPE_FLOAT:
+				bindDest, _ := dest.getFloat32BindDest()
+				*bindDest = yacPointerToFloat32(bind.value)
+			case C.YAPI_TYPE_YM_INTERVAL:
+				bindDest, _ := dest.getIntervalBindDest()
+				res, err := stmt.Conn.yapiYMIntervalToString((*C.YapiYMInterval)(bind.value))
+				if err != nil {
+					return err
+				}
+				*bindDest = res
+			case C.YAPI_TYPE_DS_INTERVAL:
+				bindDest, _ := dest.getIntervalBindDest()
+				res, err := stmt.Conn.yapiDSIntervalToString((*C.YapiDSInterval)(bind.value))
+				if err != nil {
+					return err
+				}
+				*bindDest = res
+			case C.YAPI_TYPE_BINARY:
+				bindDest, _ := dest.getBlobBindDest()
+				if *bind.indicator != C.YAPI_NULL_DATA {
+					*bindDest = C.GoBytes(unsafe.Pointer(bind.value), C.int(*bind.indicator))
+				}
+			case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_NCHAR:
+				bindDest, _ := dest.getVarcharBindDest()
+				*bindDest = C.GoString((*C.char)(bind.value))
+			case C.YAPI_TYPE_NUMBER:
+				bindDest, _ := dest.getNumberDest()
+				res, err := stmt.Conn.yapiNumberToFloat64((*C.YapiNumber)(bind.value))
+				if err != nil {
+					return err
+				}
+				*bindDest = res
+			case C.YAPI_TYPE_ROWID:
 				bindDest, _ := dest.getVarcharBindDest()
 				*bindDest = C.GoString((*C.char)(bind.value))
 			}
@@ -719,6 +941,54 @@ type outputBindInfo struct {
 }
 type outputBindOpt func(*outputBindInfo)
 
+func WithTypeBool() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_BOOL }
+}
+
+func WithTypeDate() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_DATE }
+}
+
+func WithTypeTimestamp() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_TIMESTAMP }
+}
+
+func WithTypeTimestampLocalTimeZone() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_TIMESTAMP_LTZ }
+}
+
+func WithTypeTimestampTimeZone() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_TIMESTAMP_TZ }
+}
+
+func WithTypeBigInt() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_BIGINT }
+}
+
+func WithTypeInteger() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_INTEGER }
+}
+
+func WithTypeSmallInt() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_SMALLINT }
+}
+
+func WithTypeDouble() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_DOUBLE }
+}
+
+func WithTypeFloat() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_FLOAT }
+}
+
+func WithTypeTinyint() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_TINYINT }
+}
+
+func WithTypeBit() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_BIT }
+}
+
 func WithTypeClob() outputBindOpt {
 	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_CLOB }
 }
@@ -731,8 +1001,32 @@ func WithTypeVarchar() outputBindOpt {
 	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_VARCHAR }
 }
 
+func WithTypeNvarchar() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_NVARCHAR }
+}
+
 func WithTypeChar() outputBindOpt {
 	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_CHAR }
+}
+
+func WithTypeRaw() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_BINARY }
+}
+
+func WithTypeDSInterval() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_DS_INTERVAL }
+}
+
+func WithTypeYMInterval() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_YM_INTERVAL }
+}
+
+func WithTypeNumber() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_NUMBER }
+}
+
+func WithTypeRowid() outputBindOpt {
+	return func(obi *outputBindInfo) { obi.yacType = C.YAPI_TYPE_ROWID }
 }
 
 func WithBindSize(bindSize uint32) outputBindOpt {
@@ -760,14 +1054,34 @@ func (obi *outputBindInfo) setBindOpt(opts ...outputBindOpt) error {
 
 func (obi *outputBindInfo) checkBindOptParams() (err error) {
 	switch obi.yacType {
-	case C.YAPI_TYPE_BLOB:
+	case C.YAPI_TYPE_BLOB, C.YAPI_TYPE_BINARY:
 		_, err = obi.getBlobBindDest()
 	case C.YAPI_TYPE_CLOB:
 		_, err = obi.getClobBindDest()
-	case C.YAPI_TYPE_VARCHAR:
+	case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_ROWID:
 		_, err = obi.getVarcharBindDest()
-	case C.YAPI_TYPE_CHAR:
-		_, err = obi.getCharBindDest()
+	case C.YAPI_TYPE_BIT:
+		_, err = obi.getBitBindDest()
+	case C.YAPI_TYPE_BOOL:
+		_, err = obi.getBoolBindDest()
+	case C.YAPI_TYPE_DATE, C.YAPI_TYPE_TIMESTAMP, C.YAPI_TYPE_TIMESTAMP_TZ, C.YAPI_TYPE_TIMESTAMP_LTZ:
+		_, err = obi.getTimeBindDest()
+	case C.YAPI_TYPE_TINYINT:
+		_, err = obi.getInt8BindDest()
+	case C.YAPI_TYPE_SMALLINT:
+		_, err = obi.getInt16BindDest()
+	case C.YAPI_TYPE_BIGINT:
+		_, err = obi.getInt64BindDest()
+	case C.YAPI_TYPE_INTEGER:
+		_, err = obi.getInt32BindDest()
+	case C.YAPI_TYPE_DOUBLE:
+		_, err = obi.getFloat64BindDest()
+	case C.YAPI_TYPE_FLOAT:
+		_, err = obi.getFloat32BindDest()
+	case C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_YM_INTERVAL:
+		_, err = obi.getIntervalBindDest()
+	case C.YAPI_TYPE_NUMBER:
+		_, err = obi.getNumberDest()
 	default:
 		return ErrUnknowType(obi.yacType)
 	}
@@ -778,20 +1092,101 @@ func (obi *outputBindInfo) getClobBindDest() (*string, error) {
 	if value, ok := obi.dest.(*string); ok {
 		return value, nil
 	}
-	return nil, fmt.Errorf("the dest parameter type must be *string")
+	return nil, NewBindOutDestTypeErr("*string")
 }
 
 func (obi *outputBindInfo) getBlobBindDest() (*[]byte, error) {
 	if value, ok := obi.dest.(*[]byte); ok {
 		return value, nil
 	}
-	return nil, fmt.Errorf("the dest parameter type must be *[]byte")
-}
-
-func (obi *outputBindInfo) getCharBindDest() (*string, error) {
-	return obi.getClobBindDest()
+	return nil, NewBindOutDestTypeErr("*[]byte")
 }
 
 func (obi *outputBindInfo) getVarcharBindDest() (*string, error) {
 	return obi.getClobBindDest()
+}
+
+func (obi *outputBindInfo) getBitBindDest() (*[]byte, error) {
+	return obi.getBlobBindDest()
+}
+
+func (obi *outputBindInfo) getBoolBindDest() (*bool, error) {
+	if value, ok := obi.dest.(*bool); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*bool")
+}
+
+func (obi *outputBindInfo) getInt64BindDest() (*int64, error) {
+	if value, ok := obi.dest.(*int64); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*int64")
+}
+
+func (obi *outputBindInfo) getInt32BindDest() (*int32, error) {
+	if value, ok := obi.dest.(*int32); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*int32")
+}
+
+func (obi *outputBindInfo) getInt16BindDest() (*int16, error) {
+	if value, ok := obi.dest.(*int16); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*int16")
+}
+
+func (obi *outputBindInfo) getInt8BindDest() (*int8, error) {
+	if value, ok := obi.dest.(*int8); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*int8")
+}
+
+func (obi *outputBindInfo) getTimeBindDest() (*time.Time, error) {
+	if value, ok := obi.dest.(*time.Time); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*time.Time")
+}
+
+func (obi *outputBindInfo) getFloat64BindDest() (*float64, error) {
+	if value, ok := obi.dest.(*float64); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*float64")
+}
+
+func (obi *outputBindInfo) getFloat32BindDest() (*float32, error) {
+	if value, ok := obi.dest.(*float32); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*float32")
+}
+
+func (obi *outputBindInfo) getIntervalBindDest() (*string, error) {
+	return obi.getClobBindDest()
+}
+
+func (obi *outputBindInfo) getNumberDest() (*float64, error) {
+	if value, ok := obi.dest.(*float64); ok {
+		return value, nil
+	}
+	return nil, NewBindOutDestTypeErr("*flot64")
+}
+
+func NewBindOutDestTypeErr(typeFormat string) *BindOutDestTypeErr {
+	return &BindOutDestTypeErr{
+		TypeFormat: typeFormat,
+	}
+}
+
+type BindOutDestTypeErr struct {
+	TypeFormat string
+}
+
+func (d *BindOutDestTypeErr) Error() string {
+	return fmt.Sprintf("the dest parameter type must be %s", d.TypeFormat)
 }

@@ -369,3 +369,100 @@ func yapiFetch(stmt *C.YapiStmt, rows *C.uint32_t) error {
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiFetch(stmt, rows))
 }
+
+func yapiTimestampGetTimestamp(timestamp C.YapiTimestamp,
+	year *C.int16_t,
+	month *C.uint8_t,
+	day *C.uint8_t,
+	hour *C.uint8_t,
+	minute *C.uint8_t,
+	second *C.uint8_t,
+	fraction *C.uint32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiTimestampGetTimestamp(timestamp, year, month, day, hour, minute, second, fraction))
+}
+
+func yapiTimestampSetTimestamp(timestamp *C.YapiTimestamp,
+	year C.int16_t,
+	month C.uint8_t,
+	day C.uint8_t,
+	hour C.uint8_t,
+	minute C.uint8_t,
+	second C.uint8_t,
+	fraction C.uint32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiTimestampSetTimestamp(timestamp, year, month, day, hour, minute, second, fraction))
+}
+
+func yapiDateTimeGetTimeZoneOffset(env *C.YapiEnv, timestamp C.YapiTimestamp, hr *C.int8_t, mm *C.int8_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiDateTimeGetTimeZoneOffset(env, timestamp, hr, mm))
+}
+
+func yapiDSIntervalFromText(hEnv *C.YapiEnv, dsInterval *C.YapiDSInterval, str *C.char, strLen C.uint32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiDSIntervalFromText(hEnv, dsInterval, str, strLen))
+}
+
+func yapiYMIntervalFromText(hEnv *C.YapiEnv, dsInterval *C.YapiYMInterval, str *C.char, strLen C.uint32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiYMIntervalFromText(hEnv, dsInterval, str, strLen))
+}
+
+func yapiDSIntervalGetDaySecond(dsInterval C.YapiDSInterval, day *C.int32_t, hour *C.int32_t, mintue *C.int32_t, second *C.int32_t, fraction *C.int32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiDSIntervalGetDaySecond(dsInterval, day, hour, mintue, second, fraction))
+}
+
+func yapiYMIntervalGetYearMonth(ymInterval C.YapiYMInterval, year *C.int32_t, month *C.int32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiYMIntervalGetYearMonth(ymInterval, year, month))
+}
+
+func yapiNumberToText(
+	number *C.YapiNumber,
+	fmt *C.char,
+	fmtLength C.uint32_t,
+	nlsParam *C.char,
+	nlsParamLength C.uint32_t,
+	str *C.char,
+	bufLength C.int32_t,
+	length *C.int32_t,
+) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiNumberToText(number, fmt, fmtLength, nlsParam, nlsParamLength, str, bufLength, length))
+}
+
+func yapiNumberFromText(
+	str *C.char,
+	strLength C.uint32_t,
+	fmt *C.char,
+	fmtLength C.uint32_t,
+	nlsParam *C.char,
+	nlsParamLength C.uint32_t,
+	number *C.YapiNumber,
+) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiNumberFromText(str, strLength, fmt, fmtLength, nlsParam, nlsParamLength, number))
+}
+
+func yapiNumberFromReal(rnum C.YapiPointer, length C.uint32_t, number *C.YapiNumber) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiNumberFromReal(rnum, length, number))
+}
+
+func yapiNumberToReal(number *C.YapiNumber, length C.uint32_t, rsl C.YapiPointer) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiNumberToReal(number, length, rsl))
+}

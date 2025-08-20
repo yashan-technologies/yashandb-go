@@ -22,7 +22,9 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"strconv"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -31,15 +33,21 @@ const (
 )
 
 type YasConn struct {
-	Env            *C.YapiEnv
-	Conn           *C.YapiConnect
-	closed         bool
-	charsetRatio   uint32 // 最大CHARSET膨胀比率
-	ncharsetRatio  uint32 // 最大NCHARSET膨胀比率
-	numberAsString bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
-	directInsert   bool
-	autocommit     bool
-	mu             sync.Mutex
+	Env               *C.YapiEnv
+	Conn              *C.YapiConnect
+	closed            bool
+	charsetRatio      uint32 // 最大CHARSET膨胀比率
+	ncharsetRatio     uint32 // 最大NCHARSET膨胀比率
+	numberAsString    bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
+	directInsert      bool
+	autocommit        bool
+	timestampFormat   string
+	timestampTzFormat string
+	dateFormat        string
+	timeFormat        string
+	dsIntervalFormat  string
+	ymIntervalFormat  string
+	mu                sync.Mutex
 }
 
 func (conn *YasConn) Prepare(query string) (driver.Stmt, error) {
@@ -339,6 +347,173 @@ func (conn *YasConn) handleRestSessionErr(err error) error {
 	return nil
 }
 
+func (conn *YasConn) yapiTimestampToTime(dateTime *C.YapiTimestamp, zone bool) (*time.Time, error) {
+	// get date
+	var (
+		year     C.int16_t
+		month    C.uint8_t
+		day      C.uint8_t
+		hour     C.uint8_t
+		minute   C.uint8_t
+		second   C.uint8_t
+		fraction C.uint32_t
+	)
+
+	if err := yapiTimestampGetTimestamp(
+		*dateTime,
+		&year,
+		&month,
+		&day,
+		&hour,
+		&minute,
+		&second,
+		&fraction,
+	); err != nil {
+		return nil, err
+	}
+
+	if !zone {
+		aTime := time.Date(int(year), time.Month(month), int(day), int(hour), int(minute), int(second), int(fraction), time.UTC)
+		return &aTime, nil
+	}
+
+	var timeZoneHour C.int8_t
+	var timeZoneMin C.int8_t
+
+	if err := yapiDateTimeGetTimeZoneOffset(conn.Env, *dateTime, &timeZoneHour, &timeZoneMin); err != nil {
+		return nil, err
+	}
+
+	aTime := time.Date(int(year), time.Month(month), int(day), int(hour), int(minute), int(second), int(fraction),
+		timezoneToLocation(int64(timeZoneHour), int64(timeZoneMin)))
+
+	return &aTime, nil
+}
+
+func (conn *YasConn) timeToYapiTimestamp(dest *time.Time) (*C.YapiTimestamp, error) {
+	var timestamp C.YapiTimestamp
+	p := C.malloc(C.size_t(unsafe.Sizeof(timestamp)))
+
+	tpointer := (*C.YapiTimestamp)(p)
+	year := C.int16_t(dest.Year())
+	month := C.uint8_t(dest.Month())
+	day := C.uint8_t(dest.Day())
+	hour := C.uint8_t(dest.Hour())
+	mintue := C.uint8_t(dest.Minute())
+	second := C.uint8_t(dest.Second())
+	fraction := C.uint32_t(dest.Nanosecond())
+
+	if err := yapiTimestampSetTimestamp(tpointer, year, month, day, hour, mintue, second, fraction); err != nil {
+		C.free(p)
+		return nil, err
+	}
+	return tpointer, nil
+
+}
+
+func (conn *YasConn) stringToYapiDSInterval(dest *string) (*C.YapiDSInterval, error) {
+	var dsInterval C.YapiDSInterval
+	p := C.malloc(C.size_t(unsafe.Sizeof(dsInterval)))
+	dsPointer := (*C.YapiDSInterval)(p)
+	cstr := C.CString(*dest)
+	defer C.free(unsafe.Pointer(cstr))
+	length := C.uint32_t(len((*dest)))
+
+	if err := yapiDSIntervalFromText(conn.Env, dsPointer, cstr, length); err != nil {
+		C.free(p)
+		return nil, err
+	}
+	return dsPointer, nil
+}
+
+func (conn *YasConn) yapiDSIntervalToString(interval *C.YapiDSInterval) (string, error) {
+
+	var (
+		day      C.int32_t
+		hour     C.int32_t
+		mintue   C.int32_t
+		second   C.int32_t
+		fraction C.int32_t
+	)
+	if err := yapiDSIntervalGetDaySecond(
+		*interval,
+		&day,
+		&hour,
+		&mintue,
+		&second,
+		&fraction,
+	); err != nil {
+		return "", err
+	}
+
+	t := time.Date(0, 0, int(day), int(hour), int(mintue), int(second), int(fraction), time.UTC)
+	return FormatTime(conn.dsIntervalFormat, t), nil
+}
+
+func (conn *YasConn) yapiYMIntervalToString(interval *C.YapiYMInterval) (string, error) {
+
+	var (
+		year  C.int32_t
+		month C.int32_t
+	)
+	if err := yapiYMIntervalGetYearMonth(
+		*interval,
+		&year,
+		&month,
+	); err != nil {
+		return "", err
+	}
+
+	return FormatYMInterval(conn.ymIntervalFormat, int32(year), int32(month)), nil
+}
+
+func (conn *YasConn) stringToYapiYMInterval(dest *string) (*C.YapiYMInterval, error) {
+
+	var dsInterval C.YapiYMInterval
+	p := C.malloc(C.size_t(unsafe.Sizeof(dsInterval)))
+	dsPointer := (*C.YapiYMInterval)(p)
+	cstr := C.CString(*dest)
+	defer C.free(unsafe.Pointer(cstr))
+	length := C.uint32_t(len((*dest)))
+	if len(*dest) == 0 {
+		return dsPointer, nil
+	}
+
+	if err := yapiYMIntervalFromText(conn.Env, dsPointer, cstr, length); err != nil {
+		C.free(p)
+		return nil, err
+	}
+	return dsPointer, nil
+}
+
+func (conn *YasConn) float64ToYapiNumber(dest *float64) (*C.YapiNumber, error) {
+
+	var number C.YapiNumber
+	p := C.malloc(C.size_t(unsafe.Sizeof(number)))
+	np := (*C.YapiNumber)(p)
+
+	yp := C.YapiPointer(unsafe.Pointer(dest))
+	length := C.uint32_t(unsafe.Sizeof(*dest))
+
+	if err := yapiNumberFromReal(yp, length, np); err != nil {
+		C.free(p)
+		return nil, err
+	}
+	return np, nil
+}
+
+func (conn *YasConn) yapiNumberToFloat64(number *C.YapiNumber) (float64, error) {
+
+	var res float64
+
+	length := C.uint32_t(unsafe.Sizeof(res))
+
+	if err := yapiNumberToReal(number, length, C.YapiPointer(unsafe.Pointer(&res))); err != nil {
+		return 0, err
+	}
+	return res, nil
+}
+
 func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -385,4 +560,28 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 	}
 
 	return yasStmt, nil
+}
+
+func timezoneToLocation(hour int64, minute int64) *time.Location {
+	if minute != 0 || hour > 14 || hour < -12 {
+		// create location with FixedZone
+		var name string
+		if hour < 0 {
+			name = strconv.FormatInt(hour, 10) + ":"
+		} else {
+			name = "+" + strconv.FormatInt(hour, 10) + ":"
+		}
+		if minute == 0 {
+			name += "00"
+		} else {
+			if minute < 10 {
+				name += "0"
+			}
+			name += strconv.FormatInt(minute, 10)
+		}
+		return time.FixedZone(name, (3600*int(hour))+(60*int(minute)))
+	}
+
+	// use location from timeLocations cache
+	return timeLocations[12+hour]
 }

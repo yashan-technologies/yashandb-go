@@ -27,6 +27,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -112,6 +113,15 @@ func stringToYasChar(str string) *C.char {
 	return (*C.char)(p)
 }
 
+func stringToYasCharBySize(size C.size_t) *C.char {
+	p := C.malloc(size + 1)
+	pp := (*[1 << 30]byte)(p)
+	for i := 0; i <= int(size); i++ {
+		pp[i] = 0
+	}
+	return (*C.char)(p)
+}
+
 func intToYacInt16(n int) C.int16_t {
 	return C.int16_t(n)
 }
@@ -136,12 +146,28 @@ func yacPointerToInt64(p C.YapiPointer) int64 {
 	return int64(*(*C.int64_t)(p))
 }
 
+func yacPointerToInt32(p C.YapiPointer) int32 {
+	return int32(*(*C.int32_t)(p))
+}
+
+func yacPointerToInt16(p C.YapiPointer) int16 {
+	return int16(*(*C.int16_t)(p))
+}
+
+func yacPointerToInt8(p C.YapiPointer) int8 {
+	return int8(*(*C.int8_t)(p))
+}
+
 func yacPointerToUint64(p C.YapiPointer) uint64 {
 	return uint64(*(*C.uint64_t)(p))
 }
 
 func yacPointerToFloat64(p C.YapiPointer) float64 {
 	return float64(*(*C.double)(p))
+}
+
+func yacPointerToFloat32(p C.YapiPointer) float32 {
+	return float32(*(*C.float)(p))
 }
 
 func yacPointerToBool(p C.YapiPointer) bool {
@@ -309,6 +335,11 @@ func ConvertToNameValue(args ...any) ([]driver.NamedValue, error) {
 			nargValue driver.Value
 			err       error
 		)
+		v, isName := arg.(sql.NamedArg)
+		if isName {
+			nargs[i].Name = v.Name
+			arg = v.Value
+		}
 		outValue, isOut := arg.(sql.Out)
 		if isOut {
 			nargValue = outValue
@@ -406,4 +437,179 @@ func GetDatabaseTypeSize(yType C.YapiType) int32 {
 	default:
 		return _DefaultSize
 	}
+}
+
+func boolOutBindParam(dest *bool, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.bool)(p) = C.bool(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func bitOutBindParam(dest *[]byte, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = 8
+	bufLen = 8
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		pp := (*[1 << 30]byte)(p)
+		copy(pp[:], *dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = C.YAPI_NULL_DATA
+	if len(*dest) != 0 {
+		indicator = C.int32_t(len(*dest))
+	}
+	return
+}
+
+func int64OutBindParam(dest *int64, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.int64_t)(p) = C.int64_t(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func int32OutBindParam(dest *int32, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.int32_t)(p) = C.int32_t(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func int16OutBindParam(dest *int16, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.int16_t)(p) = C.int16_t(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func int8OutBindParam(dest *int8, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.int8_t)(p) = C.int8_t(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+func dateOutBindParam(dest *time.Time, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = 8
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.int64_t)(p) = C.int64_t(dest.UnixMicro())
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func timestampOutBindParam(dest *time.Time, _, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t, err error) {
+	var timestamp C.YapiTimestamp
+
+	bindSize = C.int32_t(unsafe.Sizeof(timestamp))
+	bufLen = bindSize
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		tpointer := (*C.YapiTimestamp)(p)
+		year := C.int16_t(dest.Year())
+		month := C.uint8_t(dest.Month())
+		day := C.uint8_t(dest.Day())
+		hour := C.uint8_t(dest.Hour())
+		mintue := C.uint8_t(dest.Minute())
+		second := C.uint8_t(dest.Second())
+		fraction := C.uint32_t(dest.Nanosecond())
+		err = yapiTimestampSetTimestamp(tpointer, year, month, day, hour, mintue, second, fraction)
+		if err != nil {
+			C.free(p)
+			return
+		}
+	}
+
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func float64OutBindParam(dest *float64, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.double)(p) = C.double(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func float32OutBindParam(dest *float32, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		*(*C.float)(p) = C.float(*dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = bindSize
+	return
+}
+
+func stringOutBindParam(dest *string, size int, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	n := len(*dest)
+	bindSize = getMallocSize(n, size)
+	bufLen = bindSize
+	p := C.malloc(C.size_t(bindSize))
+	if in {
+		pp := (*[1 << 30]byte)(p)
+		copy(pp[:], *dest)
+		pp[n] = 0 // 添加终结符
+	}
+
+	value = C.YapiPointer(p)
+
+	indicator = C.YAPI_NULL_DATA
+	if n > 0 {
+		// 需要把\0也算进去
+		indicator = C.int32_t(n)
+	}
+	return
+}
+
+func rawOutBindParam(dest *[]byte, size int, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
+	n := len(*dest)
+	bindSize = getMallocSize(n, size)
+	p := C.malloc(C.size_t(bindSize))
+	bufLen = bindSize
+	if in {
+		pp := (*[1 << 30]byte)(p)
+		copy(pp[:], *dest)
+	}
+	value = C.YapiPointer(p)
+	indicator = C.YAPI_NULL_DATA
+	if n > 0 {
+		indicator = C.int32_t(n)
+	}
+	return
+}
+
+func getMallocSize(actual, want int) C.int32_t {
+	if want > actual {
+		return C.int32_t(want)
+	}
+	return C.int32_t(actual)
 }
