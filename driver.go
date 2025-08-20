@@ -36,6 +36,15 @@ const (
 	_ReleaseMode = "release"
 )
 
+const (
+	_DefaultDbTimestampFormat   = "yyyy-mm-dd hh24:mi:ss.ff"
+	_DefaultDbDateFormat        = "yyyy-mm-dd"
+	_DefaultDbTimeFormat        = "hh24:mi:ss.ff"
+	_DefaultDbTimestampTzFormat = "yyyy-mm-dd hh24:mi:ss.ff tzh:tzm"
+	_DefaultDbDsIntervalFormat  = "dd hh24:mi:ss.ff"
+	_DefaultDbYmIntervalFormat  = "yy-mm"
+)
+
 var _Mode = _ReleaseMode
 
 func SetDebugMode() {
@@ -99,10 +108,17 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 	}
 
 	yasConn := &YasConn{
-		Env:            env,
-		Conn:           conn,
-		numberAsString: dsn.numberAsString,
-		directInsert:   dsn.directInsert,
+		Env:               env,
+		Conn:              conn,
+		numberAsString:    dsn.numberAsString,
+		directInsert:      dsn.directInsert,
+		autocommit:        dsn.IsAutoCommit,
+		dateFormat:        dsn.dateFormat,
+		timeFormat:        dsn.timeFormat,
+		timestampFormat:   dsn.timestampFormat,
+		timestampTzFormat: dsn.timestampTzFormat,
+		dsIntervalFormat:  dsn.dsIntervalFormat,
+		ymIntervalFormat:  dsn.ymIntervalFormat,
 	}
 
 	if err := yasConn.setHeartbeatEnable(dsn.heartbeatEnable); err != nil {

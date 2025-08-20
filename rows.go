@@ -263,15 +263,16 @@ func (r *YasRows) getValues() (*[]driver.Value, error) {
 					return nil, err
 				}
 			}
-		case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB:
+		case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB, C.YAPI_TYPE_XML, C.YAPI_TYPE_NCLOB:
 			lobLocator := (**C.YapiLobLocator)(row.Data)
 			data, err := r.stmt.Conn.lobRead(*lobLocator)
 			if err != nil {
 				return nil, err
 			}
-			if row.yacType == C.YAPI_TYPE_CLOB {
+			switch row.yacType {
+			case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_XML, C.YAPI_TYPE_NCLOB:
 				value = string(data)
-			} else {
+			default:
 				value = data
 			}
 		case C.YAPI_TYPE_BINARY:
