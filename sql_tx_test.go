@@ -4,6 +4,9 @@ import (
 	"testing"
 )
 
+const BeginTxErr = "begin tx err: %v"
+const ExecTxErr = "exec tx err: %v"
+
 func TestTxCommit(t *testing.T) {
 	db := newSqlTest(t)
 	defer db.Close()
@@ -12,19 +15,19 @@ func TestTxCommit(t *testing.T) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		t.Fatalf("begin tx err: %v", err)
+		t.Fatalf(BeginTxErr, err)
 	}
 	_, err = tx.Exec("insert into test_tx_commit values(1,'000001')")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Exec("insert into test_tx_commit values(2,'000001')")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Query("select * from test_tx_commit")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit tx err: %v", err)
@@ -39,19 +42,19 @@ func TestTxRollback(t *testing.T) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		t.Fatalf("begin tx err: %v", err)
+		t.Fatalf(BeginTxErr, err)
 	}
 	_, err = tx.Exec("insert into test_tx_rollback values(1,'000001')")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Exec("insert into test_tx_rollback values(2,'000001')")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Query("select * from test_tx_rollback")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	if err := tx.Rollback(); err != nil {
 		t.Fatalf("rollback tx err: %v", err)
@@ -68,19 +71,19 @@ func TestTxAutoCommit(t *testing.T) {
 	// start tx
 	tx, err := db.Begin()
 	if err != nil {
-		t.Fatalf("begin tx err: %v", err)
+		t.Fatalf(BeginTxErr, err)
 	}
 	_, err = tx.Exec("insert into t1 values(1)")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Exec("insert into t1 values(2)")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Query("select * from t1")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	if err := tx.Rollback(); err != nil {
 		t.Fatalf("rollback tx err: %v", err)
@@ -106,25 +109,25 @@ func TestTxAutoCommit2(t *testing.T) {
 	// start tx
 	tx, err := db.Begin()
 	if err != nil {
-		t.Fatalf("begin tx err: %v", err)
+		t.Fatalf(BeginTxErr, err)
 	}
 	_, err = tx.Exec("insert into t1 values(1)")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Exec("insert into t1 values(2)")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	_, err = tx.Query("select * from t1")
 	if err != nil {
-		t.Fatalf("exec tx err: %v", err)
+		t.Fatalf(ExecTxErr, err)
 	}
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit tx err: %v", err)
 	}
 	var count int
-	err = db.QueryRow("select count(*) from t1").Scan(&count)
+	err = db.QueryRow("select count(*) c from t1").Scan(&count)
 	if err != nil {
 		t.Fatalf("query after commit tx err: %v", err)
 	}
@@ -139,7 +142,7 @@ func TestTxAutoCommit2(t *testing.T) {
 	}
 
 	db2 := newSqlAutoCommitTest(t)
-	err = db2.QueryRow("select count(*) from t1").Scan(&count)
+	err = db2.QueryRow("select count(1) from t1").Scan(&count)
 	if err != nil {
 		t.Fatalf("query after commit tx err: %v", err)
 	}
