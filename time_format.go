@@ -103,11 +103,11 @@ func replaceFractionalSeconds(format string) string {
 func replaceTimeZoneOffset(format string) string {
 	// 处理TZH (时区小时偏移)
 	if strings.Contains(format, "TZH") {
-		format = strings.Replace(format, "TZH", "-07", -1)
+		format = strings.ReplaceAll(format, "TZH", "-07")
 	}
 	// 处理TZM (时区分钟偏移)
 	if strings.Contains(format, "TZM") {
-		format = strings.Replace(format, "TZM", "00", -1)
+		format = strings.ReplaceAll(format, "TZM", "00")
 	}
 	return format
 }

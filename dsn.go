@@ -28,7 +28,7 @@ const (
 	_HeartbeatEnable = "heartbeat_enable"
 	_NumberAsString  = "number_as_string"
 	_CompatVector    = "compat_vector"
-	_DirectInsert    = "directinsert"
+	_CliPrepare      = "cliPrepare"
 
 	_DbTimestampFormat   = "timestamp_format"
 	_DbDateFormat        = "date_format"
@@ -36,9 +36,6 @@ const (
 	_DbTimestampTzFormat = "timestamp_tz_format"
 	_DbDsIntervalFormat  = "ds_interval_format"
 	_DbYmIntervalFormat  = "ym_interval_format"
-
-	_LoadBalance = "LOADBALANCE:"
-	_Primary     = "PRIMARY:"
 )
 
 var (
@@ -61,7 +58,7 @@ type DataSourceName struct {
 	heartbeatEnable   bool
 	numberAsString    bool
 	compatVector      string
-	directInsert      bool
+	cliPrepare        bool
 	timestampFormat   string
 	timestampTzFormat string
 	dateFormat        string
@@ -99,11 +96,11 @@ func parseDSN(dsnStr string) (*DataSourceName, error) {
 	}
 	matchStrs := dsnReg.FindStringSubmatch(dsnStr)
 	dsn := &DataSourceName{
-		User:         recoverySpecialChars(matchStrs[1]),
-		Password:     recoverySpecialChars(matchStrs[2]),
-		Url:          matchStrs[3],
-		DataPath:     "",
-		directInsert: true,
+		User:       recoverySpecialChars(matchStrs[1]),
+		Password:   recoverySpecialChars(matchStrs[2]),
+		Url:        matchStrs[3],
+		DataPath:   "",
+		cliPrepare: true,
 	}
 
 	// if err := checkUrl(dsn.Url); err != nil {
@@ -125,11 +122,11 @@ func parseUDS(dsnStr string) (*DataSourceName, error) {
 	}
 	matchStrs := udsReg.FindStringSubmatch(dsnStr)
 	dsn := &DataSourceName{
-		User:         "sys",
-		Password:     "",
-		Url:          "",
-		DataPath:     matchStrs[1],
-		directInsert: true,
+		User:       "sys",
+		Password:   "",
+		Url:        "",
+		DataPath:   matchStrs[1],
+		cliPrepare: true,
 	}
 	_, err := os.Stat(dsn.DataPath)
 	if err != nil && !os.IsExist(err) {
@@ -193,10 +190,10 @@ func parseParams(dsn *DataSourceName, argStr string) error {
 			default:
 				return fmt.Errorf("unknow compat_vector %s", value)
 			}
-		case _DirectInsert:
+		case _CliPrepare:
 			value := strings.ToLower(strs[1])
 			if value == "0" || value == "false" {
-				dsn.directInsert = false
+				dsn.cliPrepare = false
 			}
 		case _DbDateFormat:
 			dsn.dateFormat = strs[1]
@@ -252,24 +249,4 @@ func recoverySpecialChars(str string) string {
 		str = strings.ReplaceAll(str, v, k)
 	}
 	return str
-}
-
-func checkUrl(url string) error {
-	ipv4UrlReg, _ := regexp.Compile(ipv4UrlRegExpr)
-	ipv6UrlReg, _ := regexp.Compile(ipv6UrlRegExpr)
-	mappedUrlReg, _ := regexp.Compile(mappedUrlRegExpr)
-	strs := strings.Split(strings.ToUpper(url), ",")
-	for i, str := range strs {
-		if i == 0 {
-			if strings.HasPrefix(str, _Primary) {
-				str = strings.TrimPrefix(str, _Primary)
-			} else if strings.HasPrefix(str, _LoadBalance) {
-				str = strings.TrimPrefix(str, _LoadBalance)
-			}
-		}
-		if !ipv4UrlReg.MatchString(str) && !ipv6UrlReg.MatchString(str) && !mappedUrlReg.MatchString(str) {
-			return ErrDsnNoStandard(str)
-		}
-	}
-	return nil
 }

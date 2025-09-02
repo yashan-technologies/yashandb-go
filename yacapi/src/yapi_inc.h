@@ -36,6 +36,12 @@ typedef YacResult (*yapiFuncExecute)(YacHandle hStmt);
 typedef YacResult (*yapiFuncFetch)(YacHandle hStmt, uint32_t* rows);
 typedef YacResult (*yapiFuncCommit)(YacHandle hConn);
 typedef YacResult (*yapiFuncRollback)(YacHandle hConn);
+typedef YacResult (*yapiFuncPing)(YacHandle hConn, int32_t timeout);
+
+typedef YacResult (*yapiFuncParseSqlParams)(YacHandle hEnv, YacHandle* hParamList, const char* sql, int32_t sqlLength);
+typedef YacResult (*yapiFuncGetParamListCount)(YacHandle hParamList, uint32_t* count);
+typedef YacResult (*yapiFuncGetParamName)(YacHandle hParamList, uint16_t index, char* name, int32_t nameBufLen, int32_t* nameLen);
+typedef YacResult (*yapiFuncFreeParamList)(YacHandle hParamList);
 
 typedef YacResult (*yapiFuncSetConnAttr)(YacHandle hConn, YapiConnAttr attr, void* value, int32_t length);
 typedef YacResult (*yapiFuncGetConnAttr)(YacHandle hConn, YapiConnAttr attr, void* value, int32_t bufLength,
@@ -159,6 +165,13 @@ typedef YacResult (*yapiFuncPdbgGetVarValue)(YacHandle hStmt, uint32_t id, uint3
 typedef YacResult (*yapiFuncPdbgGetBreakpointAttrs)(YacHandle hStmt, uint32_t id, YapiDebugBpAttr attr, void* value,
                                                     int32_t bufLen, int32_t* stringLength);
 
+typedef YacResult (*yapiFuncConnectionPoolCreate)(YacHandle hConnPool, const char* url, int16_t urlLength,
+                                                  uint32_t min, uint32_t max, uint32_t increment, const char* user, int16_t userLength,
+                                                  const char* password, int16_t passwordLength, uint32_t mode);
+typedef YacResult (*yapiFuncConnectionGet)(YacHandle hConnPool, YacHandle hConn);
+typedef YacResult (*yapiFuncConnectionGiveBack)(YacHandle hConn);
+typedef YacResult (*yapiFuncConnectionPoolDestroy)(YacHandle hConnPool, uint32_t mode);
+
 typedef struct StYapiSymbols {
     yapiFuncAllocHandle fnAllocHandle;
     yapiFuncFreeHandler fnHandleFree;
@@ -176,6 +189,12 @@ typedef struct StYapiSymbols {
     yapiFuncFetch         fnFetch;
     yapiFuncCommit        fnCommit;
     yapiFuncRollback      fnRollback;
+    yapiFuncPing          fnPing;
+
+    yapiFuncParseSqlParams     fnParseSqlParams;
+    yapiFuncGetParamListCount  fnGetParamListCount;
+    yapiFuncGetParamName       fnGetParamName;
+    yapiFuncFreeParamList      fnFreeParamList;
 
     yapiFuncSetEnvAttr  fnSetEnvAttr;
     yapiFuncGetEnvAttr  fnGetEnvAttr;
@@ -255,6 +274,11 @@ typedef struct StYapiSymbols {
     yapiFuncPdbgGetVarAttrs        fnPdbgGetVarAttrs;
     yapiFuncPdbgGetBreakpointAttrs fnPdbgGetBreakpointAttrs;
 
+    yapiFuncConnectionPoolCreate   fnConnectionPoolCreate;
+    yapiFuncConnectionGet          fnConnectionGet;
+    yapiFuncConnectionGiveBack      fnConnectionGiveBack;
+    yapiFuncConnectionPoolDestroy  fnConnectionPoolDestroy;
+
 } YapiSymbols;
 
 #define T2S_BUFFER_SIZE 8192
@@ -292,6 +316,11 @@ typedef struct StYapiStmt {
     YacHandle    stmtHandler;
 } YapiStmt;
 
+typedef struct StYapiConnectPool {
+    YapiEnv*  env;
+    YacHandle connPoolHandler;
+} YapiConnectPool;
+
 YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg* error);
 void       yapiSetError(YapiErrorMsg* error, yapiErrorNum errorNum, const char* format, ...);
 
@@ -313,6 +342,12 @@ YapiResult yapiCliSetConnAttr(YacHandle hConn, YapiConnAttr attr, void* value, i
 YapiResult yapiCliGetConnAttr(YacHandle hConn, YapiConnAttr attr, void* value, int32_t bufLength, int32_t* stringLength,
                               YapiErrorMsg* error);
 YapiResult yapiCliCancel(YacHandle hConn, YapiErrorMsg* error);
+YapiResult yapiCliPing(YacHandle hConn, int32_t timeout, YapiErrorMsg* error);
+
+YapiResult yapiCliParseSqlParams(YacHandle hEnv, YacHandle* paramList, const char* sql, int32_t sqlLength, YapiErrorMsg* error);
+YapiResult yapiCliGetParamListCount(YacHandle hParamList, uint32_t* count, YapiErrorMsg* error);
+YapiResult yapiCliGetParamName(YacHandle hParamList, uint16_t index, char* name, int32_t nameBufLen, int32_t* nameLen, YapiErrorMsg* error);
+YapiResult yapiCliFreeParamList(YacHandle hParamList, YapiErrorMsg* error);
 
 YapiResult yapiCliDirectExecute(YacHandle hStmt, const char* sql, int32_t sqlLength, YapiErrorMsg* error);
 YapiResult yapiCliPrepare(YacHandle hStmt, const char* sql, int32_t sqlLength, YapiErrorMsg* error);
@@ -427,6 +462,13 @@ YapiResult yapiCiPdbgGetVarAttrs(YacHandle hStmt, uint32_t id, uint32_t valueTyp
                                  int32_t* indicator, YapiErrorMsg* error);
 YapiResult yapiCiPdbgGetBreakpointAttrs(YacHandle hStmt, uint32_t id, YapiDebugBpAttr attr, void* value, int32_t bufLen,
                                         int32_t* stringLength, YapiErrorMsg* error);
+
+YapiResult yapiCliConnectionPoolCreate(YacHandle hConnPool, const char* url, int16_t urlLength,
+                                       uint32_t min, uint32_t max, uint32_t increment, const char* user, int16_t userLength,
+                                       const char* password, int16_t passwordLength, uint32_t mode, YapiErrorMsg* error);
+YapiResult yapiCliConnectionGet(YacHandle hConnPool, YacHandle* hConn, YapiErrorMsg* error);
+YapiResult yapiCliConnectionGiveBack(YacHandle hConn, YapiErrorMsg* error);
+YapiResult yapiCliConnectionPoolDestroy(YacHandle hConnPool, uint32_t mode, YapiErrorMsg* error);
 
 #ifdef __cplusplus
 }

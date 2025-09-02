@@ -73,6 +73,9 @@ func (stmt *YasStmt) QueryContext(ctx context.Context, args []driver.NamedValue)
 //
 // Deprecated: Drivers should implement StmtExecContext instead (or additionally).
 func (stmt *YasStmt) Exec(args []driver.Value) (driver.Result, error) {
+	if args == nil {
+		args = []driver.Value{}
+	}
 	nargs := make([]driver.NamedValue, len(args))
 	for i, arg := range args {
 		nargs[i].Ordinal = i + 1
@@ -93,6 +96,10 @@ func (stmt *YasStmt) ExecContext(ctx context.Context, args []driver.NamedValue) 
 	defer stmt.Unlock()
 	stmt.ctx = ctx
 
+	if args == nil {
+		args = []driver.NamedValue{}
+	}
+
 	defer stmt.freeBindValues()
 	if err := stmt.bindValues(args); err != nil {
 		return nil, err
@@ -103,7 +110,21 @@ func (stmt *YasStmt) ExecContext(ctx context.Context, args []driver.NamedValue) 
 
 // NumInput returns the number of placeholder parameters.
 func (stmt *YasStmt) NumInput() int {
-	return -1
+	if stmt.Conn == nil || stmt.Stmt == nil {
+		return -1
+	}
+	var paramList C.YapiPointer
+	err := yapiParseSqlParams(stmt.Conn.Env, &paramList, C.CString(stmt.Sqlstr), C.int32_t(len(stmt.Sqlstr)))
+	if err != nil {
+		return -1
+	}
+	defer yapiFreeParamList(paramList)
+
+	var count C.uint32_t
+	if err := yapiGetParamListCount(paramList, &count); err != nil {
+		return -1
+	}
+	return int(count)
 }
 
 // Close closes the statement.

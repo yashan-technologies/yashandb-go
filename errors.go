@@ -16,6 +16,7 @@ import (
 
 const (
 	_UnknownAttributeIdCode = "YAS-08028"
+	_LoadSymbolCode         = "YAS-20001"
 )
 
 type YasBaseError struct {
@@ -66,6 +67,10 @@ func ErrDataPathNoExist(p string) *YasBaseError {
 	return &YasBaseError{Code: 1009, Msg: fmt.Sprintf("YASDB_DATA:%s is not existed", p)}
 }
 
+func ErrEnvInit() *YasBaseError {
+	return &YasBaseError{Code: 1005, Msg: "yasdb env init failed"}
+}
+
 func ErrNoConnect() *YasBaseError {
 	return &YasBaseError{Code: 1003, Msg: "yasdb is not connected"}
 }
@@ -99,4 +104,11 @@ func isUnknownAttributeIdErr(err error) bool {
 		return false
 	}
 	return strings.Contains(err.Error(), _UnknownAttributeIdCode)
+}
+
+func isLoadSymbolErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), _LoadSymbolCode)
 }

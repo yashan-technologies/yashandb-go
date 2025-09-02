@@ -326,15 +326,6 @@ func affectedResultComparison(t *testing.T, actualResult int64, expectedResult i
 	}
 }
 
-func newYasDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("yasdb", testDsn)
-	if err != nil {
-		t.Fatalf("error connecting: %v", err)
-	}
-	t.Parallel()
-	return db
-}
-
 var (
 	VERSION_LEN = 4
 )

@@ -51,11 +51,23 @@ func SetDebugMode() {
 	_Mode = _DebugMode
 }
 
-type YasdbDriver struct{}
+type YasdbDriver struct {
+	conn *YasConn
+}
 
 // Open returns a new connection to the database.
 func (yasDriver *YasdbDriver) Open(dsnStr string) (driver.Conn, error) {
-	return GenYasconn(dsnStr)
+	conn, err := GenYasconn(dsnStr)
+	if err != nil {
+		return nil, err
+	}
+	yasDriver.conn = conn
+	return conn, nil
+}
+
+func (yasDriver *YasdbDriver) Conn() *YasConn {
+	// 需要实际连接才会有conn，仅Open时为nil
+	return yasDriver.conn
 }
 
 func GenYasconn(dsnStr string) (*YasConn, error) {
@@ -111,7 +123,7 @@ func GenYasconn(dsnStr string) (*YasConn, error) {
 		Env:               env,
 		Conn:              conn,
 		numberAsString:    dsn.numberAsString,
-		directInsert:      dsn.directInsert,
+		cliPrepare:        dsn.cliPrepare,
 		autocommit:        dsn.IsAutoCommit,
 		dateFormat:        dsn.dateFormat,
 		timeFormat:        dsn.timeFormat,
