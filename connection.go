@@ -28,8 +28,14 @@ import (
 	"unsafe"
 )
 
+type serverStatus uint8
+
 const (
 	_DefaultNcharsetRatio = 4
+
+	SS_UNKNOWN     serverStatus = 255
+	SS_UNCONNECTED serverStatus = 0
+	SS_NORMAL      serverStatus = 1
 )
 
 type YasConn struct {
@@ -39,7 +45,7 @@ type YasConn struct {
 	charsetRatio      uint32 // 最大CHARSET膨胀比率
 	ncharsetRatio     uint32 // 最大NCHARSET膨胀比率
 	numberAsString    bool   // YashanDB的number类型返回为golang的string类型，默认返回float64类型
-	directInsert      bool
+	cliPrepare        bool
 	autocommit        bool
 	timestampFormat   string
 	timestampTzFormat string
@@ -87,6 +93,8 @@ func (conn *YasConn) Close() error {
 	} else if connErr != nil {
 		return connErr
 	}
+	conn.Conn = nil
+	conn.Env = nil
 	return nil
 }
 
@@ -96,6 +104,13 @@ func (conn *YasConn) Ping(ctx context.Context) error {
 	}
 	if conn.Conn == nil {
 		return ErrNoConnect()
+	}
+	if err := yapiPing(conn.Conn, -1); err != nil {
+		// c driver is unsupport yacPingWithTimeout, support in 23.4.4
+		if isLoadSymbolErr(err) {
+			return nil
+		}
+		return err
 	}
 	return nil
 }
@@ -156,6 +171,22 @@ func (conn *YasConn) setHeartbeatEnable(enable bool) error {
 		}
 	}
 	return nil
+}
+
+func (conn *YasConn) getServerStatus() serverStatus {
+	var status C.uint32_t
+	size := C.int32_t(unsafe.Sizeof(status))
+	err := conn.yapiGetConnAttr(C.YAPI_ATTR_SERVER_STATUS, unsafe.Pointer(&status), size)
+	if err != nil {
+		if isUnknownAttributeIdErr(err) {
+			return SS_UNKNOWN
+		}
+		return SS_UNCONNECTED
+	}
+	if status == 1 {
+		return SS_NORMAL
+	}
+	return SS_UNCONNECTED
 }
 
 func (conn *YasConn) setCompatVector(compatVector string) error {
@@ -329,22 +360,14 @@ func (conn *YasConn) ResetSession(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	// stmt, err := conn.PrepareContext(ctx, "select 1 from dual")
-	// if err != nil {
-	// 	return conn.handleRestSessionErr(err)
-	// }
-	// defer stmt.Close()
-	return conn.Ping(ctx)
-}
-
-func (conn *YasConn) handleRestSessionErr(err error) error {
-	if err == nil {
-		return nil
-	}
-	if isResetSessionErr(err) {
+	if conn == nil || conn.closed {
 		return driver.ErrBadConn
 	}
-	return nil
+	status := conn.getServerStatus()
+	if status == SS_NORMAL || status == SS_UNKNOWN {
+		return nil
+	}
+	return driver.ErrBadConn
 }
 
 func (conn *YasConn) yapiTimestampToTime(dateTime *C.YapiTimestamp, zone bool) (*time.Time, error) {
@@ -521,7 +544,7 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 
 	var stmt *C.YapiStmt
 	nQuery, cst := tryRmSemicolon(query)
-	if cst == CST_INSERT && conn.directInsert {
+	if conn.cliPrepare && (cst == CST_INSERT || cst == CST_DELETE || cst == CST_UPDATE || cst == CST_SELECT) {
 		if err := yapiStmtCreate(conn.Conn, &stmt); err != nil {
 			return nil, err
 		}
@@ -556,6 +579,7 @@ func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt,
 		Conn:     conn,
 		Stmt:     stmt,
 		SqlType:  (uint32)(sqlType),
+		Sqlstr:   nQuery,
 		prepared: true,
 	}
 

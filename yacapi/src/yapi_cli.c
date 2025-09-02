@@ -261,6 +261,51 @@ YapiResult yapiCliCancel(YacHandle hConn, YapiErrorMsg* error)
     YAPI_CHECK_CLI_RETURN();
 }
 
+YapiResult yapiCliPing(YacHandle hConn, int32_t timeout, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacPingWithTimeout", yapiSymbols.fnPing)
+    ret = (YapiResult)(*yapiSymbols.fnPing)(hConn, timeout);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliParseSqlParams(YacHandle hEnv, YacHandle* paramList, const char* sql, int32_t sqlLength, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacParseSqlParams", yapiSymbols.fnParseSqlParams)
+    ret = (YapiResult)(*yapiSymbols.fnParseSqlParams)(hEnv, paramList, sql, sqlLength);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliGetParamListCount(YacHandle hParamList, uint32_t* count, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacGetParamListCount", yapiSymbols.fnGetParamListCount)
+    ret = (YapiResult)(*yapiSymbols.fnGetParamListCount)(hParamList, count);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliGetParamName(YacHandle hParamList, uint16_t index, char* name, int32_t nameBufLen, int32_t* nameLen, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacGetParamName", yapiSymbols.fnGetParamName)
+    ret = (YapiResult)(*yapiSymbols.fnGetParamName)(hParamList, index, name, nameBufLen, nameLen);
+    YAPI_CHECK_CLI_RETURN();
+}   
+
+YapiResult yapiCliFreeParamList(YacHandle hParamList, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacFreeParamList", yapiSymbols.fnFreeParamList)
+    ret = (YapiResult)(*yapiSymbols.fnFreeParamList)(hParamList);
+    YAPI_CHECK_CLI_RETURN();
+}
+
 YapiResult yapiCliDirectExecute(YacHandle hStmt, const char* sql, int32_t sqlLength, YapiErrorMsg* error)
 {
     YapiResult ret;
@@ -496,8 +541,7 @@ YapiResult yapiCliTimestampGetTimestamp(const YapiTimestamp timestamp, int16_t* 
     YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacTimestampGetTimestamp", yapiSymbols.fnTimestampGetTimestamp)
-    ret =
-        (YapiResult)(*yapiSymbols.fnTimestampGetTimestamp)(timestamp, year, month, day, hour, minute, second, fraction);
+    ret = (YapiResult)(*yapiSymbols.fnTimestampGetTimestamp)(timestamp, year, month, day, hour, minute, second, fraction);
     YAPI_CHECK_CLI_RETURN();
 }
 
@@ -547,8 +591,7 @@ YapiResult yapiCliTimestampSetTimestamp(YapiTimestamp* timestamp, int16_t year, 
     YapiResult ret;
 
     YAPI_LOAD_SYMBOL("yacTimestampSetTimestamp", yapiSymbols.fnTimestampSetTimestamp)
-    ret =
-        (YapiResult)(*yapiSymbols.fnTimestampSetTimestamp)(timestamp, year, month, day, hour, minute, second, fraction);
+    ret =(YapiResult)(*yapiSymbols.fnTimestampSetTimestamp)(timestamp, year, month, day, hour, minute, second, fraction);
     YAPI_CHECK_CLI_RETURN();
 }
 
@@ -817,4 +860,40 @@ YapiResult yapiCiPdbgGetBreakpointAttrs(YacHandle hStmt, uint32_t id, YapiDebugB
     YAPI_LOAD_SYMBOL("yacPdbgGetBreakpointAttrs", yapiSymbols.fnPdbgGetBreakpointAttrs)
     ret = (YapiResult)(*yapiSymbols.fnPdbgGetBreakpointAttrs)(hStmt, id, attr, value, bufLen, stringLength);
     YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliConnectionPoolCreate(YacHandle hConnPool, const char* url, int16_t urlLength,
+                                       uint32_t min, uint32_t max, uint32_t increment, const char* user, int16_t userLength,
+                                       const char* password, int16_t passwordLength, uint32_t mode, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacConnectionPoolCreate", yapiSymbols.fnConnectionPoolCreate)
+    ret = (YapiResult)(*yapiSymbols.fnConnectionPoolCreate)(hConnPool, url, urlLength, min, max, increment, user,
+                                                            userLength, password, passwordLength, mode);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliConnectionGet(YacHandle hConnPool, YacHandle* hConn, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacConnectionGet", yapiSymbols.fnConnectionGet)
+    ret = (YapiResult) (*yapiSymbols.fnConnectionGet)(hConnPool, hConn);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliConnectionGiveBack(YacHandle hConn, YapiErrorMsg* error)
+{
+    YapiResult ret;
+
+    YAPI_LOAD_SYMBOL("yacConnectionGiveBack", yapiSymbols.fnConnectionGiveBack)
+    ret = (YapiResult) (*yapiSymbols.fnConnectionGiveBack)(hConn);
+    YAPI_CHECK_CLI_RETURN();
+}
+
+YapiResult yapiCliConnectionPoolDestroy(YacHandle hConnPool, uint32_t mode, YapiErrorMsg* error)
+{
+    YAPI_LOAD_SYMBOL("yacConnectionPoolDestroy", yapiSymbols.fnConnectionPoolDestroy)
+    return YAPI_SUCCESS;
 }

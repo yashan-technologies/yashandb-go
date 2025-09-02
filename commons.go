@@ -44,7 +44,10 @@ type cliSqlType int8
 
 var (
 	CST_UNKNOW cliSqlType = 0
+	CST_SELECT cliSqlType = 1
 	CST_INSERT cliSqlType = 2
+	CST_UPDATE cliSqlType = 3
+	CST_DELETE cliSqlType = 4
 	CST_PLSQL  cliSqlType = 126
 )
 var (
@@ -263,8 +266,17 @@ func whichKeySql(query string) cliSqlType {
 	query = rmComment(query)
 	strs := strings.Fields(strings.TrimSpace(query))
 	sqlStr := strings.ToLower(strings.Join(strs, " "))
+	if strings.HasPrefix(sqlStr, "select ") {
+		return CST_SELECT
+	}
 	if strings.HasPrefix(sqlStr, "insert into") {
 		return CST_INSERT
+	}
+	if strings.HasPrefix(sqlStr, "update ") {
+		return CST_UPDATE
+	}
+	if strings.HasPrefix(sqlStr, "delete from") {
+		return CST_DELETE
 	}
 	for _, v := range keySqls {
 		if strings.HasPrefix(sqlStr, v) {
@@ -306,14 +318,14 @@ func isResetSessionErr(err error) bool {
 	return false
 }
 
-func releaseConn(conn *C.YapiConnect) error {
-	if conn == nil {
+func releaseConn(yasConn *C.YapiConnect) error {
+	if yasConn == nil {
 		return nil
 	}
-	if err := yapiReleaseConn(conn); err != nil {
+	if err := yapiReleaseConn(yasConn); err != nil {
 		return err
 	}
-	conn = nil
+	yasConn = nil
 	return nil
 }
 

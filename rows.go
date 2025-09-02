@@ -113,9 +113,7 @@ func (r *YasRows) Next(dest []driver.Value) error {
 	if results == nil {
 		return io.EOF
 	}
-	for i, d := range *results {
-		dest[i] = d
-	}
+	copy(dest, *results)
 	return nil
 }
 

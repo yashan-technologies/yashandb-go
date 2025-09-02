@@ -32,7 +32,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -66,7 +66,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -83,7 +83,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -117,7 +117,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -134,7 +134,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -151,7 +151,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -185,7 +185,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -202,7 +202,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -217,7 +217,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -232,7 +232,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -251,7 +251,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -270,7 +270,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -288,7 +288,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -306,7 +306,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -336,7 +336,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -353,7 +353,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -370,7 +370,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -387,7 +387,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -404,7 +404,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -421,7 +421,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -439,7 +439,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: _DefaultDbTimestampTzFormat,
 				dsIntervalFormat:  _DefaultDbDsIntervalFormat,
 				ymIntervalFormat:  _DefaultDbYmIntervalFormat,
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 		{
@@ -457,7 +457,7 @@ func TestParseDsn(t *testing.T) {
 				timestampTzFormat: "YYYY-MM-DD HH12:MI:SS.FF TZH:TZM",
 				dsIntervalFormat:  "DD HH12:MI:SS.FF",
 				ymIntervalFormat:  "YYYY-MM",
-				directInsert:      true,
+				cliPrepare:        true,
 			},
 		},
 	}

@@ -15,12 +15,18 @@ import (
 )
 
 func yapiReleaseConn(conn *C.YapiConnect) error {
+	if conn == nil {
+		return nil
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiReleaseConn(conn))
 }
 
 func yapiReleaseEnv(env *C.YapiEnv) error {
+	if env == nil {
+		return nil
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiReleaseEnv(env))
@@ -33,6 +39,9 @@ func yapiAllocEnv(env **C.YapiEnv) error {
 }
 
 func yapiSetConnAttr(conn *C.YapiConnect, attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiSetConnAttr(
@@ -44,6 +53,9 @@ func yapiSetConnAttr(conn *C.YapiConnect, attr C.YapiConnAttr, value unsafe.Poin
 }
 
 func yapiGetConnAttr(conn *C.YapiConnect, attr C.YapiConnAttr, value unsafe.Pointer, bufLength C.int32_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var stringLen C.int32_t
@@ -58,18 +70,27 @@ func yapiGetConnAttr(conn *C.YapiConnect, attr C.YapiConnAttr, value unsafe.Poin
 }
 
 func yapiCommit(conn *C.YapiConnect) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiCommit(conn))
 }
 
 func yapiRollback(conn *C.YapiConnect) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiRollback(conn))
 }
 
 func yapiLobRead(conn *C.YapiConnect, lobLocator *C.YapiLobLocator, bytes *C.uint64_t, buf *C.uint8_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -83,24 +104,36 @@ func yapiLobRead(conn *C.YapiConnect, lobLocator *C.YapiLobLocator, bytes *C.uin
 }
 
 func yapiLobGetLength(conn *C.YapiConnect, lobLocator *C.YapiLobLocator, lobLen *C.uint64_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiLobGetLength(conn, lobLocator, lobLen))
 }
 
 func yapiLobDescAlloc(conn *C.YapiConnect, yacType C.YapiType, desc *unsafe.Pointer) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiLobDescAlloc(conn, yacType, desc))
 }
 
 func yapiLobCreateTemporary(conn *C.YapiConnect, lobLocator *C.YapiLobLocator) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiLobCreateTemporary(conn, lobLocator))
 }
 
 func yapiLobWrite(conn *C.YapiConnect, lobLocator *C.YapiLobLocator, buf *C.uint8_t, bufLen C.uint64_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -114,12 +147,18 @@ func yapiLobWrite(conn *C.YapiConnect, lobLocator *C.YapiLobLocator, buf *C.uint
 }
 
 func yapiCancel(conn *C.YapiConnect) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiCancel(conn))
 }
 
 func yapiPrepare(conn *C.YapiConnect, queryP *C.char, sqlLength C.int32_t, stmt **C.YapiStmt) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -132,6 +171,9 @@ func yapiPrepare(conn *C.YapiConnect, queryP *C.char, sqlLength C.int32_t, stmt 
 }
 
 func yapiGetStmtAttr(stmt *C.YapiStmt, stmtAttr C.YapiStmtAttr, point unsafe.Pointer, sqlSize, sqlLength C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -145,12 +187,18 @@ func yapiGetStmtAttr(stmt *C.YapiStmt, stmtAttr C.YapiStmtAttr, point unsafe.Poi
 }
 
 func yapiExecute(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiExecute(stmt))
 }
 
 func yapiDirectExecute(stmt *C.YapiStmt, sqlstr string) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	queryP := C.CString(sqlstr)
 	defer C.free(unsafe.Pointer(queryP))
 	sqlLength := C.int32_t(len(sqlstr))
@@ -160,30 +208,45 @@ func yapiDirectExecute(stmt *C.YapiStmt, sqlstr string) error {
 }
 
 func yapiStmtCreate(conn *C.YapiConnect, stmt **C.YapiStmt) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiStmtCreate(conn, stmt))
 }
 
 func yapiReleaseStmt(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiReleaseStmt(stmt))
 }
 
 func yapiNumResultCols(stmt *C.YapiStmt, columns *C.int16_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiNumResultCols(stmt, columns))
 }
 
 func yapiDescribeCol2(stmt *C.YapiStmt, pos C.uint16_t, item *C.YapiColumnDesc) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiDescribeCol2(stmt, pos, item))
 }
 
 func yapiBindColumn(stmt *C.YapiStmt, pos C.uint16_t, yacType C.YapiType, point C.YapiPointer, bufLen C.int32_t, indicator *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -199,6 +262,9 @@ func yapiBindColumn(stmt *C.YapiStmt, pos C.uint16_t, yacType C.YapiType, point 
 }
 
 func yapiBindParameter(stmt *C.YapiStmt, b *bindStruct, pos C.uint16_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -216,6 +282,9 @@ func yapiBindParameter(stmt *C.YapiStmt, b *bindStruct, pos C.uint16_t) error {
 }
 
 func yapiBindParameterByName(stmt *C.YapiStmt, charName *C.char, b *bindStruct) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(
@@ -233,138 +302,207 @@ func yapiBindParameterByName(stmt *C.YapiStmt, charName *C.char, b *bindStruct) 
 }
 
 func yapiSetEnvAttr(env *C.YapiEnv, envAttr C.YapiEnvAttr, point unsafe.Pointer, dpLen C.int32_t) error {
+	if env == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiSetEnvAttr(env, envAttr, point, dpLen))
 }
 
 func yapiConnect(env *C.YapiEnv, url *C.char, urlLen C.int16_t, user *C.char, userLen C.int16_t, password *C.char, pwLen C.int16_t, conn **C.YapiConnect) error {
+	if env == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiConnect(env, url, urlLen, user, userLen, password, pwLen, conn))
 }
 
 func yapiAllocConnect(env *C.YapiEnv, conn **C.YapiConnect) error {
+	if env == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiAllocConnect(env, conn))
 }
 
 func yapiConnect2(conn *C.YapiConnect, url *C.char, urlLen C.int16_t, user *C.char, userLen C.int16_t, password *C.char, pwLen C.int16_t) error {
+	if conn == nil {
+		return ErrNoConnect()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiConnect2(conn, url, urlLen, user, userLen, password, pwLen))
 }
 
 func yapiPdbgStart(stmt *C.YapiStmt, objId C.uint64_t, subId C.uint16_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgStart(stmt, objId, subId))
 }
 
 func yapiPdbgCheckVersion(stmt *C.YapiStmt, objId C.uint64_t, subId C.uint16_t, version C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgCheckVersion(stmt, objId, subId, version))
 }
 
 func yapiPdbgAbort(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgAbort(stmt))
 }
 
 func yapiPdbgContinue(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgContinue(stmt))
 }
 
 func yapiPdbgStepInto(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgStepInto(stmt))
 }
 
 func yapiPdbgStepOut(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgStepOut(stmt))
 }
 
 func yapiPdbgStepNext(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgStepNext(stmt))
 }
 
 func yapiPdbgDeleteAllBreakpoints(stmt *C.YapiStmt) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgDeleteAllBreakpoints(stmt))
 }
 
 func yapiPdbgAddBreakpoint(stmt *C.YapiStmt, objId uint64, subId uint16, lineNo uint32, bpID *C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgAddBreakpoint(stmt, C.uint64_t(objId), C.uint16_t(subId), C.uint32_t(lineNo), bpID))
 }
 
 func yapiPdbgDeleteBreakpoint(stmt *C.YapiStmt, objId uint64, subId uint16, lineNo uint32) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgDeleteBreakpoint(stmt, C.uint64_t(objId), C.uint16_t(subId), C.uint32_t(lineNo)))
 }
 
 func yapiPdbgGetBreakpointsCount(stmt *C.YapiStmt, bpCount *C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetBreakpointsCount(stmt, bpCount))
 }
 
 func yapiPdbgGetAllVars(stmt *C.YapiStmt, varCount *C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetAllVars(stmt, varCount))
 }
 
 func yapiPdbgGetAllFrames(stmt *C.YapiStmt, frameCount *C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetAllFrames(stmt, frameCount))
 }
 
 func yapiPdbgGetRunningAttrs(stmt *C.YapiStmt, attr C.YapiDebugRunningAttr, point C.YapiPointer, len C.int32_t, stringLen *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetRunningAttrs(stmt, attr, point, len, stringLen))
 }
 
 func yapiPdbgGetFrameAttrs(stmt *C.YapiStmt, id C.uint32_t, attr C.YapiDebugFrameAttr, point C.YapiPointer, len C.int32_t, stringLen *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetFrameAttrs(stmt, id, attr, point, len, stringLen))
 }
 
 func yapiPdbgGetVarAttrs(stmt *C.YapiStmt, id C.uint32_t, attr C.YapiDebugVarAttr, point C.YapiPointer, len C.int32_t, stringLen *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetVarAttrs(stmt, id, attr, point, len, stringLen))
 }
 
 func yapiPdbgGetVarValue(stmt *C.YapiStmt, id C.uint32_t, bindType C.uint32_t, point C.YapiPointer, len C.int32_t, stringLen *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetVarValue(stmt, id, bindType, point, len, stringLen))
 }
 
 func yapiPdbgGetBreakpointAttrs(stmt *C.YapiStmt, id C.uint32_t, attr C.YapiDebugBpAttr, point C.YapiPointer, len C.int32_t, stringLen *C.int32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiPdbgGetBreakpointAttrs(stmt, C.uint32_t(id), attr, point, len, stringLen))
 }
 
 func yapiFetch(stmt *C.YapiStmt, rows *C.uint32_t) error {
+	if stmt == nil {
+		return ErrStmtNoOpen()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiFetch(stmt, rows))
@@ -397,18 +535,27 @@ func yapiTimestampSetTimestamp(timestamp *C.YapiTimestamp,
 }
 
 func yapiDateTimeGetTimeZoneOffset(env *C.YapiEnv, timestamp C.YapiTimestamp, hr *C.int8_t, mm *C.int8_t) error {
+	if env == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiDateTimeGetTimeZoneOffset(env, timestamp, hr, mm))
 }
 
 func yapiDSIntervalFromText(hEnv *C.YapiEnv, dsInterval *C.YapiDSInterval, str *C.char, strLen C.uint32_t) error {
+	if hEnv == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiDSIntervalFromText(hEnv, dsInterval, str, strLen))
 }
 
 func yapiYMIntervalFromText(hEnv *C.YapiEnv, dsInterval *C.YapiYMInterval, str *C.char, strLen C.uint32_t) error {
+	if hEnv == nil {
+		return ErrEnvInit()
+	}
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiYMIntervalFromText(hEnv, dsInterval, str, strLen))
@@ -465,4 +612,41 @@ func yapiNumberToReal(number *C.YapiNumber, length C.uint32_t, rsl C.YapiPointer
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	return checkYasError(C.yapiNumberToReal(number, length, rsl))
+}
+
+func yapiPing(conn *C.YapiConnect, timeout C.int32_t) error {
+	// timeout is ms
+	if conn == nil {
+		return ErrNoConnect()
+	}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiPing(conn, timeout))
+}
+
+func yapiParseSqlParams(env *C.YapiEnv, paramList *C.YapiPointer, sql *C.char, sqlLength C.int32_t) error {
+	if env == nil {
+		return ErrEnvInit()
+	}
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiParseSqlParams(env, paramList, sql, sqlLength))
+}
+
+func yapiGetParamListCount(hParamList C.YapiPointer, count *C.uint32_t) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiGetParamListCount(hParamList, count))
+}
+
+// func yapiGetParamName(hParamList C.YapiPointer, index C.uint16_t, name *C.char, nameBufLen C.int32_t, nameLen *C.int32_t) error {
+// 	runtime.LockOSThread()
+// 	defer runtime.UnlockOSThread()
+// 	return checkYasError(C.yapiGetParamName(hParamList, index, name, nameBufLen, nameLen))
+// }
+
+func yapiFreeParamList(hParamList C.YapiPointer) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return checkYasError(C.yapiFreeParamList(hParamList))
 }
