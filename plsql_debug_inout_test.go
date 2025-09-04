@@ -1228,7 +1228,6 @@ func TestRowidInout(t *testing.T) {
 	assert.Equal(rowidVal, expected)
 }
 
-// todo：调试会报错
 // func TestYmIntervalInout(t *testing.T) {
 
 // 	proc := `

@@ -9,7 +9,7 @@ import (
 
 func TestParseDsn(t *testing.T) {
 
-	os.Mkdir("./test", 0o755)
+	os.Mkdir(_DataPath, 0o755)
 
 	dsnTests := []struct {
 		dsnStr      string
@@ -127,7 +127,7 @@ func TestParseDsn(t *testing.T) {
 				Password:          "",
 				Url:               "",
 				IsAutoCommit:      true,
-				DataPath:          "./test",
+				DataPath:          _DataPath,
 				dateFormat:        _DefaultDbDateFormat,
 				timeFormat:        _DefaultDbTimeFormat,
 				timestampFormat:   _DefaultDbTimestampFormat,
@@ -144,7 +144,7 @@ func TestParseDsn(t *testing.T) {
 				Password:          "",
 				Url:               "",
 				IsAutoCommit:      false,
-				DataPath:          "./test",
+				DataPath:          _DataPath,
 				dateFormat:        _DefaultDbDateFormat,
 				timeFormat:        _DefaultDbTimeFormat,
 				timestampFormat:   _DefaultDbTimestampFormat,

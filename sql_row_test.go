@@ -9,7 +9,7 @@ import (
 func TestColumnTypePrecisionScale(t *testing.T) {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	defer db.Close()
 
@@ -48,7 +48,7 @@ func TestColumnTypePrecisionScale(t *testing.T) {
 func TestColumnTypeNullable(t *testing.T) {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	defer db.Close()
 

@@ -86,9 +86,9 @@ func testVarchar(t *sqlTest) {
 	t.runSelectTest()
 
 	// test case2:
-	t2c1_1 := strings.Repeat("0123456789", 8000/10)
-	t2c1_2 := strings.Repeat("崖山数据库", 8000/(5*3))
-	t2c1_3 := ""
+	t2c1 := strings.Repeat("0123456789", 8000/10)
+	t2c2 := strings.Repeat("崖山数据库", 8000/(5*3))
+	t2c3 := ""
 	si = sqlGenInfo{
 		tableName: "varchar_test2",
 		columnNameType: [][2]string{
@@ -96,13 +96,13 @@ func testVarchar(t *sqlTest) {
 			{"c1", "varchar(8000)"},
 		},
 		execArgs: [][]interface{}{
-			{1, t2c1_1},
-			{2, t2c1_2},
-			{3, t2c1_3},
+			{1, t2c1},
+			{2, t2c2},
+			{3, t2c3},
 		},
 		queryResult: [][]interface{}{
-			{int32(1), t2c1_1},
-			{int32(2), t2c1_2},
+			{int32(1), t2c1},
+			{int32(2), t2c2},
 			{int32(3), nil},
 		},
 	}
@@ -143,9 +143,9 @@ func testChar(t *sqlTest) {
 	t.runSelectTest()
 
 	// test case2:
-	t2c1_1 := strings.Repeat("0123456789", 8000/10)
-	t2c1_2 := strings.Repeat("崖山数据库", 8000/(5*3))
-	t2c1_3 := ""
+	t2c1 := strings.Repeat("0123456789", 8000/10)
+	t2c2 := strings.Repeat("崖山数据库", 8000/(5*3))
+	t2c3 := ""
 	si = sqlGenInfo{
 		tableName: "char_test2",
 		columnNameType: [][2]string{
@@ -153,13 +153,13 @@ func testChar(t *sqlTest) {
 			{"c1", "char(8000)"},
 		},
 		execArgs: [][]interface{}{
-			{1, t2c1_1},
-			{2, t2c1_2},
-			{3, t2c1_3},
+			{1, t2c1},
+			{2, t2c2},
+			{3, t2c3},
 		},
 		queryResult: [][]interface{}{
-			{int32(1), t2c1_1},
-			{int32(2), t2c1_2 + strings.Repeat(" ", 8000-len(t2c1_2))},
+			{int32(1), t2c1},
+			{int32(2), t2c2 + strings.Repeat(" ", 8000-len(t2c2))},
 			{int32(3), nil},
 		},
 	}
@@ -270,9 +270,9 @@ func testnChar(t *sqlTest) {
 	t.runSelectTest()
 
 	// test case2:
-	t2c1_1 := strings.Repeat("0123456789", 4000/10)
-	t2c1_2 := strings.Repeat("崖山数据库", 4000/5)
-	t2c1_3 := ""
+	t2c1 := strings.Repeat("0123456789", 4000/10)
+	t2c2 := strings.Repeat("崖山数据库", 4000/5)
+	t2c3 := ""
 	si = sqlGenInfo{
 		tableName: "nchar_test2",
 		columnNameType: [][2]string{
@@ -280,13 +280,13 @@ func testnChar(t *sqlTest) {
 			{"c1", "nchar(4000)"},
 		},
 		execArgs: [][]interface{}{
-			{1, t2c1_1},
-			{2, t2c1_2},
-			{3, t2c1_3},
+			{1, t2c1},
+			{2, t2c2},
+			{3, t2c3},
 		},
 		queryResult: [][]interface{}{
-			{int32(1), t2c1_1},
-			{int32(2), t2c1_2},
+			{int32(1), t2c1},
+			{int32(2), t2c2},
 			{int32(3), nil},
 		},
 	}
@@ -327,9 +327,9 @@ func testnvarChar(t *sqlTest) {
 	t.runSelectTest()
 
 	// test case2:
-	t2c1_1 := strings.Repeat("0123456789", 4000/10)
-	t2c1_2 := strings.Repeat("崖山数据库", 4000/5)
-	t2c1_3 := ""
+	t2c1 := strings.Repeat("0123456789", 4000/10)
+	t2c2 := strings.Repeat("崖山数据库", 4000/5)
+	t2c3 := ""
 	si = sqlGenInfo{
 		tableName: "nvarchar_test2",
 		columnNameType: [][2]string{
@@ -337,13 +337,13 @@ func testnvarChar(t *sqlTest) {
 			{"c1", "nvarchar(4000)"},
 		},
 		execArgs: [][]interface{}{
-			{1, t2c1_1},
-			{2, t2c1_2},
-			{3, t2c1_3},
+			{1, t2c1},
+			{2, t2c2},
+			{3, t2c3},
 		},
 		queryResult: [][]interface{}{
-			{int32(1), t2c1_1},
-			{int32(2), t2c1_2},
+			{int32(1), t2c1},
+			{int32(2), t2c2},
 			{int32(3), nil},
 		},
 	}

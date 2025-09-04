@@ -37,6 +37,15 @@ const (
 )
 
 const (
+	_DataPath = "./test"
+)
+
+const (
+	NormalConnErr     = "error connecting: "
+	IntegerPrimaryKey = "integer primary key"
+)
+
+const (
 	_DefaultDbTimestampFormat   = "yyyy-mm-dd hh24:mi:ss.ff"
 	_DefaultDbDateFormat        = "yyyy-mm-dd"
 	_DefaultDbTimeFormat        = "hh24:mi:ss.ff"
