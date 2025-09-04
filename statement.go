@@ -913,7 +913,7 @@ func (stmt *YasStmt) getBindValueDest() error {
 				if *bind.indicator != C.YAPI_NULL_DATA {
 					*bindDest = C.GoBytes(unsafe.Pointer(bind.value), C.int(*bind.indicator))
 				}
-			case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_NCHAR:
+			case C.YAPI_TYPE_VARCHAR, C.YAPI_TYPE_CHAR, C.YAPI_TYPE_NVARCHAR, C.YAPI_TYPE_NCHAR, C.YAPI_TYPE_ROWID:
 				bindDest, _ := dest.getVarcharBindDest()
 				*bindDest = C.GoString((*C.char)(bind.value))
 			case C.YAPI_TYPE_NUMBER:
@@ -923,9 +923,6 @@ func (stmt *YasStmt) getBindValueDest() error {
 					return err
 				}
 				*bindDest = res
-			case C.YAPI_TYPE_ROWID:
-				bindDest, _ := dest.getVarcharBindDest()
-				*bindDest = C.GoString((*C.char)(bind.value))
 			}
 		default:
 			return fmt.Errorf("unknown column %v", index)

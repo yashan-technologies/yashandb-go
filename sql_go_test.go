@@ -9,16 +9,16 @@ import (
 	"testing"
 )
 
-func TestBlob_gosql(t *testing.T) {
+func TestBlobGosql(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testBlob_gosql)
+	runSqlTest(t, testblobgosql)
 }
 
-func testBlob_gosql(t *sqlTest) {
+func testblobgosql(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "blob"
 	t.columnNameType = [][2]string{
-		{"id", "integer primary key"},
+		{"id", IntegerPrimaryKey},
 		{"bar", "blob"},
 	}
 	t.genTableTest()
@@ -46,16 +46,16 @@ func testBlob_gosql(t *sqlTest) {
 	}
 }
 
-func TestClob_gosql(t *testing.T) {
+func TestClobGosql(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testClob_gosql)
+	runSqlTest(t, testclobgosql)
 }
 
-func testClob_gosql(t *sqlTest) {
+func testclobgosql(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "clob"
 	t.columnNameType = [][2]string{
-		{"id", "integer primary key"},
+		{"id", IntegerPrimaryKey},
 		{"bar", "clob"},
 	}
 	t.genTableTest()
@@ -72,12 +72,12 @@ func testClob_gosql(t *sqlTest) {
 	}
 }
 
-func TestManyQueryRow_gosql(t *testing.T) {
+func TestManyQueryRowGosql(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testManyQueryRow_gosql)
+	runSqlTest(t, testmanyqueryrowgosql)
 }
 
-func testManyQueryRow_gosql(t *sqlTest) {
+func testmanyqueryrowgosql(t *sqlTest) {
 	if testing.Short() {
 		t.Logf("it is short")
 		return
@@ -85,7 +85,7 @@ func testManyQueryRow_gosql(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "MQR"
 	t.columnNameType = [][2]string{
-		{"id", "integer primary key"},
+		{"id", IntegerPrimaryKey},
 		{"name", "varchar(50)"},
 	}
 	t.genTableTest()
@@ -101,16 +101,16 @@ func testManyQueryRow_gosql(t *sqlTest) {
 	}
 }
 
-func TestTxQuery_gosql(t *testing.T) {
+func TestTxQueryGosql(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testTxQuery_gosql)
+	runSqlTest(t, testtxquerygosql)
 }
 
-func testTxQuery_gosql(t *sqlTest) {
+func testtxquerygosql(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "txquery"
 	t.columnNameType = [][2]string{
-		{"id", "integer primary key"},
+		{"id", IntegerPrimaryKey},
 		{"name", "varchar(50)"},
 	}
 	t.genTableTest()
@@ -149,12 +149,12 @@ func testTxQuery_gosql(t *sqlTest) {
 	}
 }
 
-func TestPrepareStmt_gosql(t *testing.T) {
+func TestPrepareStmtGosql(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testPrepareStmt_gosql)
+	runSqlTest(t, testpreparestmtgosql)
 }
 
-func testPrepareStmt_gosql(t *sqlTest) {
+func testpreparestmtgosql(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "preparestmt"
 	t.columnNameType = [][2]string{{"count", "int"}}
@@ -203,16 +203,16 @@ func testPrepareStmt_gosql(t *sqlTest) {
 	}
 }
 
-func TestEmoji_gosqltest(t *testing.T) {
+func TestEmojiGosqlTest(t *testing.T) {
 	t.Parallel()
-	runSqlTest(t, testEmoji_gosqltest)
+	runSqlTest(t, testemojigosqltest)
 }
 
-func testEmoji_gosqltest(t *sqlTest) {
+func testemojigosqltest(t *sqlTest) {
 	t.sqlGenInfo = &sqlGenInfo{}
 	t.tableName = tablePrefix + "emoji"
 	t.columnNameType = [][2]string{
-		{"id", "integer primary key"},
+		{"id", IntegerPrimaryKey},
 		{"c1", "varchar(10)"},
 		{"c2", "varchar(10)"},
 	}

@@ -46,10 +46,10 @@ class Ziper(object):
         self.ex_prefixs = ex_prefixs
         self.ex_postfixs = ex_postfixs
 
-    def genPkgName(self):
+    def gen_pkg_name(self):
         return "{}.zip".format(self.name)
 
-    def isExclude(self, f):
+    def is_exclude(self, f):
         if self.ex_prefixs:
             for prefix in self.ex_prefixs:
                 if f.startswith(prefix):
@@ -61,16 +61,16 @@ class Ziper(object):
         return False
 
     def pack(self):
-        return self.windowsPack()
+        return self.windows_pack()
 
-    def windowsPack(self):
-        pkgName = self.genPkgName()
+    def windows_pack(self):
+        pkg_name = self.gen_pkg_name()
         p, n = os.path.split(self.src_path)
         os.chdir(os.path.abspath(p))
-        handler = zipfile.ZipFile(os.path.join(self.dest_path, pkgName), "w")
+        handler = zipfile.ZipFile(os.path.join(self.dest_path, pkg_name), "w")
         for root, dirs, fs in os.walk(n):
             for f in fs:
-                if self.isExclude(os.path.join(root, f)):
+                if self.is_exclude(os.path.join(root, f)):
                     continue
                 print(os.path.join(root, f))
                 handler.write(os.path.join(root, f))
@@ -88,7 +88,7 @@ def get_version():
     return describe if describe else "unknow"
 
 def move(src, dest):
-    dest_path, dest_name = os.path.split(dest)
+    dest_path, _ = os.path.split(dest)
     if not os.path.exists(dest_path):
         os.makedirs(dest_path)
     shutil.move(src, dest)

@@ -48,7 +48,7 @@ type sqlGenInfo struct {
 func newSqlTest(t *testing.T) *sqlTest {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	return &sqlTest{T: t, DB: db}
 }
@@ -56,7 +56,7 @@ func newSqlTest(t *testing.T) *sqlTest {
 func newSqlAutoCommitTest(t *testing.T) *sqlTest {
 	db, err := sql.Open("yasdb", fmt.Sprintf("%s?%s", testDsn, "autocommit=true"))
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	return &sqlTest{T: t, DB: db}
 }
@@ -294,7 +294,7 @@ func (st *sqlTest) resultComparison(actualResults [][]interface{}, expectedResul
 func runSqlTest(t *testing.T, fn func(st *sqlTest)) {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	defer db.Close()
 	fn(&sqlTest{T: t, DB: db})
@@ -304,7 +304,7 @@ func runsqlTestACTrue(t *testing.T, fn func(st *sqlTest)) {
 	dsn := fmt.Sprintf("%s?%s", testDsn, "autocommit=true")
 	db, err := sql.Open("yasdb", dsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	defer db.Close()
 	fn(&sqlTest{T: t, DB: db})
@@ -314,7 +314,7 @@ func runsqlTestACFalse(t *testing.T, fn func(st *sqlTest)) {
 	dsn := fmt.Sprintf("%s?%s", testDsn, "autocommit=false")
 	db, err := sql.Open("yasdb", dsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	defer db.Close()
 	fn(&sqlTest{T: t, DB: db})

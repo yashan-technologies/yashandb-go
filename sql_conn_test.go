@@ -14,7 +14,7 @@ import (
 func TestConnect(t *testing.T) {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	if err = db.Close(); err != nil {
 		t.Fatalf("error db close: %v", err)
@@ -29,7 +29,7 @@ YASDB_DATA
 func TestConnectWithoutPassword(t *testing.T) {
 	db, err := sql.Open("yasdb", "")
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	if err = db.Close(); err != nil {
 		t.Fatalf("error db close: %v", err)
@@ -39,7 +39,7 @@ func TestConnectWithoutPassword(t *testing.T) {
 func TestPing(t *testing.T) {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	if err = db.Ping(); err != nil {
 		t.Fatalf("error db ping: %v", err)
@@ -115,7 +115,7 @@ func testAutoCommitFalse(t *sqlTest) {
 func getYasConn(t *testing.T) *YasConn {
 	db, err := sql.Open("yasdb", testDsn)
 	if err != nil {
-		t.Fatalf("error connecting: %v", err)
+		t.Fatalf("%s%v", NormalConnErr, err)
 	}
 	if err = db.Ping(); err != nil {
 		t.Fatalf("error db ping: %v", err)
