@@ -246,7 +246,7 @@ func (conn *YasConn) yacLobRead(lobLocator *C.YapiLobLocator, lobLen uint64) ([]
 			return nil, err
 		}
 		data = append(data, readBuffer[:uint64(bytes)]...)
-		if uint64(bytes) < _LobBufLen {
+		if uint64(bytes) <= 0 {
 			break
 		}
 	}
