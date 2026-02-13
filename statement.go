@@ -114,7 +114,9 @@ func (stmt *YasStmt) NumInput() int {
 		return -1
 	}
 	var paramList C.YapiPointer
-	err := yapiParseSqlParams(stmt.Conn.Env, &paramList, C.CString(stmt.Sqlstr), C.int32_t(len(stmt.Sqlstr)))
+	sql := C.CString(stmt.Sqlstr)
+	defer C.free(unsafe.Pointer(sql))
+	err := yapiParseSqlParams(stmt.Conn.Env, &paramList, sql, C.int32_t(len(stmt.Sqlstr)))
 	if err != nil {
 		return -1
 	}
