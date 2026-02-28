@@ -610,12 +610,6 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 		value = C.YapiPointer(mallocBytes(uint32(bufLen)))
 	}
 
-	indicator := new(C.int32_t)
-	err = yapiPdbgGetVarValue(stmt.Stmt, C.uint32_t(id), C.uint32_t(bindType), value, C.int32_t(bufLen), indicator)
-	if err != nil {
-		return "", err
-	}
-
 	defer func() {
 		if isLob {
 			lobLocator := (**C.YapiLobLocator)(unsafe.Pointer(value))
@@ -624,6 +618,12 @@ func PdbgGetVarValue(stmt *YasStmt, id uint32) (string, error) {
 			C.free(unsafe.Pointer(value))
 		}
 	}()
+
+	indicator := new(C.int32_t)
+	err = yapiPdbgGetVarValue(stmt.Stmt, C.uint32_t(id), C.uint32_t(bindType), value, C.int32_t(bufLen), indicator)
+	if err != nil {
+		return "", err
+	}
 
 	if *indicator == C.YAPI_NULL_DATA {
 		return "", nil

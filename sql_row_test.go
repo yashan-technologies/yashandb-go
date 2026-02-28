@@ -31,6 +31,7 @@ func TestColumnTypePrecisionScale(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer rows.Close()
 			rowTypes, err := rows.ColumnTypes()
 			if err != nil {
 				t.Fatal(err)
@@ -81,6 +82,7 @@ func TestColumnTypeNullable(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer rows.Close()
 			rowTypes, err := rows.ColumnTypes()
 			if err != nil {
 				t.Fatal(err)

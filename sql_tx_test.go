@@ -26,10 +26,11 @@ func TestTxCommit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
-	_, err = tx.Query("select * from test_tx_commit")
+	rows, err := tx.Query("select * from test_tx_commit")
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
+	rows.Close()
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit tx err: %v", err)
 	}
@@ -53,10 +54,11 @@ func TestTxRollback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
-	_, err = tx.Query("select * from test_tx_rollback")
+	rows, err := tx.Query("select * from test_tx_rollback")
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
+	rows.Close()
 	if err := tx.Rollback(); err != nil {
 		t.Fatalf("rollback tx err: %v", err)
 	}
@@ -82,10 +84,11 @@ func TestTxAutoCommit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
-	_, err = tx.Query("select * from t1")
+	rows, err := tx.Query("select * from t1")
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
+	rows.Close()
 	if err := tx.Rollback(); err != nil {
 		t.Fatalf("rollback tx err: %v", err)
 	}
@@ -120,10 +123,11 @@ func TestTxAutoCommit2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
-	_, err = tx.Query("select * from t1")
+	rows, err := tx.Query("select * from t1")
 	if err != nil {
 		t.Fatalf("exec tx err: %v", err)
 	}
+	rows.Close()
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit tx err: %v", err)
 	}
@@ -227,6 +231,7 @@ func TestYasStmt_NumInput(t *testing.T) {
 				fmt.Printf("prepare stmt err: %v\n", err)
 				return
 			}
+			defer stmt.Close()
 			num := stmt.NumInput()
 			fmt.Printf("sql: %s, want: %d, real: %d\n", stmt.Sqlstr, tt.want, num)
 			at.Equal(tt.want, num)

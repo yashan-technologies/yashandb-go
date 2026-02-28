@@ -197,12 +197,11 @@ func (r *YasRows) ColumnTypeNullable(index int) (nullable, ok bool) {
 
 func (r *YasRows) getValues() (*[]driver.Value, error) {
 	var err error
-	unsafeRows := (unsafe.Pointer)(new(uint32))
-	rows := (*C.uint32_t)(unsafeRows)
-	if err = yapiFetch(r.stmt.Stmt, rows); err != nil {
+	var rows C.uint32_t
+	if err = yapiFetch(r.stmt.Stmt, &rows); err != nil {
 		return nil, err
 	}
-	if *rows == 0 {
+	if rows == 0 {
 		return nil, nil
 	}
 	columns := len(r.fetchRows)

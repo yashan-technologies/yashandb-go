@@ -293,6 +293,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	case C.YAPI_TYPE_CLOB, C.YAPI_TYPE_BLOB, C.YAPI_TYPE_XML, C.YAPI_TYPE_NCLOB:
 		desc := new(unsafe.Pointer)
 		if err := yapiLobDescAlloc(stmt.Conn.Conn, yacType, desc); err != nil {
+			C.free(unsafe.Pointer(indicator))
 			return nil, err
 		}
 		bufLen = -1
@@ -548,8 +549,11 @@ func (stmt *YasStmt) getOutputBindValueByDest(dest interface{}, inout bool) (*bi
 		freeType = lobFree
 	case time.Time:
 		yacType = C.YAPI_TYPE_TIMESTAMP
-		t := int64(0)
-		value = C.YapiPointer(unsafe.Pointer(&t))
+		bindSize = C.int32_t(unsafe.Sizeof(C.YapiTimestamp{}))
+		bufLength = bindSize
+		p := C.malloc(C.size_t(bindSize))
+		value = C.YapiPointer(p)
+		freeType = normalFree
 	case nil:
 		yacType = C.YAPI_TYPE_CHAR
 		bindSize = 0
@@ -649,12 +653,14 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo, inout bool) (
 			return bind, err
 		}
 		bindSize, bufLength, value, *indicator = int16OutBindParam(v, inout)
+		freeType = normalFree
 	case C.YAPI_TYPE_INTEGER:
 		v, err := obi.getInt32BindDest()
 		if err != nil {
 			return bind, err
 		}
 		bindSize, bufLength, value, *indicator = int32OutBindParam(v, inout)
+		freeType = normalFree
 	case C.YAPI_TYPE_BIGINT:
 		v, err := obi.getInt64BindDest()
 		if err != nil {
