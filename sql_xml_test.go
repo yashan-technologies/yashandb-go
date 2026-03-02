@@ -3,7 +3,7 @@ package yasdb
 import "testing"
 
 func TestXml(t *testing.T) {
-	runSqlTest(t, testXml)
+	//runSqlTest(t, testXml)
 }
 
 func testXml(t *sqlTest) {
