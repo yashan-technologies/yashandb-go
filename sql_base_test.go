@@ -66,6 +66,7 @@ func (st *sqlTest) getDBVersion() {
 	if err != nil {
 		st.T.Fatalf("get db version failed %s", err)
 	}
+	defer r.Close()
 	if r.Next() {
 		version := ""
 		if err := r.Scan(&version); err != nil {

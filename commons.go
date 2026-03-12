@@ -452,7 +452,7 @@ func GetDatabaseTypeSize(yType C.YapiType) int32 {
 }
 
 func boolOutBindParam(dest *bool, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(bool(false)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.bool)(p) = C.bool(*dest)
@@ -479,7 +479,7 @@ func bitOutBindParam(dest *[]byte, in bool) (bindSize, bufLen C.int32_t, value C
 }
 
 func int64OutBindParam(dest *int64, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(int64(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.int64_t)(p) = C.int64_t(*dest)
@@ -490,7 +490,7 @@ func int64OutBindParam(dest *int64, in bool) (bindSize, bufLen C.int32_t, value 
 }
 
 func int32OutBindParam(dest *int32, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(int32(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.int32_t)(p) = C.int32_t(*dest)
@@ -501,7 +501,7 @@ func int32OutBindParam(dest *int32, in bool) (bindSize, bufLen C.int32_t, value 
 }
 
 func int16OutBindParam(dest *int16, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(int16(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.int16_t)(p) = C.int16_t(*dest)
@@ -512,7 +512,7 @@ func int16OutBindParam(dest *int16, in bool) (bindSize, bufLen C.int32_t, value 
 }
 
 func int8OutBindParam(dest *int8, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(int8(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.int8_t)(p) = C.int8_t(*dest)
@@ -560,7 +560,7 @@ func timestampOutBindParam(dest *time.Time, _, in bool) (bindSize, bufLen C.int3
 }
 
 func float64OutBindParam(dest *float64, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(float64(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.double)(p) = C.double(*dest)
@@ -571,7 +571,7 @@ func float64OutBindParam(dest *float64, in bool) (bindSize, bufLen C.int32_t, va
 }
 
 func float32OutBindParam(dest *float32, in bool) (bindSize, bufLen C.int32_t, value C.YapiPointer, indicator C.int32_t) {
-	bindSize = C.int32_t(unsafe.Sizeof(dest))
+	bindSize = C.int32_t(unsafe.Sizeof(float32(0)))
 	p := C.malloc(C.size_t(bindSize))
 	if in {
 		*(*C.float)(p) = C.float(*dest)
