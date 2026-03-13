@@ -251,7 +251,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 	}
 	yacType := C.YapiType(item._type)
 	size, indicator := uint32(item.size), (*C.int32_t)(C.malloc(4))
-	precision, scale, nullable := uint8(item.precision), int8(item.scale), uint8(item.nullable)
+	precision, scale, nullable := uint8(item.anon0[0]), int8(item.anon0[1]), uint8(item.nullable)
 	row := NewYasRow(size, yacType, precision, scale, nullable)
 	bufLen := int32(size)
 	freeType := notFree
@@ -268,7 +268,7 @@ func (stmt *YasStmt) getFetchRow(pos int) (*yasRow, error) {
 		freeType = normalFree
 	case C.YAPI_TYPE_NUMBER: // number to string
 		yacType = C.YAPI_TYPE_VARCHAR
-		bufLen = int32(sizeToAlign4(uint32(item.precision) + 8))
+		bufLen = int32(sizeToAlign4(uint32(item.anon0[0]) + 8))
 		row.Data = mallocBytes(uint32(bufLen))
 		freeType = normalFree
 	case C.YAPI_TYPE_YM_INTERVAL:
