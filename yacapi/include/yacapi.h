@@ -26,9 +26,9 @@ typedef int32_t YapiYMInterval;
 typedef int64_t YapiDSInterval;
 typedef void*   YapiPointer;
 
-typedef struct StYapiConnect YapiConnect;
-typedef struct StYapiStmt    YapiStmt;
-typedef struct StYapiEnv     YapiEnv;
+typedef struct StYapiConnect     YapiConnect;
+typedef struct StYapiStmt        YapiStmt;
+typedef struct StYapiEnv         YapiEnv;
 typedef struct StYapiConnectPool YapiConnectPool;
 
 #pragma pack(4)
@@ -96,6 +96,7 @@ typedef enum EnYapiType {
     YAPI_TYPE_JSON = 35,
     YAPI_TYPE_XML = 39,
     YAPI_TYPE_NUMBER_FLOAT = 40,
+    YAPI_TYPE_VECTOR = 42,
     __YAPI_TYPES_COUNT__
 } YapiType;
 
@@ -120,8 +121,17 @@ typedef struct StYapiColumnDesc {
     char*    name;
     uint32_t size;
     uint8_t  type;
-    uint8_t  precision;
-    int8_t   scale;
+    union {
+      struct {
+        uint8_t precision;
+        int8_t scale;
+      };
+      struct {
+        uint8_t format : 4;
+        uint8_t unused: 4;
+        uint8_t reserved;
+      } vector;
+    };
     uint8_t  nullable;
 } YapiColumnDesc;
 
@@ -243,8 +253,19 @@ typedef enum EnYapiStmtAttr {
 } YapiStmtAttr;
 
 typedef enum EnYapiColAttr {
-    __YAPI_COL_ATTR_BEGIN__ = 200,
-    YAPI_COL_ATTR_DISPLAY_SIZE = 200,
+    __YAPI_COL_ATTR_BEGIN__ = 0,
+    YAPI_COL_ATTR_DISPLAY_SIZE = 0,
+    YAPI_COL_ATTR_NAME = 1,
+    YAPI_COL_ATTR_SIZE = 2,
+    YAPI_COL_ATTR_TYPE = 3,
+    YAPI_COL_ATTR_PRECISION = 4,
+    YAPI_COL_ATTR_SCALE = 5,
+    YAPI_COL_ATTR_NULLABLE = 6,
+    YAPI_COL_ATTR_CHAR_SIZE = 7,
+    YAPI_COL_ATTR_CHAR_USED = 8,
+    YAPI_COL_ATTR_DISPLAY_CHAR_SIZE = 9,
+    YAPI_COL_ATTR_VECTOR_DIMENSION = 10,
+    YAPI_COL_ATTR_VECTOR_DATA_FORMAT = 11,
     __YAPI_COL_ATTR_END__
 } YapiColAttr;
 
@@ -358,6 +379,29 @@ typedef enum EnYapiSQLType {
     __YAPI_SQLTYPE_COUNT__ = 255
 } YapiSQLType;
 
+/* YACAPI Vector format type */
+typedef enum EnYapiVectorFormat {
+    YAPI_VECTOR_FORMAT_FLEX = 0,
+    YAPI_VECTOR_FORMAT_FLOAT16 = 1,
+    YAPI_VECTOR_FORMAT_FLOAT32 = 2,
+    YAPI_VECTOR_FORMAT_FLOAT64 = 3,
+    YAPI_VECTOR_FORMAT_INT8 = 4
+} YapiVectorFormat;
+
+/* YACAPI describe type codes */
+typedef enum EnYapiDescType {
+    YAPI_DESC_UNKNOWN = 0,
+    YAPI_DESC_LOB = 1,
+    YAPI_DESC_VECTOR = 2
+} YapiDescType;
+
+typedef struct StYapiVector {
+    YapiEnv*    env;
+    uint32_t    capacity;
+    uint32_t    size;
+    YapiPointer vector;
+} YapiVector;
+
 #define yapiEnvCreate yapiAllocEnv
 #define yapiEnvRelease yapiReleaseEnv
 
@@ -421,7 +465,8 @@ YapiResult yapiConnectionPoolCreate(YapiConnectPool* hConnPool, const char* url,
 YapiResult yapiConnectionGet(YapiConnectPool* hConnPool, YapiConnect** hConn);
 YapiResult yapiConnectionGiveBack(YapiConnect* hConn);
 YapiResult yapiConnectionPoolDestroy(YapiConnectPool* hConnPool, uint32_t mode);
-
+YapiResult yapiDescAlloc2(YapiEnv* hEnv, void** desc, YapiDescType type);
+YapiResult yapiDescFree2(YapiEnv* hEnv, void** desc, YapiDescType type);
 YapiResult yapiPing(YapiConnect* hConn, int32_t timeout);
 
 //-----------------------------------------------------------------------------
@@ -431,6 +476,7 @@ YapiResult yapiParseSqlParams(YapiEnv* hEnv, YapiPointer* paramList, const char*
 YapiResult yapiGetParamListCount(YapiPointer hParamList, uint32_t* count);
 YapiResult yapiGetParamName(YapiPointer hParamList, uint16_t index, char* name, int32_t nameBufLen, int32_t* nameLen);
 YapiResult yapiFreeParamList(YapiPointer hParamList);
+YapiResult yapiGetSqlParamCount(const char* sql, int32_t sqlLength, uint16_t* paramCount);
 
 //-----------------------------------------------------------------------------
 // Statment Function
@@ -507,6 +553,16 @@ YapiResult yapiLobRead(YapiConnect* hConn, YapiLobLocator* loc, uint64_t* bytes,
 YapiResult yapiLobWrite(YapiConnect* hConn, YapiLobLocator* loc, uint64_t* bytes, uint8_t* buf, uint64_t bufLen);
 YapiResult yapiLobCreateTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc);
+
+//-----------------------------------------------------------------------------
+// Vector Function
+//-----------------------------------------------------------------------------
+YapiResult yapiVectorFromText(YapiVector* vector, YapiVectorFormat format, uint16_t dim, char* text, uint32_t textlen, uint32_t mode);
+YapiResult yapiVectorFromArray(YapiVector* vector, YapiVectorFormat format, uint16_t dim, uint8_t* array, uint32_t arrayLen, uint32_t mode);
+YapiResult yapiVectorToText(YapiVector* vector, char* text, uint32_t* textlen, uint32_t mode);
+YapiResult yapiVectorToArray(YapiVector* vector, YapiVectorFormat format, uint16_t* dim, uint8_t* array, uint32_t* arrayLen, uint32_t mode);
+YapiResult yapiVectorGetFormat(YapiVector* vector, YapiVectorFormat* format);
+YapiResult yapiVectorGetDimension(YapiVector* vector, uint16_t* dim);
 
 //-----------------------------------------------------------------------------
 // plsql debug Function

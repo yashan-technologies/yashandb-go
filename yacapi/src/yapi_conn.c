@@ -139,6 +139,13 @@ YapiResult yapiFreeParamList(YapiPointer hParamList)
     return yapiCliFreeParamList(hParamList, &error);
 }
 
+YapiResult yapiGetSqlParamCount(const char* sql, int32_t sqlLength, uint16_t* paramCount)
+{
+    YapiErrorMsg error;
+    yapiInitError(&error);
+
+    return yapiCliGetSqlParamCount(sql, sqlLength, paramCount, &error);
+}
 
 void yapiGetLastError(YapiErrorInfo* info)
 {
@@ -281,3 +288,16 @@ YapiResult yapiConnectionPoolDestroy(YapiConnectPool* hConnPool, uint32_t mode)
     return yapiCliConnectionPoolDestroy(hConnPool->connPoolHandler, mode, &error);
 }
 
+YapiResult yapiDescAlloc2(YapiEnv* hEnv, void** desc, YapiDescType type)
+{
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliDescAlloc2(hEnv->envHandler, desc, type, &error);
+}
+
+YapiResult yapiDescFree2(YapiEnv* hEnv, void** desc, YapiDescType type)
+{
+    YapiErrorMsg error;
+    yapiInitError(&error);
+    return yapiCliDescFree2(hEnv->envHandler, desc, type, &error);
+}
