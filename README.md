@@ -1,29 +1,22 @@
-# yasdb-go
+# yasdb-go|崖山数据库GO语言驱动程序
 
-### quick started
+yasdb-go 是 YashanDB 官方 Go 语言数据库驱动，完全兼容 Go 标准的 `database/sql` 接口，依赖崖山数据库C驱动。
 
-yasdb-go驱动包可以通过以下两种方式进行安装和配置：
+### 特性
 
-#### 在线下载
-
-- 通过go get命令在`https://git.yasdb.com/go/yasdb-go`仓库中下载
-- [linux](./linux_online.md) 
-- [windows](./win_online.md) 
-
-#### 离线获取
-
-- 如果无法连接上`https://git.yasdb.com/go/yasdb-go`，可以使用离线方案，直接获得源码包
-- [linux](./linux_offline.md) 
-- [windows](./win_offline.md) 
+- ✅ 全面兼容 Go 1.18+
+- ✅ 符合 Go 标准 `database/sql` 接口
+- ✅ 预处理语句与批量操作
+- ✅ 事务支持
+- ✅ 上下文控制（Cancel/Timeout）
+- ✅ 多版本运行时检测与自动适配
 
 ### DSN的填写说明
-参考教程: [DSN format](./DSNFormat.md)
 
+参考教程: [DSN format]()
 
-### yacapi更新
+### 兼容性说明
 
-git subtree pull --prefix=yacapi  git@git.yasdb.com:cod-x/yacapi.git  master --squash
-
-
-### 使用示例
-yasdb-go驱动包中提供了一些使用示例。其中通过标准库`database/sql`连接操作yashandb示例请参考[examples](./_examples)；通过第三方库`github.com/jmoiron/sqlx`连接操作yashandb示例请参考[sqlx示例](./sqlx示例.md) 。
+| GO驱动版本 | 版本发布时间 | 新特性     | 最低兼容C驱动版本 | 完全支持C驱动版本 |
+| ---------- | ------------ | ---------- | ----------------- | ----------------- |
+| 1.4.2      | 2026.3.18    | 首版本支持 | v23.4.1.100       | v23.4.1.100       |
