@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"git.yasdb.com/go/yasdb-go/assert"
+	"github.com/yashan-technologies/yashandb-go/assert"
 )
 
 func TestTxCommit(t *testing.T) {
