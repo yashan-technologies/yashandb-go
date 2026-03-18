@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "git.yasdb.com/go/yasdb-go"
-	example "git.yasdb.com/go/yasdb-go/_examples"
+	_ "github.com/yashan-technologies/yashandb-go"
+	example "github.com/yashan-technologies/yashandb-go/_examples"
 )
 
 func getYasdbConn(dsn string) (*sql.DB, error) {

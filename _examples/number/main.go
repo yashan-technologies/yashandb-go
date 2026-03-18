@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "git.yasdb.com/go/yasdb-go"
+	_ "github.com/yashan-technologies/yashandb-go"
 )
 
 func main() {

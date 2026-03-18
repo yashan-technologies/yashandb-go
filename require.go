@@ -12,6 +12,6 @@ Home page: 	https://www.yashandb.com/
 package yasdb
 
 import (
-	_ "git.yasdb.com/go/yasdb-go/yacapi/include"
-	_ "git.yasdb.com/go/yasdb-go/yacapi/src"
+	_ "github.com/yashan-technologies/yashandb-go/yacapi/include"
+	_ "github.com/yashan-technologies/yashandb-go/yacapi/src"
 )

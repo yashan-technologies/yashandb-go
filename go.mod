@@ -1,3 +1,3 @@
-module git.yasdb.com/go/yasdb-go
+module github.com/yashan-technologies/yashandb-go
 
 go 1.18
