@@ -542,6 +542,17 @@ YapiResult yapiNumberFromText(const char* str, uint32_t strLength, const char* f
 YapiResult yapiNumberFromReal(const YapiPointer rnum, uint32_t length, YapiNumber* number);
 
 YapiResult yapiNumberToReal(const YapiNumber* number, uint32_t length, YapiPointer rsl);
+
+//-----------------------------------------------------------------------------
+// Column Desc Function
+//-----------------------------------------------------------------------------
+uint8_t yapiColumnDescGetPrecision(const YapiColumnDesc* desc);
+void    yapiColumnDescSetPrecision(YapiColumnDesc* desc, uint8_t precision);
+int8_t  yapiColumnDescGetScale(const YapiColumnDesc* desc);
+void    yapiColumnDescSetScale(YapiColumnDesc* desc, int8_t scale);
+uint8_t yapiColumnDescGetVectorFormat(const YapiColumnDesc* desc);
+void    yapiColumnDescSetVectorFormat(YapiColumnDesc* desc, uint8_t format);
+
 //-----------------------------------------------------------------------------
 // Lob Function
 //-----------------------------------------------------------------------------

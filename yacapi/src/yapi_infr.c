@@ -20,3 +20,36 @@ void yapiFreeMem(void *ptr)
     }
     free(ptr);
 }
+
+//-----------------------------------------------------------------------------
+// Column Desc Function
+//-----------------------------------------------------------------------------
+uint8_t yapiColumnDescGetPrecision(const YapiColumnDesc* desc)
+{
+    return desc->precision;
+}
+
+void yapiColumnDescSetPrecision(YapiColumnDesc* desc, uint8_t precision)
+{
+    desc->precision = precision;
+}
+
+int8_t yapiColumnDescGetScale(const YapiColumnDesc* desc)
+{
+    return desc->scale;
+}
+
+void yapiColumnDescSetScale(YapiColumnDesc* desc, int8_t scale)
+{
+    desc->scale = scale;
+}
+
+uint8_t yapiColumnDescGetVectorFormat(const YapiColumnDesc* desc)
+{
+    return desc->vector.format;
+}
+
+void yapiColumnDescSetVectorFormat(YapiColumnDesc* desc, uint8_t format)
+{
+    desc->vector.format = format;
+}
