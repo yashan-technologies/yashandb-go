@@ -70,9 +70,27 @@ static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error, char* e
     return YAPI_SUCCESS;
 }
 
-YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg* error)
+YapiResult yapiOpenDynamicLib(char* yacliLibName, YapiPointer* handler, YapiErrorMsg* error)
 {
-    *handler = LoadLibraryA(libName);
+    char* userProfile = getenv("USERPROFILE");
+    if (userProfile != NULL) {
+        char basePath[FILENAME_MAX];
+        snprintf(basePath, sizeof(basePath), "%s\\.yashandb\\client\\lib", userProfile);
+        char thirdPath[FILENAME_MAX];
+        snprintf(thirdPath, sizeof(thirdPath), "%s\\libssl-1_1-x64.dll", basePath);
+        (void)LoadLibraryA(thirdPath);
+        snprintf(thirdPath, sizeof(thirdPath), "%s\\libcrypto-1_1-x64.dll", basePath);
+        (void)LoadLibraryA(thirdPath);
+        snprintf(thirdPath, sizeof(thirdPath), "%s\\yas_infra.dll", basePath);
+        (void)LoadLibraryA(thirdPath);
+        snprintf(thirdPath, sizeof(thirdPath), "%s\\%s", basePath, yacliLibName);
+        *handler = LoadLibraryA(thirdPath);
+        if (*handler != NULL) {
+            yapiLibHandle = *handler;
+            return YAPI_SUCCESS;
+        }
+    }
+    *handler = LoadLibraryA(yacliLibName);
     if (*handler != NULL) {
         yapiLibHandle = *handler;
         return YAPI_SUCCESS;
@@ -82,6 +100,7 @@ YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg*
     YAPI_CALL(yapiGetWindowsError(errNum, error, "load yacli library error: "));
     return YAPI_ERROR;
 }
+
 
 YapiResult yapiCloseDynamicLib(YapiPointer* handler, YapiErrorMsg* error)
 {
@@ -111,22 +130,28 @@ YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg*
 {
     char* homeDir = getenv("HOME");
     if (homeDir != NULL) {
-        char customPath[FILENAME_MAX];
-        snprintf(customPath, sizeof(customPath), "%s/.yashandb/client/lib/%s", homeDir, libName);
-        *handler = dlopen(customPath, RTLD_LAZY);
-        if (*handler != NULL) {
+        char basePath[FILENAME_MAX];
+        snprintf(basePath, sizeof(basePath), "%s/.yashandb/client/lib/", homeDir);
+        char thirdPath[FILENAME_MAX];
+        snprintf(thirdPath, sizeof(thirdPath), "%s/libcrypto.so", basePath);
+        dlopen(thirdPath, RTLD_LAZY);
+        snprintf(thirdPath, sizeof(thirdPath), "%s/libssl.so", basePath);
+        dlopen(thirdPath, RTLD_LAZY);
+        snprintf(thirdPath, sizeof(thirdPath), "%s/libyas_infra.so", basePath);
+        dlopen(thirdPath, RTLD_LAZY);
+        snprintf(thirdPath, sizeof(thirdPath), "%s/%s", basePath, libName);
+        *handler = dlopen(thirdPath, RTLD_LAZY);
+        if (*handler) {
             yapiLibHandle = *handler;
             return YAPI_SUCCESS;
         }
     }
-
     *handler = dlopen(libName, RTLD_LAZY);
     if (!*handler) {
         char* errMsg = dlerror();
         yapiSetError(error, YAPI_ERR_LOAD_SYMBOL, "load yacli library error [%s]", errMsg);
         return YAPI_ERROR;
     }
-
     yapiLibHandle = *handler;
     return YAPI_SUCCESS;
 }
