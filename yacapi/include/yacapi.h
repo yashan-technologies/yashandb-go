@@ -122,17 +122,17 @@ typedef struct StYapiColumnDesc {
     uint32_t size;
     uint8_t  type;
     union {
-      struct {
-        uint8_t precision;
-        int8_t scale;
-      };
-      struct {
-        uint8_t format : 4;
-        uint8_t unused: 4;
-        uint8_t reserved;
-      } vector;
+        struct {
+            uint8_t precision;
+            int8_t  scale;
+        };
+        struct {
+            uint8_t format : 4;
+            uint8_t unused : 4;
+            uint8_t reserved;
+        } vector;
     };
-    uint8_t  nullable;
+    uint8_t nullable;
 } YapiColumnDesc;
 
 typedef enum EnYapiDebugRunningAttr {
@@ -231,7 +231,10 @@ typedef enum EnYapiConnAttr {
     YAPI_ATTR_TAF_CALLBACK = 15,
     YAPI_ATTR_MAX_NCHARSET_RATIO = 17,
     YAPI_ATTR_HEARTBEAT_ENABLED = 18,
+    YAPI_ATTR_SET_COMPAT_VECTOR = 21,
     YAPI_ATTR_SERVER_STATUS = 22,
+    YAPI_ATTR_ROLE = 23,
+    YAPI_ATTR_SSL_ROOT_CER = 24,
     __YAPI_CONN_ATTR_END__
 } YapiConnAttr;
 
@@ -389,11 +392,7 @@ typedef enum EnYapiVectorFormat {
 } YapiVectorFormat;
 
 /* YACAPI describe type codes */
-typedef enum EnYapiDescType {
-    YAPI_DESC_UNKNOWN = 0,
-    YAPI_DESC_LOB = 1,
-    YAPI_DESC_VECTOR = 2
-} YapiDescType;
+typedef enum EnYapiDescType { YAPI_DESC_UNKNOWN = 0, YAPI_DESC_LOB = 1, YAPI_DESC_VECTOR = 2 } YapiDescType;
 
 typedef struct StYapiVector {
     YapiEnv*    env;
@@ -455,12 +454,12 @@ YapiResult yapiGetConnAttr(YapiConnect* hConn, YapiConnAttr attr, void* value, i
                            int32_t* stringLength);
 YapiResult yapiAllocConnect(YapiEnv* env, YapiConnect** hConn);
 YapiResult yapiConnect2(YapiConnect* hConn, const char* url, int16_t urlLength, const char* user, int16_t userLength,
-                       const char* password, int16_t passwordLength);
+                        const char* password, int16_t passwordLength);
 
 YapiResult yapiAllocConnectionPool(YapiEnv* env, YapiConnectPool** hConnPool);
 YapiResult yapiReleaseConnectionPool(YapiConnectPool* hConnPool);
-YapiResult yapiConnectionPoolCreate(YapiConnectPool* hConnPool, const char* url, int16_t urlLength,
-                                    uint32_t min, uint32_t max, uint32_t increment, const char* user, int16_t userLength,
+YapiResult yapiConnectionPoolCreate(YapiConnectPool* hConnPool, const char* url, int16_t urlLength, uint32_t min,
+                                    uint32_t max, uint32_t increment, const char* user, int16_t userLength,
                                     const char* password, int16_t passwordLength, uint32_t mode);
 YapiResult yapiConnectionGet(YapiConnectPool* hConnPool, YapiConnect** hConn);
 YapiResult yapiConnectionGiveBack(YapiConnect* hConn);
@@ -568,10 +567,13 @@ YapiResult yapiLobFreeTemporary(YapiConnect* hConn, YapiLobLocator* loc);
 //-----------------------------------------------------------------------------
 // Vector Function
 //-----------------------------------------------------------------------------
-YapiResult yapiVectorFromText(YapiVector* vector, YapiVectorFormat format, uint16_t dim, char* text, uint32_t textlen, uint32_t mode);
-YapiResult yapiVectorFromArray(YapiVector* vector, YapiVectorFormat format, uint16_t dim, uint8_t* array, uint32_t arrayLen, uint32_t mode);
+YapiResult yapiVectorFromText(YapiVector* vector, YapiVectorFormat format, uint16_t dim, char* text, uint32_t textlen,
+                              uint32_t mode);
+YapiResult yapiVectorFromArray(YapiVector* vector, YapiVectorFormat format, uint16_t dim, uint8_t* array,
+                               uint32_t arrayLen, uint32_t mode);
 YapiResult yapiVectorToText(YapiVector* vector, char* text, uint32_t* textlen, uint32_t mode);
-YapiResult yapiVectorToArray(YapiVector* vector, YapiVectorFormat format, uint16_t* dim, uint8_t* array, uint32_t* arrayLen, uint32_t mode);
+YapiResult yapiVectorToArray(YapiVector* vector, YapiVectorFormat format, uint16_t* dim, uint8_t* array,
+                             uint32_t* arrayLen, uint32_t mode);
 YapiResult yapiVectorGetFormat(YapiVector* vector, YapiVectorFormat* format);
 YapiResult yapiVectorGetDimension(YapiVector* vector, uint16_t* dim);
 
