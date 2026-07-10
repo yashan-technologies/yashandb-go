@@ -72,6 +72,12 @@ static YapiResult yapiGetWindowsError(DWORD errNum, YapiErrorMsg* error, char* e
 
 YapiResult yapiOpenDynamicLib(char* yacliLibName, YapiPointer* handler, YapiErrorMsg* error)
 {
+    *handler = LoadLibraryA(yacliLibName);
+    if (*handler != NULL) {
+        yapiLibHandle = *handler;
+        return YAPI_SUCCESS;
+    }
+
     char* userProfile = getenv("USERPROFILE");
     if (userProfile != NULL) {
         char basePath[FILENAME_MAX];
@@ -90,16 +96,12 @@ YapiResult yapiOpenDynamicLib(char* yacliLibName, YapiPointer* handler, YapiErro
             return YAPI_SUCCESS;
         }
     }
-    *handler = LoadLibraryA(yacliLibName);
-    if (*handler != NULL) {
-        yapiLibHandle = *handler;
-        return YAPI_SUCCESS;
-    }
 
     DWORD errNum = GetLastError();
     YAPI_CALL(yapiGetWindowsError(errNum, error, "load yacli library error: "));
     return YAPI_ERROR;
 }
+
 
 YapiResult yapiCloseDynamicLib(YapiPointer* handler, YapiErrorMsg* error)
 {
@@ -127,6 +129,12 @@ static int yapiLoadSymbol(const char* symbolName, void** symbol, YapiErrorMsg* e
 
 YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg* error)
 {
+    *handler = dlopen(libName, RTLD_LAZY);
+    if (*handler) {
+        yapiLibHandle = *handler;
+        return YAPI_SUCCESS;
+    }
+
     char* homeDir = getenv("HOME");
     if (homeDir != NULL) {
         char basePath[FILENAME_MAX];
@@ -145,14 +153,10 @@ YapiResult yapiOpenDynamicLib(char* libName, YapiPointer* handler, YapiErrorMsg*
             return YAPI_SUCCESS;
         }
     }
-    *handler = dlopen(libName, RTLD_LAZY);
-    if (!*handler) {
-        char* errMsg = dlerror();
-        yapiSetError(error, YAPI_ERR_LOAD_SYMBOL, "load yacli library error [%s]", errMsg);
-        return YAPI_ERROR;
-    }
-    yapiLibHandle = *handler;
-    return YAPI_SUCCESS;
+
+    char* errMsg = dlerror();
+    yapiSetError(error, YAPI_ERR_LOAD_SYMBOL, "load yacli library error [%s]", errMsg);
+    return YAPI_ERROR;
 }
 
 YapiResult yapiCloseDynamicLib(YapiPointer* handler, YapiErrorMsg* error)
