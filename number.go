@@ -304,7 +304,21 @@ func numberDestToYapiNumber(dest interface{}, in bool) (number *C.YapiNumber, in
 
 // numberToInBindValue prepares bind parameters for a Number IN parameter.
 // Binds as VARCHAR — database handles VARCHAR → NUMBER conversion.
-func numberToInBindValue(n Number) *bindInfo {
+func numberToInBindValue(v interface{}) *bindInfo {
+	var n Number
+	switch val := v.(type) {
+	case Number:
+		n = val
+	case *Number:
+		if val == nil {
+			// nil pointer treated as NULL
+			n = Number{}
+		} else {
+			n = *val
+		}
+	default:
+		return nil
+	}
 	if !n.Valid() {
 		return &bindInfo{
 			yacType:   C.YAPI_TYPE_CHAR,

@@ -645,6 +645,161 @@ func testNumberCRUD(st *sqlTest) {
 }
 
 // ---------------------------------------------------------------------------
+// 9.5 INSERT NULL Number
+// ---------------------------------------------------------------------------
+
+func TestNumberInsertNull(t *testing.T) {
+	runSqlTest(t, testNumberInsertNull)
+}
+
+func testNumberInsertNull(st *sqlTest) {
+	st.sqlGenInfo = &sqlGenInfo{
+		tableName: "test_number_insert_null",
+		columnNameType: [][2]string{
+			{"id", "INT"},
+			{"n_val", "NUMBER"},
+		},
+	}
+	st.genTableTest()
+	defer st.dropTable()
+
+	insertSQL := fmt.Sprintf("INSERT INTO %s (id, n_val) VALUES (?, ?)", st.tableName)
+
+	// Row 1: NULL Number (zero value)
+	st.mustExec(insertSQL, 1, Number{})
+
+	// Row 2: *Number pointing to NULL Number
+	nullNum := Number{}
+	st.mustExec(insertSQL, 2, &nullNum)
+
+	// Row 3: nil *Number
+	var nilNum *Number
+	st.mustExec(insertSQL, 3, nilNum)
+
+	// Row 4: valid Number for comparison
+	st.mustExec(insertSQL, 4, NewNumber("123.45"))
+
+	// Verify all values
+	selectSQL := fmt.Sprintf("SELECT id, n_val FROM %s ORDER BY id", st.tableName)
+	rows := st.mustQuery(selectSQL)
+	defer rows.Close()
+
+	type row struct {
+		id    int
+		nVal  Number
+		valid bool
+	}
+	var got []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.nVal); err != nil {
+			st.Fatalf("Scan error: %v", err)
+		}
+		r.valid = r.nVal.Valid()
+		got = append(got, r)
+	}
+	if err := rows.Err(); err != nil {
+		st.Fatalf("Rows error: %v", err)
+	}
+
+	if len(got) != 4 {
+		st.Fatalf("row count = %d, want 4", len(got))
+	}
+
+	// Rows 1, 2, 3 should be NULL
+	for i := 0; i < 3; i++ {
+		if got[i].valid {
+			st.Errorf("row %d (id=%d): expected NULL Number, got Valid()=true, String()=%q",
+				i, got[i].id, got[i].nVal.String())
+		}
+	}
+
+	// Row 4 should be valid
+	if !got[3].valid {
+		st.Errorf("row 3 (id=%d): expected valid Number, got NULL", got[3].id)
+	}
+	if got[3].nVal.String() != "123.45" {
+		st.Errorf("row 3 (id=%d): n_val = %q, want %q", got[3].id, got[3].nVal.String(), "123.45")
+	}
+}
+
+func TestNumberInsertEdgeCases(t *testing.T) {
+	runSqlTest(t, testNumberInsertEdgeCases)
+}
+
+func testNumberInsertEdgeCases(st *sqlTest) {
+	st.sqlGenInfo = &sqlGenInfo{
+		tableName: "test_number_edge_cases",
+		columnNameType: [][2]string{
+			{"id", "INT"},
+			{"n_val", "NUMBER"},
+		},
+	}
+	st.genTableTest()
+	defer st.dropTable()
+
+	insertSQL := fmt.Sprintf("INSERT INTO %s (id, n_val) VALUES (?, ?)", st.tableName)
+
+	tests := []struct {
+		name   string
+		id     int
+		number Number
+		want   string // expected string representation after DB roundtrip
+	}{
+		{"zero", 1, NewNumber("0"), "0"},
+		{"negative_integer", 2, NewNumber("-42"), "-42"},
+		{"negative_decimal", 3, NewNumber("-3.14159"), "-3.14159"},
+		{"small_decimal", 4, NewNumber("0.000000000001"), "0.000000000001"},
+		{"reasonable_decimals", 5, NewNumber("3.14159265358979"), "3.14159265358979"},
+		{"simple_integer", 6, NewNumber("123456789"), "123456789"},
+		{"moderate_large", 7, NewNumber("999999999999999"), "999999999999999"},
+		{"moderate_negative", 8, NewNumber("-999999999999999"), "-999999999999999"},
+	}
+
+	for _, tt := range tests {
+		st.mustExec(insertSQL, tt.id, tt.number)
+	}
+
+	// Verify all values
+	selectSQL := fmt.Sprintf("SELECT id, n_val FROM %s ORDER BY id", st.tableName)
+	rows := st.mustQuery(selectSQL)
+	defer rows.Close()
+
+	var got []struct {
+		id   int
+		nVal Number
+	}
+	for rows.Next() {
+		var r struct {
+			id   int
+			nVal Number
+		}
+		if err := rows.Scan(&r.id, &r.nVal); err != nil {
+			st.Fatalf("Scan error: %v", err)
+		}
+		got = append(got, r)
+	}
+	if err := rows.Err(); err != nil {
+		st.Fatalf("Rows error: %v", err)
+	}
+
+	if len(got) != len(tests) {
+		st.Fatalf("row count = %d, want %d", len(got), len(tests))
+	}
+
+	// Verify each value matches expected
+	for i, tt := range tests {
+		if got[i].id != tt.id {
+			st.Errorf("row %d: id = %d, want %d", i, got[i].id, tt.id)
+		}
+		gotStr := got[i].nVal.String()
+		if gotStr != tt.want {
+			st.Errorf("row %d (%s): n_val = %q, want %q", i, tt.name, gotStr, tt.want)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // 10. DatabaseTypeName
 // ---------------------------------------------------------------------------
 

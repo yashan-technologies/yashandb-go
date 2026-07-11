@@ -143,7 +143,8 @@ func (stmt *YasStmt) Close() error {
 // validation and conversion as appropriate for the driver.
 func (stmt *YasStmt) CheckNamedValue(namedValue *driver.NamedValue) error {
 	switch namedValue.Value.(type) {
-	case sql.Out, DSInterval, YMInterval, Vector, *Vector, []Vector, []*Vector, Number:
+	case sql.Out, DSInterval, YMInterval, Vector, *Vector, []Vector, []*Vector, Number, *Number,
+		*sql.NullBool, *sql.NullFloat64, *sql.NullInt64, *sql.NullString:
 		return nil
 	}
 	return driver.ErrSkip
@@ -466,7 +467,7 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
 		indicator = nil
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
 		freeType = normalFree
-	case Number:
+	case Number, *Number:
 		info := numberToInBindValue(v)
 		yacType = info.yacType
 		bindSize = info.bindSize
@@ -474,6 +475,26 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
 		indicator = info.indicator
 		value = info.value
 		freeType = info.freeType
+	case *sql.NullBool:
+		if v.Valid {
+			return stmt.getInputBindValue(v.Bool)
+		}
+		return stmt.getInputBindValue(nil)
+	case *sql.NullFloat64:
+		if v.Valid {
+			return stmt.getInputBindValue(v.Float64)
+		}
+		return stmt.getInputBindValue(nil)
+	case *sql.NullInt64:
+		if v.Valid {
+			return stmt.getInputBindValue(v.Int64)
+		}
+		return stmt.getInputBindValue(nil)
+	case *sql.NullString:
+		if v.Valid {
+			return stmt.getInputBindValue(v.String)
+		}
+		return stmt.getInputBindValue(nil)
 	case []byte:
 		desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
 		if err != nil {
