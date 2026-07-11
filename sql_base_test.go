@@ -330,6 +330,21 @@ func runSqlTest(t *testing.T, fn func(st *sqlTest)) {
 	fn(&sqlTest{T: t, DB: db})
 }
 
+// runSqlTestWithDSN 使用指定的 DSN 参数运行测试。
+// params 为 ? 后面的部分，如 "autocommit=true&number_as_string=true"。
+func runSqlTestWithParams(t *testing.T, params string, fn func(st *sqlTest)) {
+	dsn := testDsn
+	if params != "" {
+		dsn = fmt.Sprintf("%s?%s", testDsn, params)
+	}
+	db, err := sql.Open("yasdb", dsn)
+	if err != nil {
+		t.Fatalf("%s%v", NormalConnErr, err)
+	}
+	defer db.Close()
+	fn(&sqlTest{T: t, DB: db})
+}
+
 func runsqlTestACTrue(t *testing.T, fn func(st *sqlTest)) {
 	dsn := fmt.Sprintf("%s?%s", testDsn, "autocommit=true")
 	db, err := sql.Open("yasdb", dsn)

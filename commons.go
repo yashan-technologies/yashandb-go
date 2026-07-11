@@ -102,6 +102,16 @@ type bindStruct struct {
 	freeType  valueFreeType
 }
 
+// bindInfo 包含绑定参数所需的信息（Vector、Number 等自定义类型 IN 绑定共用）
+type bindInfo struct {
+	yacType   C.YapiType
+	bindSize  C.int32_t
+	bufLength C.int32_t
+	indicator *C.int32_t
+	value     C.YapiPointer
+	freeType  valueFreeType
+}
+
 func stringToYasChar(str string) *C.char {
 	p := C.malloc(C.size_t(len(str) + 1))
 	pp := (*[1 << 30]byte)(p)

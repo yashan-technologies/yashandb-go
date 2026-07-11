@@ -143,7 +143,7 @@ func (stmt *YasStmt) Close() error {
 // validation and conversion as appropriate for the driver.
 func (stmt *YasStmt) CheckNamedValue(namedValue *driver.NamedValue) error {
 	switch namedValue.Value.(type) {
-	case sql.Out, DSInterval, YMInterval, Vector, *Vector, []Vector, []*Vector:
+	case sql.Out, DSInterval, YMInterval, Vector, *Vector, []Vector, []*Vector, Number:
 		return nil
 	}
 	return driver.ErrSkip
@@ -466,6 +466,14 @@ func (stmt *YasStmt) getInputBindValue(arg driver.Value) (*bindStruct, error) {
 		indicator = nil
 		value = C.YapiPointer(unsafe.Pointer(stringToYasChar(v)))
 		freeType = normalFree
+	case Number:
+		info := numberToInBindValue(v)
+		yacType = info.yacType
+		bindSize = info.bindSize
+		bufLength = info.bufLength
+		indicator = info.indicator
+		value = info.value
+		freeType = info.freeType
 	case []byte:
 		desc, err := stmt.Conn.lobWrite(C.YAPI_TYPE_BLOB, v)
 		if err != nil {
@@ -839,17 +847,15 @@ func (stmt *YasStmt) getOutputBindValueByInfo(obi *outputBindInfo, inout bool) (
 		bindSize, bufLength, value, *indicator = stringOutBindParam(v, size, inout)
 		freeType = normalFree
 	case C.YAPI_TYPE_NUMBER:
-		v, err := obi.getNumberDest()
-		if err != nil {
-			return bind, err
-		}
-		number, err := stmt.Conn.float64ToYapiNumber(v)
+		// Use YapiNumber for both OUT and IN OUT.
+		// Database reads/writes binary NUMBER format — yapiNumberToString handles conversion.
+		number, indicatorValue, err := numberDestToYapiNumber(obi.dest, inout)
 		if err != nil {
 			return bind, err
 		}
 		bindSize = C.int32_t(unsafe.Sizeof(*number))
 		bufLength = bindSize
-		*indicator = C.int32_t(bufLength)
+		*indicator = indicatorValue
 		value = C.YapiPointer(number)
 		freeType = normalFree
 
@@ -1085,12 +1091,22 @@ func (stmt *YasStmt) getBindValueDest() error {
 				bindDest, _ := dest.getVarcharBindDest()
 				*bindDest = C.GoString((*C.char)(bind.value))
 			case C.YAPI_TYPE_NUMBER:
-				bindDest, _ := dest.getNumberDest()
-				res, err := stmt.Conn.yapiNumberToFloat64((*C.YapiNumber)(bind.value))
-				if err != nil {
-					return err
+				// NUMBER OUT/IN OUT: bind.value is *C.YapiNumber.
+				// Read via yapiNumberToString for lossless text conversion.
+				isNull := bind.indicator != nil && *bind.indicator == C.YAPI_NULL_DATA
+				if isNull {
+					if err := setNumberDestFromString(dest.dest, "", true); err != nil {
+						return err
+					}
+				} else {
+					text, err := yapiNumberToString((*C.YapiNumber)(bind.value))
+					if err != nil {
+						return fmt.Errorf("yasdb: yapiNumberToString: %w", err)
+					}
+					if err := setNumberDestFromString(dest.dest, text, false); err != nil {
+						return err
+					}
 				}
-				*bindDest = res
 			case C.YAPI_TYPE_ROWID:
 				bindDest, _ := dest.getVarcharBindDest()
 				*bindDest = C.GoString((*C.char)(bind.value))
@@ -1336,7 +1352,7 @@ func (obi *outputBindInfo) checkBindOptParams() (err error) {
 	case C.YAPI_TYPE_DS_INTERVAL, C.YAPI_TYPE_YM_INTERVAL:
 		_, err = obi.getIntervalBindDest()
 	case C.YAPI_TYPE_NUMBER:
-		_, err = obi.getNumberDest()
+		err = obi.checkNumberDest()
 	case C.YAPI_TYPE_CURSOR:
 		_, err = obi.getCursorBindDest()
 	case C.YAPI_TYPE_VECTOR:
@@ -1464,11 +1480,15 @@ func (obi *outputBindInfo) getIntervalBindDest() (*string, error) {
 	return obi.getClobBindDest()
 }
 
-func (obi *outputBindInfo) getNumberDest() (*float64, error) {
-	if value, ok := obi.dest.(*float64); ok {
-		return value, nil
+// checkNumberDest validates that obi.dest is one of the supported NUMBER OUT/IN OUT destination types:
+// *float64, *int64, *string, or *Number.
+func (obi *outputBindInfo) checkNumberDest() error {
+	switch obi.dest.(type) {
+	case *float64, *int64, *string, *Number:
+		return nil
+	default:
+		return NewBindOutDestTypeErr("*float64, *int64, *string, or *yasdb.Number")
 	}
-	return nil, NewBindOutDestTypeErr("*float64")
 }
 
 func (obi *outputBindInfo) getVectorBindDest() (*Vector, error) {

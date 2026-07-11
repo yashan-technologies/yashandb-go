@@ -156,22 +156,11 @@ func getVectorElementSizeByFormat(format VectorFormat) int {
 	}
 }
 
-// vectorBindInfo 包含 Vector 绑定所需的信息
-type vectorBindInfo struct {
-	desc      unsafe.Pointer // descriptor 指针
-	yacType   C.YapiType
-	bindSize  C.int32_t
-	bufLength C.int32_t
-	indicator *C.int32_t
-	value     C.YapiPointer
-	freeType  valueFreeType
-}
-
 // bindVector 创建 Vector 的绑定信息
 // env: Yapi 环境指针
 // v: Vector 值
 // 返回绑定信息和错误
-func bindVector(env *C.YapiEnv, v Vector) (*vectorBindInfo, error) {
+func bindVector(env *C.YapiEnv, v Vector) (*bindInfo, error) {
 	desc := new(unsafe.Pointer)
 	if err := yapiDescAlloc2(env, desc, C.YAPI_DESC_VECTOR); err != nil {
 		return nil, err
@@ -213,8 +202,7 @@ func bindVector(env *C.YapiEnv, v Vector) (*vectorBindInfo, error) {
 		return nil, err
 	}
 
-	return &vectorBindInfo{
-		desc:      unsafe.Pointer(desc),
+	return &bindInfo{
 		yacType:   C.YAPI_TYPE_VECTOR,
 		bindSize:  -1,
 		bufLength: -1,
@@ -225,7 +213,7 @@ func bindVector(env *C.YapiEnv, v Vector) (*vectorBindInfo, error) {
 }
 
 // bindVectorPointer 创建 *Vector 的绑定信息
-func bindVectorPointer(env *C.YapiEnv, v *Vector) (*vectorBindInfo, error) {
+func bindVectorPointer(env *C.YapiEnv, v *Vector) (*bindInfo, error) {
 	if v == nil {
 		return nil, fmt.Errorf("nil Vector pointer")
 	}
@@ -233,7 +221,7 @@ func bindVectorPointer(env *C.YapiEnv, v *Vector) (*vectorBindInfo, error) {
 }
 
 // bindVectorSlice 创建 []Vector 的绑定信息（使用第一个 Vector 作为模板）
-func bindVectorSlice(env *C.YapiEnv, vectors []Vector) (*vectorBindInfo, error) {
+func bindVectorSlice(env *C.YapiEnv, vectors []Vector) (*bindInfo, error) {
 	if len(vectors) == 0 {
 		return nil, fmt.Errorf("empty Vector slice")
 	}
@@ -241,7 +229,7 @@ func bindVectorSlice(env *C.YapiEnv, vectors []Vector) (*vectorBindInfo, error) 
 }
 
 // bindPointerVectorSlice 创建 []*Vector 的绑定信息（使用第一个 Vector 作为模板）
-func bindPointerVectorSlice(env *C.YapiEnv, vectors []*Vector) (*vectorBindInfo, error) {
+func bindPointerVectorSlice(env *C.YapiEnv, vectors []*Vector) (*bindInfo, error) {
 	if len(vectors) == 0 {
 		return nil, fmt.Errorf("empty Vector pointer slice")
 	}
@@ -252,7 +240,7 @@ func bindPointerVectorSlice(env *C.YapiEnv, vectors []*Vector) (*vectorBindInfo,
 }
 
 // bindVectorValue 统一的 Vector 绑定入口，支持 Vector、*Vector、[]Vector、[]*Vector
-func bindVectorValue(env *C.YapiEnv, v interface{}) (*vectorBindInfo, error) {
+func bindVectorValue(env *C.YapiEnv, v interface{}) (*bindInfo, error) {
 	switch val := v.(type) {
 	case Vector:
 		return bindVector(env, val)
