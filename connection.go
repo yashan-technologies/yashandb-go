@@ -634,34 +634,6 @@ func (conn *YasConn) stringToYapiYMInterval(dest *string) (*C.YapiYMInterval, er
 	return dsPointer, nil
 }
 
-func (conn *YasConn) float64ToYapiNumber(dest *float64) (*C.YapiNumber, error) {
-
-	var number C.YapiNumber
-	p := C.malloc(C.size_t(unsafe.Sizeof(number)))
-	np := (*C.YapiNumber)(p)
-
-	yp := C.YapiPointer(unsafe.Pointer(dest))
-	length := C.uint32_t(unsafe.Sizeof(*dest))
-
-	if err := yapiNumberFromReal(yp, length, np); err != nil {
-		C.free(p)
-		return nil, err
-	}
-	return np, nil
-}
-
-func (conn *YasConn) yapiNumberToFloat64(number *C.YapiNumber) (float64, error) {
-
-	var res float64
-
-	length := C.uint32_t(unsafe.Sizeof(res))
-
-	if err := yapiNumberToReal(number, length, C.YapiPointer(unsafe.Pointer(&res))); err != nil {
-		return 0, err
-	}
-	return res, nil
-}
-
 func PrepareContext(conn *YasConn, ctx context.Context, query string) (*YasStmt, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
